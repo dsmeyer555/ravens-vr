@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
-<title>Ravens VR Skating</title>
+<title>Ravens VR Stick</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,13 +74,15 @@ fieldset.f{border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;ma
 fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
 .chk{display:flex;gap:8px;align-items:center;font-size:15px;min-height:32px}
 .chk input{width:18px;height:18px;accent-color:var(--accent)}
+.curvebox{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.curvebox canvas{width:100%;max-width:720px;height:auto;aspect-ratio:720/190;background:var(--surface);border:1px solid var(--line);border-radius:8px}
 </style>
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Phase 2</p>
-    <h1>Skate the empty rink</h1>
-    <p class="lede">No teammates and no game yet: just you, a stand-in stick and the ice. Open this page in the Quest browser, press Enter VR and skate for about ten minutes. What I need to know is how it feels: speed, turning, stopping, and whether anything makes you uneasy.</p>
+    <p class="eyebrow">Ravens VR · Phase 3</p>
+    <h1>Stick and puck</h1>
+    <p class="lede">Still no teammates: just you, a real stick in both hands, a puck, the boards and the nets. Pick your curve, press Enter VR and spend about ten minutes stickhandling, passing off the boards and shooting. What I need to know is how the stick and puck feel, and whether the skating changes (crossovers, punch turns) work for you.</p>
   </header>
 
   <section class="card" aria-label="Checks">
@@ -147,6 +149,22 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
           <option value="off">Off</option>
         </select>
       </label>
+      <label class="f">Stick curve
+        <select id="curve"></select>
+      </label>
+      <label class="f">Shot power
+        <select id="power">
+          <option value="0">Raw (blade speed only)</option>
+          <option value="1" selected>Natural (adds stick flex)</option>
+          <option value="2">Boosted (arcade)</option>
+        </select>
+      </label>
+      <label class="f">Crossovers and punch turns
+        <select id="assist">
+          <option value="on" selected>On (automatic)</option>
+          <option value="off">Off (Phase 2 skating)</option>
+        </select>
+      </label>
       <label class="f">Which way you shoot
         <select id="shot">
           <option value="right" selected>Right (left hand on top, right hand low)</option>
@@ -161,20 +179,21 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
         </select>
       </label>
     </div>
+    <div class="curvebox"><canvas id="curve-cv" width="720" height="190" aria-label="Top view of the blade, heel on the left, toe on the right"></canvas><p class="note" id="curve-info"></p></div>
     <p class="note" style="margin-top:10px">These are saved on this device. Top speed can also be changed inside VR. The refresh rate only changes if the headset offers it, and the report says what you got.</p>
   </section>
 
   <section class="card" aria-label="In the headset">
     <h2>In the headset</h2>
     <ol class="how">
-      <li><b>Left thumbstick</b> skates. Push the way you want to go, and let go to glide. Push a little for a slow stride and fully for top speed.</li>
-      <li><b>Left trigger</b> brakes. Squeeze for a hockey stop. Pulling the thumbstick back against your travel slows you more gently.</li>
-      <li><b>Right thumbstick</b> left and right turns you (snap or smooth, as set above). Up and down changes the stick length.</li>
-      <li><b>A</b> (right controller) steps the top speed Easy, Normal, Fast. <b>B</b> puts the puck back in front of you.</li>
-      <li><b>Y</b> (left controller) sets your height. Sit or stand up straight first, then press it. <b>X</b> leaves VR.</li>
-      <li>The stick and puck are still the Phase 0 stand-ins. Skate into the boards and the nets: they stop you.</li>
-      <li>The scoreboard over centre ice shows your speed and the frame rate. If you feel unwell, take the headset off.</li>
-      <li>When you leave VR, the <b>Last VR session</b> card appears at the bottom of this page. It asks how it felt and is saved if you reload.</li>
+      <li><b>Both hands hold the stick.</b> Your top hand (left, for a right shot) is on the butt end and your lower hand slides anywhere along the shaft. Hold the controllers like a real stick. The blade is at the end of the line from your top hand through your lower hand, and turning your top wrist rolls the blade open or closed.</li>
+      <li><b>Get into your ready stance</b> with the blade just above the ice and keep it there for a second: the stick calibrates itself so the blade sits flat. Press <b>Y</b> any time to do it again (it also resets your height).</li>
+      <li>The blade cannot go through the ice: push down and the shaft flattens. The puck is real: it slides, bounces off the boards and glass, rings off the posts and stops in the net.</li>
+      <li><b>Left thumbstick</b> skates. Push a little for a slow stride, fully for top speed. In an arc you crossover automatically, and pushing the stick well to the side at speed makes a punch turn (quick, and it costs speed). <b>Left trigger</b> brakes.</li>
+      <li><b>Right thumbstick</b> left and right turns you. Up and down sets the stick length. <b>Click it</b> to change curve.</li>
+      <li><b>A</b> (right) steps the top speed. <b>B</b> puts the puck back in front of you. <b>X</b> (left) leaves VR.</li>
+      <li>The scoreboard over centre ice shows your speed, your last hit and best, goals, and the frame rate. If you feel unwell, take the headset off.</li>
+      <li>When you leave VR, the <b>Last VR session</b> card appears at the bottom of this page. It asks how the stick and puck felt and is saved if you reload.</li>
     </ol>
   </section>
 
@@ -212,6 +231,27 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
         <label class="chk"><input type="checkbox" name="cb" value="nothing"> Nothing</label>
       </fieldset>
     </div>
+    <div class="grid2" style="margin-bottom:12px">
+      <fieldset class="f" id="sf-overall"><legend>How did the stick feel?</legend>
+        <label class="chk"><input type="radio" name="sf" value="Like a real stick"> Like a real stick</label>
+        <label class="chk"><input type="radio" name="sf" value="Close"> Close</label>
+        <label class="chk"><input type="radio" name="sf" value="Floaty"> Floaty</label>
+        <label class="chk"><input type="radio" name="sf" value="Off"> Off</label>
+      </fieldset>
+      <fieldset class="f" id="sf-parts"><legend>Anything wrong?</legend>
+        <label class="chk"><input type="checkbox" name="sb" value="blade in the wrong place"> Blade in the wrong place</label>
+        <label class="chk"><input type="checkbox" name="sb" value="blade angle wrong when I roll my wrist"> Blade angle wrong</label>
+        <label class="chk"><input type="checkbox" name="sb" value="stick sinks into the ice"> Stick sinks into the ice</label>
+        <label class="chk"><input type="checkbox" name="sb" value="puck sticks to the blade"> Puck sticks</label>
+        <label class="chk"><input type="checkbox" name="sb" value="puck jumps away"> Puck jumps away</label>
+        <label class="chk"><input type="checkbox" name="sb" value="shots too weak"> Shots too weak</label>
+        <label class="chk"><input type="checkbox" name="sb" value="shots too strong"> Shots too strong</label>
+        <label class="chk"><input type="checkbox" name="sb" value="passes do not go where I aim"> Passes go the wrong way</label>
+        <label class="chk"><input type="checkbox" name="sb" value="curves feel the same"> Curves feel the same</label>
+        <label class="chk"><input type="checkbox" name="sb" value="skating changes bad"> Crossovers or punch turns bad</label>
+        <label class="chk"><input type="checkbox" name="sb" value="nothing"> Nothing</label>
+      </fieldset>
+    </div>
     <pre class="rep" id="rep"></pre>
     <div class="row" style="margin-top:12px">
       <button class="btn alt" id="copy" type="button">Copy report</button>
@@ -230,17 +270,18 @@ const RK = { L: 200 * FT, W: 85 * FT, R: 28 * FT };           // rink in metres:
 const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const SKEY = 'ravens-vr2-settings';
-const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true };
+const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
+const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
-    const j = JSON.parse(localStorage.getItem(SKEY) || 'null');
+    const j = JSON.parse(localStorage.getItem(SKEY) || localStorage.getItem(SKEY_OLD) || 'null');
     if (j && typeof j === 'object') {
       const ok = (v, a) => a.includes(v);
       if (ok(j.level, [0, 1, 2])) o.level = j.level; if (ok(j.shot, ['right', 'left'])) o.shot = j.shot; if (ok(j.wantHz, [0, 90, 120])) o.wantHz = j.wantHz;
       if (ok(j.speed, [0, 1, 2])) o.speed = j.speed; if (ok(j.steer, ['body', 'head'])) o.steer = j.steer; if (ok(j.turn, ['snap30', 'snap45', 'smooth', 'off'])) o.turn = j.turn;
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
+      if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
     }
   } catch (e) { /* storage is optional */ }
   return o;
@@ -409,30 +450,346 @@ const btex = new THREE.CanvasTexture(bc); if ('colorSpace' in btex) btex.colorSp
 }
 function drawBoard(l) {
   bx.fillStyle = '#0d131a'; bx.fillRect(0, 0, 1024, 512);
-  bx.fillStyle = '#5aa9ee'; bx.font = '600 38px sans-serif'; bx.fillText('RAVENS VR  ·  PHASE 2', 40, 64);
+  bx.fillStyle = '#5aa9ee'; bx.font = '600 38px sans-serif'; bx.fillText('RAVENS VR  ·  PHASE 3', 40, 64);
   bx.fillStyle = '#e6edf3'; bx.font = '700 170px sans-serif'; bx.fillText(l.spd, 40, 238);
   bx.font = '500 48px sans-serif'; bx.fillStyle = '#93a2b0'; bx.fillText('km/h', 60 + l.spd.length * 98, 238);
   bx.fillStyle = '#e6edf3'; bx.font = '500 42px sans-serif';
-  bx.fillText(l.l2, 40, 310); bx.fillText(l.l3, 40, 366);
-  bx.fillStyle = '#93a2b0'; bx.font = '500 34px sans-serif'; bx.fillText(l.l4, 40, 440);
+  bx.fillText(l.l2, 40, 306); bx.fillText(l.l3, 40, 358);
+  bx.fillStyle = '#93a2b0'; bx.font = '500 32px sans-serif'; bx.fillText(l.l4, 40, 412); bx.fillText(l.l5 || '', 40, 462);
   btex.needsUpdate = true;
 }
 
-// puck and stick
-const PR = 0.038;
-const puck = new THREE.Mesh(new THREE.CylinderGeometry(PR, PR, 0.025, 20), new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.5 }));
+// ---------------------------------------------------------------- stick, curves and puck physics (plain maths, no 3D library)
+// Units: metres and seconds. World: y up, rink length along x, width along z.
+// The stick is a rigid body built from both hands. The blade is a thin curved plate: its face is cut back from the straight
+// heel-to-toe line by the curve profile, and its normal (which way the face points) rides with the top controller, so rolling
+// your wrist opens or closes the blade. The puck is a disc that stays flat; it has gravity, bounces, ice friction, spin for show,
+// and collides with the blade, the boards and glass, the goal frame and the net.
+const GRAV = 9.81, PUCK = { R: 0.0381, HH: 0.0127 };
+const BL = { TB: 0.02, KB: 0.08, SHW: 0.03, SHD: 0.024 };       // blade thickness, knob beyond the top hand, shaft width and depth
+const FRAME_H = 1.22, POST_R = 0.03, WALL_TOP = 2.62, BOARD_TOP = 1.12;
+const POWERS = [1.0, 1.35, 1.8], POWER_NAMES = ['Raw', 'Natural', 'Boosted'];
+
+// Lie, blade length and blade height come from each curve's shop page. The face profile (mm the face is cut back from the straight
+// line, at fractions of the blade length from the heel) and the loft are my own approximations of the shop's descriptions.
+const CURVES = [
+  { id: 'jagr', name: 'Jagr', code: 'PRO68', lie: 6, len: 0.30, hh: 69, th: 54, loft: 7, pts: [[0, 0], [.15, 2], [.3, 9], [.45, 16], [.6, 20], [.75, 20], [.9, 15], [1, 9]], note: 'Big open toe curve, square toe' },
+  { id: 'p92', name: 'P92M', code: 'P92M', lie: 6, len: 0.30, hh: 76, th: 56, loft: 9, pts: [[0, 0], [.2, 3], [.35, 10], [.5, 16], [.65, 17], [.8, 14], [1, 8]], note: 'Deep mid curve, high blade' },
+  { id: 'p28', name: 'P28M', code: 'P28M', lie: 6, len: 0.30, hh: 76, th: 56, loft: 8, pts: [[0, 0], [.2, 4], [.4, 11], [.55, 14], [.7, 13], [.85, 9], [1, 5]], note: 'Mid curve, high blade' },
+  { id: 'p88', name: 'P88', code: 'P88', lie: 5.5, len: 0.30, hh: 72, th: 55, loft: 4, approx: true, pts: [[0, 0], [.3, 1], [.5, 5], [.7, 10], [.85, 13], [1, 15]], note: 'Flat heel, gradual curve, no toe hook (approximate)' },
+  { id: 'malkin', name: 'Malkin', code: 'PRO71', lie: 6, len: 0.29, hh: 72, th: 55, loft: 5, pts: [[0, 0], [.3, 1], [.5, 5], [.7, 10], [.8, 12], [.9, 9], [1, 3]], note: 'P88 with a hook over the last quarter' },
+  { id: 'kovalchuk', name: 'Kovalchuk', code: 'PRO17', lie: 4.5, len: 0.30, hh: 72, th: 55, loft: 3, pts: [[0, 0], [.3, 1], [.5, 4], [.7, 8], [.85, 8], [1, 2]], note: 'Flat heel, toe hook, less rocker than P28' },
+  { id: 'mcdavid', name: 'McDavid', code: 'PRO97', lie: 4, len: 0.29, hh: 76, th: 56, loft: 8, pts: [[0, 0], [.2, 3], [.35, 10], [.5, 17], [.65, 19], [.8, 16], [1, 10]], note: 'Deep P92-style curve, tall blade' },
+  { id: 'crosby', name: 'Crosby', code: 'PRO87', lie: 4, len: 0.285, hh: 68, th: 52, loft: 5, pts: [[0, 0], [.25, 3], [.45, 10], [.6, 13], [.8, 11], [1, 6]], note: 'Mid curve, short compact blade' },
+  { id: 'datsyuk', name: 'Datsyuk', code: 'PRO13', lie: 4, len: 0.32, hh: 76, th: 58, loft: 2, pts: [[0, 0], [.75, 2], [.9, 6], [1, 8]], note: 'Long flat paddle, flat for 75%, little loft at the toe' },
+  { id: 'zegras', name: 'Zegras', code: 'PRO9246', lie: 6, len: 0.30, hh: 76, th: 56, loft: 8, pts: [[0, 0], [.2, 3], [.35, 11], [.5, 18], [.65, 20], [.8, 18], [1, 12]], note: 'Deep P92 with extra toe curve' }
+];
+const curveById = id => CURVES.find(c => c.id === id) || CURVES[0];
+const curveLabel = cv => cv.name + (cv.code !== cv.name ? ' ' + cv.code : '') + ' · lie ' + cv.lie + ' · ' + Math.round(cv.len * 100) + ' cm';
+function makeProfile(cv) {
+  const n = 24, u = new Float64Array(n + 1), c = new Float64Array(n + 1), h = new Float64Array(n + 1);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n; u[i] = t * cv.len;
+    let k = 0; while (k < cv.pts.length - 2 && t > cv.pts[k + 1][0]) k++;
+    const a = cv.pts[k], b = cv.pts[k + 1], f = b[0] > a[0] ? clamp((t - a[0]) / (b[0] - a[0]), 0, 1) : 0;
+    c[i] = (a[1] + (b[1] - a[1]) * f) * 0.001; h[i] = (cv.hh + (cv.th - cv.hh) * t) * 0.001;
+  }
+  for (let pass = 0; pass < 2; pass++) { const c0 = c.slice(); for (let i = 1; i < n; i++) c[i] = (c0[i - 1] + 2 * c0[i] + c0[i + 1]) / 4; }   // soften the corners
+  let mh = 0, mc = 0; for (let i = 0; i <= n; i++) { mh = Math.max(mh, h[i]); mc = Math.max(mc, c[i]); }
+  // shaft-to-blade angle: lie 5 is 135 degrees and each lie number is 2 degrees steeper
+  return { n, Lb: cv.len, u, c, h, mh, mc, lieAng: (135 - 2 * (cv.lie - 5)) * Math.PI / 180, loft: cv.loft * Math.PI / 180, cv };
+}
+const hAt = (bp, u) => { const t = clamp(u / bp.Lb, 0, 1) * bp.n, i = Math.min(bp.n - 1, Math.floor(t)), f = t - i; return bp.h[i] + (bp.h[i + 1] - bp.h[i]) * f; };
+
+// ---- a frame is the blade's position and axes: O the heel on the shaft axis, U along the blade bottom to the toe, P up the blade,
+// W out of the face (loft included), S along the shaft up to the hands, E across the shaft. A local point (u, v, w) is
+// O + u U + v P + (w + TB/2) W, with the face at w = -curve depth.
+const newFrame = () => ({ Ox: 0, Oy: 0, Oz: 0, Ux: 1, Uy: 0, Uz: 0, Px: 0, Py: 1, Pz: 0, Wx: 0, Wy: 0, Wz: 1, Sx: 0, Sy: 1, Sz: 0, Ex: 1, Ey: 0, Ez: 0 });
+function copyFrame(a, b) { for (const k in b) a[k] = b[k]; return a; }
+function frameFrom(F, bp, hand, sx, sy, sz, wx, wy, wz, ox, oy, oz) {
+  const cl = Math.cos(bp.lieAng), sl = Math.sin(bp.lieAng);
+  const ex = hand * (wy * sz - wz * sy), ey = hand * (wz * sx - wx * sz), ez = hand * (wx * sy - wy * sx);
+  const ux = cl * sx + sl * ex, uy = cl * sy + sl * ey, uz = cl * sz + sl * ez;
+  const px = (sx - cl * ux) / sl, py = (sy - cl * uy) / sl, pz = (sz - cl * uz) / sl;
+  const cf = Math.cos(bp.loft), sf = Math.sin(bp.loft);
+  F.Ox = ox; F.Oy = oy; F.Oz = oz; F.Ux = ux; F.Uy = uy; F.Uz = uz;
+  F.Px = px * cf - wx * sf; F.Py = py * cf - wy * sf; F.Pz = pz * cf - wz * sf;
+  F.Wx = wx * cf + px * sf; F.Wy = wy * cf + py * sf; F.Wz = wz * cf + pz * sf;
+  F.Sx = sx; F.Sy = sy; F.Sz = sz; F.Ex = ex; F.Ey = ey; F.Ez = ez;
+}
+function lerpFrame(o, a, b, k) {
+  o.Ox = a.Ox + (b.Ox - a.Ox) * k; o.Oy = a.Oy + (b.Oy - a.Oy) * k; o.Oz = a.Oz + (b.Oz - a.Oz) * k;
+  let ux = a.Ux + (b.Ux - a.Ux) * k, uy = a.Uy + (b.Uy - a.Uy) * k, uz = a.Uz + (b.Uz - a.Uz) * k, l = Math.hypot(ux, uy, uz) || 1; ux /= l; uy /= l; uz /= l;
+  let px = a.Px + (b.Px - a.Px) * k, py = a.Py + (b.Py - a.Py) * k, pz = a.Pz + (b.Pz - a.Pz) * k, d = px * ux + py * uy + pz * uz;
+  px -= d * ux; py -= d * uy; pz -= d * uz; l = Math.hypot(px, py, pz) || 1; px /= l; py /= l; pz /= l;
+  let wx = a.Wx + (b.Wx - a.Wx) * k, wy = a.Wy + (b.Wy - a.Wy) * k, wz = a.Wz + (b.Wz - a.Wz) * k;
+  d = wx * ux + wy * uy + wz * uz; wx -= d * ux; wy -= d * uy; wz -= d * uz; d = wx * px + wy * py + wz * pz; wx -= d * px; wy -= d * py; wz -= d * pz; l = Math.hypot(wx, wy, wz) || 1;
+  o.Ux = ux; o.Uy = uy; o.Uz = uz; o.Px = px; o.Py = py; o.Pz = pz; o.Wx = wx / l; o.Wy = wy / l; o.Wz = wz / l;
+}
+const bpt = (F, u, v, w, o) => { const q = w + BL.TB / 2; o[0] = F.Ox + u * F.Ux + v * F.Px + q * F.Wx; o[1] = F.Oy + u * F.Uy + v * F.Py + q * F.Wy; o[2] = F.Oz + u * F.Uz + v * F.Pz + q * F.Wz; return o; };
+const _a = [0, 0, 0], _b = [0, 0, 0];
+function pointVel(Fn, Fp, u, v, w, dt, o) { bpt(Fn, u, v, w, _a); bpt(Fp, u, v, w, _b); o[0] = (_a[0] - _b[0]) / dt; o[1] = (_a[1] - _b[1]) / dt; o[2] = (_a[2] - _b[2]) / dt; return o; }
+function lowestY(F, bp) {
+  let m = 1e9;
+  for (let i = 0; i <= bp.n; i += 4) {
+    const u = bp.u[i], c = bp.c[i], h = bp.h[i];
+    for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) {
+      const v = a ? h : 0, q = (b ? -c - BL.TB : -c) + BL.TB / 2, y = F.Oy + u * F.Uy + v * F.Py + q * F.Wy; if (y < m) m = y;
+    }
+  }
+  return m;
+}
+function qrot(q, x, y, z, o) {
+  const tx = 2 * (q.y * z - q.z * y), ty = 2 * (q.z * x - q.x * z), tz = 2 * (q.x * y - q.y * x);
+  o[0] = x + q.w * tx + (q.y * tz - q.z * ty); o[1] = y + q.w * ty + (q.z * tx - q.x * tz); o[2] = z + q.w * tz + (q.x * ty - q.y * tx); return o;
+}
+
+// ---- the stick: shaft direction from the two hands, face normal from the top controller, blade from the lie
+const STK = { ok: false, cal: false, calReq: false, calN: 0, hand: 1, len: 1.55, bp: null, F: newFrame(), Fp: newFrame(), Ft: newFrame(),
+  sx: -0.7, sy: 0.7, sz: 0, hx: 1, hz: 0, w0: [0, 0, -1], wx: 0, wy: 0, wz: -1, onIce: false, depth: 0, sep: 0, nearT: 0, flat: 0 };
+const _q = { x: 0, y: 0, z: 0, w: 1 }, _v = [0, 0, 0];
+function idealW(hand, sx, sz, fx, fz, o) {
+  // the horizontal direction the blade points: opposite the shaft's lean, or where the body faces if the stick is upright
+  let hx = -sx, hz = -sz, l = Math.hypot(hx, hz); if (l < 0.15) { hx = fx; hz = fz; l = Math.hypot(hx, hz) || 1; }
+  hx /= l; hz /= l; o[0] = hand * hz; o[1] = 0; o[2] = -hand * hx;       // right shot: the face looks left of the way the blade points
+}
+function stickReset(bp, hand, len) { const K = STK; K.bp = bp; K.hand = hand; K.len = len; K.ok = false; K.cal = false; K.calReq = false; K.nearT = 0; K.flat = 0; K.depth = 0; K.onIce = false; K.had = false; K.autoDone = false; K.autoFired = false; }
+// A: tx..tz top hand, lx..lz lower hand, qx..qw top controller orientation, fx fz body forward
+function stickSolve(A) {
+  const K = STK, bp = K.bp, hand = K.hand;
+  copyFrame(K.Fp, K.F);
+  let dx = A.tx - A.lx, dy = A.ty - A.ly, dz = A.tz - A.lz; const sep = Math.hypot(dx, dy, dz); K.sep = sep;
+  let sx = K.sx, sy = K.sy, sz = K.sz;
+  if (!K.ok) { sx = -0.7 * A.fx; sy = 0.7; sz = -0.7 * A.fz; if (sep > 0.1) { sx = dx / sep; sy = dy / sep; sz = dz / sep; } }
+  else if (sep > 0.1) { const g = clamp((sep - 0.1) / 0.15, 0, 1); sx += (dx / sep - sx) * g; sy += (dy / sep - sy) * g; sz += (dz / sep - sz) * g; }
+  let l = Math.hypot(sx, sy, sz) || 1; sx /= l; sy /= l; sz /= l;
+  _q.x = A.qx; _q.y = A.qy; _q.z = A.qz; _q.w = A.qw;
+  if (K.calReq || !K.cal) {                                              // remember which way the face points, in the controller's own frame
+    idealW(hand, sx, sz, A.fx, A.fz, _v); const q = { x: -A.qx, y: -A.qy, z: -A.qz, w: A.qw }; qrot(q, _v[0], _v[1], _v[2], K.w0);
+    K.cal = true; K.calReq = false; K.calN++; K.wx = _v[0]; K.wy = _v[1]; K.wz = _v[2];
+  }
+  const Ld = Math.max(0.2, K.len - BL.KB - sep);                          // lower hand to heel
+  const ox0 = A.lx, oy0 = A.ly, oz0 = A.lz;
+  const faceFor = (sx, sy, sz, o) => {
+    qrot(_q, K.w0[0], K.w0[1], K.w0[2], o);
+    const d = o[0] * sx + o[1] * sy + o[2] * sz; o[0] -= d * sx; o[1] -= d * sy; o[2] -= d * sz;
+    const m = Math.hypot(o[0], o[1], o[2]);
+    if (m < 0.25) { o[0] = K.wx; o[1] = K.wy; o[2] = K.wz; const e = o[0] * sx + o[1] * sy + o[2] * sz; o[0] -= e * sx; o[1] -= e * sy; o[2] -= e * sz; const n = Math.hypot(o[0], o[1], o[2]) || 1; o[0] /= n; o[1] /= n; o[2] /= n; }
+    else { o[0] /= m; o[1] /= m; o[2] /= m; }
+    return o;
+  };
+  const w = [0, 0, 0]; faceFor(sx, sy, sz, w);
+  frameFrom(K.F, bp, hand, sx, sy, sz, w[0], w[1], w[2], ox0 - sx * Ld, oy0 - sy * Ld, oz0 - sz * Ld);
+  // ice: the blade cannot go through it. If it would, flatten the shaft about the lower hand until the blade rests on the ice.
+  let ym = lowestY(K.F, bp); K.depth = Math.max(0, -ym); K.onIce = false;
+  const hl = Math.hypot(sx, sz); if (hl > 0.05) { K.hx = sx / hl; K.hz = sz / hl; }
+  if (ym < 0) {
+    const phi0 = Math.asin(clamp(sy, -1, 1)), trial = phi => {
+      const cs = Math.cos(phi), tx = cs * K.hx, ty = Math.sin(phi), tz = cs * K.hz, tw = [0, 0, 0]; faceFor(tx, ty, tz, tw);
+      frameFrom(K.Ft, bp, hand, tx, ty, tz, tw[0], tw[1], tw[2], ox0 - tx * Ld, oy0 - ty * Ld, oz0 - tz * Ld); return lowestY(K.Ft, bp);
+    };
+    let lo = phi0 - 0.6, hi = phi0;
+    if (trial(lo) < 0) hi = lo; else for (let i = 0; i < 10; i++) { const mid = (lo + hi) / 2; if (trial(mid) < 0) hi = mid; else lo = mid; }
+    trial(hi); copyFrame(K.F, K.Ft); K.onIce = true;
+    sx = K.F.Sx; sy = K.F.Sy; sz = K.F.Sz;
+  }
+  K.sx = sx; K.sy = sy; K.sz = sz; K.wx = K.F.Wx; K.wy = K.F.Wy; K.wz = K.F.Wz; K.ok = true;
+  if (!K.had) { copyFrame(K.Fp, K.F); K.had = true; }
+  // one-off automatic calibration: once the blade has been near the ice for half a second you are in your ready stance
+  const gap = lowestY(K.F, bp);
+  if (!K.autoDone) { if (gap < 0.08) K.nearT += A.dt; else K.nearT = 0; if (K.nearT > 0.5) { K.autoDone = true; K.calReq = true; K.autoFired = true; } }
+  return K;
+}
+
+// ---- the puck
+const PK = { x: 0, y: PUCK.HH, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, rot: 0, out: 0, inNet: false, goalLatch: false, watch: 0, wPeak: 0, last: 0, tapAt: -9, ctl: 0 };
+const EV = [];                       // events from this frame: { k, v, x, y, z }
+const SAMP = (() => { const a = []; for (let r = 0; r < 3; r++) for (let k = 0; k < 10; k++) { const t = k * Math.PI / 5; a.push([PUCK.R * Math.cos(t), (r - 1) * PUCK.HH, PUCK.R * Math.sin(t)]); } a.push([0, 0, 0]); return a; })();
+const _C = { nx: 0, ny: 0, nz: 0, pen: 0, cu: 0, cv: 0, cw: 0 }, _vb = [0, 0, 0], _Fk = newFrame();
+function bladeContact(F, bp, cx, cy, cz, C) {
+  const TB2 = BL.TB / 2, n = bp.n; let best = 0;
+  for (let s = 0; s < SAMP.length; s++) {
+    const px = cx + SAMP[s][0], py = cy + SAMP[s][1], pz = cz + SAMP[s][2], rx = px - F.Ox, ry = py - F.Oy, rz = pz - F.Oz;
+    const u = rx * F.Ux + ry * F.Uy + rz * F.Uz, v = rx * F.Px + ry * F.Py + rz * F.Pz, w = rx * F.Wx + ry * F.Wy + rz * F.Wz - TB2;
+    if (u < -TB2 || u > bp.Lb + TB2 || v < 0 || v > bp.mh || w < -bp.mc - BL.TB - 0.001 || w > 0.001 + TB2) continue;
+    if (v > hAt(bp, u)) continue;
+    const i0 = clamp(Math.floor(u / bp.Lb * n) - 1, 0, n - 1), i1 = Math.min(n - 1, i0 + 2);
+    let bd = 1e9, qu = 0, qw = 0, du = 0, dw = 0;
+    for (let i = i0; i <= i1; i++) {
+      const au = bp.u[i], aw = -bp.c[i] - TB2, eu = bp.u[i + 1] - au, ew = (-bp.c[i + 1] - TB2) - aw, l2 = eu * eu + ew * ew;
+      const t = l2 > 0 ? clamp(((u - au) * eu + (w - aw) * ew) / l2, 0, 1) : 0, mu = au + eu * t, mw = aw + ew * t, ddu = u - mu, ddw = w - mw, d2 = ddu * ddu + ddw * ddw;
+      if (d2 < bd) { bd = d2; qu = mu; qw = mw; du = ddu; dw = ddw; }
+    }
+    const d = Math.sqrt(bd); if (d >= TB2) continue;
+    const pen = TB2 - d; if (pen <= best) continue;
+    let nu, nw; if (d > 1e-6) { nu = du / d; nw = dw / d; } else { nu = 0; nw = 1; }
+    best = pen; C.pen = pen; C.cu = qu; C.cv = v; C.cw = qw;
+    C.nx = nu * F.Ux + nw * F.Wx; C.ny = nu * F.Uy + nw * F.Wy; C.nz = nu * F.Uz + nw * F.Wz;
+  }
+  return best > 0;
+}
+function resetPuck(x, z) { PK.x = x; PK.z = z; PK.y = PUCK.HH; PK.vx = PK.vy = PK.vz = 0; PK.spin = 0; PK.out = 0; PK.inNet = false; PK.goalLatch = false; PK.watch = 0; PK.tapAt = -9; }
+function segHit(x0, y0, z0, x1, y1, z1, r, e, k) {
+  const dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, l2 = dx * dx + dy * dy + dz * dz;
+  const t = l2 > 0 ? clamp(((PK.x - x0) * dx + (PK.y - y0) * dy + (PK.z - z0) * dz) / l2, 0, 1) : 0;
+  const qx = x0 + dx * t, qy = y0 + dy * t, qz = z0 + dz * t, ax = PK.x - qx, ay = PK.y - qy, az = PK.z - qz, d = Math.hypot(ax, ay, az);
+  if (d > r + PUCK.R + 0.02) return false;
+  const nx = d > 1e-6 ? ax / d : 1, ny = d > 1e-6 ? ay / d : 0, nz = d > 1e-6 ? az / d : 0;
+  const reff = r + PUCK.R * Math.hypot(nx, nz) + PUCK.HH * Math.abs(ny);
+  if (d >= reff) return false;
+  PK.x += nx * (reff - d); PK.y += ny * (reff - d); PK.z += nz * (reff - d);
+  const vn = PK.vx * nx + PK.vy * ny + PK.vz * nz;
+  if (vn < 0) { PK.vx -= (1 + e) * vn * nx; PK.vy -= (1 + e) * vn * ny; PK.vz -= (1 + e) * vn * nz; if (-vn > 1) EV.push({ k, v: -vn, x: PK.x, y: PK.y, z: PK.z }); }
+  return true;
+}
+// a thin wall of netting on one axis: the puck stays on the side it came from and keeps almost none of its speed into the wall
+function planeFix(c, p, at, v, r) {
+  const side = (p - at) >= 0 ? 1 : -1, d = (c - at) * side; if (d >= r) return null;
+  const vn = v * side; return { c: at + side * r, v: vn < 0 ? -0.02 * vn * side : v, hit: vn < 0 ? -vn : 0 };
+}
+function worldCollide(h, px, py, pz) {
+  // ice
+  if (PK.y < PUCK.HH) {
+    PK.y = PUCK.HH;
+    if (PK.vy < 0) {
+      const vy = -PK.vy;
+      if (vy > 0.8) {
+        const e = 0.42, sp = Math.hypot(PK.vx, PK.vz), cut = Math.min(sp, 0.12 * (1 + e) * vy); PK.vy = e * vy;
+        if (sp > 1e-6) { PK.vx -= PK.vx / sp * cut; PK.vz -= PK.vz / sp * cut; }
+        if (vy > 2 && PK.out <= 0) EV.push({ k: 'ice', v: vy, x: PK.x, y: PK.y, z: PK.z });
+      } else PK.vy = 0;
+    }
+  }
+  if (PK.y <= PUCK.HH + 0.0008 && Math.abs(PK.vy) < 0.06) {               // sliding on ice
+    const sp = Math.hypot(PK.vx, PK.vz), d = 0.22 * h; if (sp <= d) { PK.vx = PK.vz = 0; } else { PK.vx -= PK.vx / sp * d; PK.vz -= PK.vz / sp * d; }
+    PK.spin *= Math.exp(-0.8 * h);
+  }
+  // boards and glass; above the glass the puck leaves the rink
+  const b = boardsPush(PK.x, PK.z, PUCK.R);
+  if (b && PK.out <= 0) {
+    if (PK.y - PUCK.HH > WALL_TOP) PK.out = 0.001;
+    else {
+      PK.x += b.nx * b.pen; PK.z += b.nz * b.pen;
+      const vn = PK.vx * b.nx + PK.vz * b.nz;
+      if (vn < 0) {
+        const hard = -vn, e = hard < 0.6 ? 0 : (PK.y < BOARD_TOP ? 0.58 : 0.5), f = 1 - Math.min(0.3, 0.07 + 0.01 * hard);
+        const tx = PK.vx - vn * b.nx, tz = PK.vz - vn * b.nz;
+        PK.vx = tx * f - e * vn * b.nx; PK.vz = tz * f - e * vn * b.nz; PK.vy *= f;
+        if (hard > 1.5) EV.push({ k: PK.y < BOARD_TOP ? 'board' : 'glass', v: hard, x: PK.x, y: PK.y, z: PK.z });
+      }
+    }
+  }
+  if (PK.out > 0 && PK.y < 0) { PK.y = 0; PK.vy = 0; PK.vx *= 0.9; PK.vz *= 0.9; }
+  // goals: frame and net at each end
+  for (let s = -1; s <= 1; s += 2) {
+    const gx = s * GX;
+    if (Math.abs(PK.x - gx) > NETD + 0.6 || Math.abs(PK.z) > NETW + 0.6 || PK.y > FRAME_H + 0.6) continue;
+    for (const pz2 of [-NETW, NETW]) segHit(gx, 0, pz2, gx, FRAME_H, pz2, POST_R, 0.5, 'post');
+    segHit(gx, FRAME_H, -NETW, gx, FRAME_H, NETW, POST_R, 0.5, 'post');
+    // work in net coordinates: xo behind the goal line, z across, y up
+    let xo = s * (PK.x - gx), zz = PK.z, yy = PK.y, vo = s * PK.vx, vz = PK.vz, vy = PK.vy;
+    const pxo = s * (px - gx), r = PUCK.R * 0.6;
+    if (pxo < 0 && xo >= 0 && Math.abs(zz) < NETW - POST_R && yy < FRAME_H - POST_R && !PK.goalLatch) { PK.goalLatch = true; EV.push({ k: 'goal', v: Math.hypot(PK.vx, PK.vz), x: PK.x, y: PK.y, z: PK.z }); }
+    if (xo < -0.5) PK.goalLatch = false;
+    let hit = 0;
+    // back
+    if (zz > -NETW - r && zz < NETW + r && yy > -r && yy < FRAME_H + r) { const f = planeFix(xo, pxo, NETD, vo, r); if (f) { xo = f.c; vo = f.v; hit = Math.max(hit, f.hit); } }
+    // two sides
+    for (let q = -1; q <= 1; q += 2) { if (xo > -r && xo < NETD + r && yy > -r && yy < FRAME_H + r) { const f = planeFix(zz, pz, q * NETW, vz, r); if (f) { zz = f.c; vz = f.v; hit = Math.max(hit, f.hit); } } }
+    // roof
+    if (xo > -r && xo < NETD + r && zz > -NETW - r && zz < NETW + r) { const f = planeFix(yy, py, FRAME_H, vy, r); if (f) { yy = f.c; vy = f.v; hit = Math.max(hit, f.hit); } }
+    if (hit > 0) { vo *= 0.85; vz *= 0.85; vy *= 0.85; if (hit > 2) EV.push({ k: 'net', v: hit, x: PK.x, y: PK.y, z: PK.z }); }
+    PK.x = gx + s * xo; PK.z = zz; PK.y = yy; PK.vx = s * vo; PK.vz = vz; PK.vy = vy;
+    PK.inNet = xo > 0 && xo < NETD && Math.abs(zz) < NETW && yy < FRAME_H;
+    if (PK.inNet) { const sp = Math.hypot(PK.vx, PK.vz), d = 3 * h; if (sp <= d) { PK.vx = PK.vz = 0; } else { PK.vx -= PK.vx / sp * d; PK.vz -= PK.vz / sp * d; } }   // the net holds it
+  }
+}
+// advance the puck by dt against the blade pose Fn (previous pose Fp). power: stick whip multiplier for fast swings.
+function puckAdvance(dt, haveBlade, power, now) {
+  const bp = STK.bp, Fn = STK.F, Fp = STK.Fp;
+  let nSub = 1;
+  const sp0 = Math.hypot(PK.vx, PK.vy, PK.vz);
+  let near = false;
+  if (haveBlade && bp) {
+    const mx = Fn.Ox + Fn.Ux * bp.Lb * 0.5, my = Fn.Oy + Fn.Uy * bp.Lb * 0.5, mz = Fn.Oz + Fn.Uz * bp.Lb * 0.5;
+    const d = Math.hypot(PK.x - mx, PK.y - my, PK.z - mz);
+    if (d < bp.Lb * 0.5 + 0.45) {
+      near = true;
+      pointVel(Fn, Fp, bp.Lb, 0.03, -bp.c[bp.n], dt, _vb); const vt = Math.hypot(_vb[0], _vb[1], _vb[2]);
+      pointVel(Fn, Fp, 0, 0.03, 0, dt, _vb); const vh = Math.hypot(_vb[0], _vb[1], _vb[2]);
+      nSub = clamp(Math.ceil((sp0 + Math.max(vt, vh)) * dt / 0.01), 3, 28);
+    }
+  }
+  if (!near) nSub = clamp(Math.ceil(sp0 * dt / 0.05), 1, 8);
+  const h = dt / nSub;
+  for (let k = 1; k <= nSub; k++) {
+    const px = PK.x, py = PK.y, pz = PK.z;
+    PK.vy -= GRAV * h;
+    const sp = Math.hypot(PK.vx, PK.vy, PK.vz), drag = 1 - 0.0004 * sp * h; PK.vx *= drag; PK.vy *= drag; PK.vz *= drag;
+    PK.x += PK.vx * h; PK.y += PK.vy * h; PK.z += PK.vz * h;
+    if (near) {
+      lerpFrame(_Fk, Fp, Fn, k / nSub);
+      for (let it = 0; it < 2; it++) {
+        if (!bladeContact(_Fk, bp, PK.x, PK.y, PK.z, _C)) break;
+        const nx = _C.nx, ny = _C.ny, nz = _C.nz;
+        PK.x += nx * _C.pen; PK.y += ny * _C.pen; PK.z += nz * _C.pen;
+        pointVel(Fn, Fp, _C.cu, _C.cv, _C.cw, dt, _vb);
+        const rx = PK.vx - _vb[0], ry = PK.vy - _vb[1], rz = PK.vz - _vb[2], vn = rx * nx + ry * ny + rz * nz;
+        if (vn < 0) {
+          const e = 0.35 * clamp((-vn - 1.2) / 4.3, 0, 1), bn = _vb[0] * nx + _vb[1] * ny + _vb[2] * nz;
+          const dvn = -(1 + e) * vn, extra = power > 1 ? (power - 1) * Math.max(0, bn - 2.5) : 0, imp = dvn + extra;
+          PK.vx += nx * imp; PK.vy += ny * imp; PK.vz += nz * imp;
+          const tx = rx - vn * nx, ty = ry - vn * ny, tz = rz - vn * nz, ts = Math.hypot(tx, ty, tz);
+          if (ts > 1e-6) { const j = Math.min(ts, 0.4 * imp); PK.vx -= tx / ts * j; PK.vy -= ty / ts * j; PK.vz -= tz / ts * j; PK.spin += clamp((nx * tz - nz * tx) * 4, -40, 40) * 0.2; }
+          if (imp > 0.8 && now - PK.tapAt > 0.1) { PK.tapAt = now; EV.push({ k: 'tap', v: imp, x: PK.x, y: PK.y, z: PK.z }); }
+          if (imp > 3) { PK.watch = 0.1; PK.wPeak = 0; }
+          PK.ctl += h;
+        }
+      }
+    }
+    worldCollide(h, px, py, pz);
+  }
+  PK.rot += PK.spin * dt;
+  if (PK.watch > 0) { PK.watch -= dt; if (PK.watch <= 0) { const v = Math.hypot(PK.vx, PK.vy, PK.vz); if (v > 6) EV.push({ k: 'launch', v, x: PK.x, y: PK.y, z: PK.z }); } }
+  if (PK.out > 0) PK.out += dt;
+}
+
+// ---------------------------------------------------------------- puck, stick and gloves in the scene
+const puck = new THREE.Mesh(new THREE.CylinderGeometry(PUCK.R, PUCK.R, PUCK.HH * 2, 28), new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.4, metalness: 0.15 }));
 puck.castShadow = true; scene.add(puck);
-const P = { x: -9, z: 0.5, vx: 0, vz: 0 };
+const puckShadow = new THREE.Mesh(new THREE.CircleGeometry(PUCK.R * 1.2, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+puckShadow.rotation.x = -Math.PI / 2; scene.add(puckShadow);
 const H = { x: 0, z: 0, fx: 1, fz: 0, ok: false };
-const resetPuck = () => {
-  if (H.ok) { P.x = H.x + H.fx * 0.95 - H.fz * 0.25; P.z = H.z + H.fz * 0.95 + H.fx * 0.25; } else { P.x = 1; P.z = 0.4; }
-  P.vx = P.vz = 0;
-};
-const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 1, 8), MATS.wood);
-const blade = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.075, 0.012), MATS.tape);
-const stick = new THREE.Group(); stick.add(shaft, blade); stick.visible = false; scene.add(stick);
-shaft.castShadow = blade.castShadow = true;
-const SK = { have: false, E: new THREE.Vector3(), T: new THREE.Vector3(), pE: new THREE.Vector3(), pT: new THREE.Vector3(), lowHand: 'right', topHand: 'left', len: 0 };
+function placePuck() {
+  const side = st.shot === 'right' ? 1 : -1;
+  if (H.ok) resetPuck(H.x + H.fx * 0.95 - H.fz * 0.3 * side, H.z + H.fz * 0.95 + H.fx * 0.3 * side); else resetPuck(1, 0.4);
+}
+const shaftMat = new THREE.MeshStandardMaterial({ color: 0x15181d, roughness: 0.4, metalness: 0.2 });
+const bladeMat = new THREE.MeshStandardMaterial({ color: 0xeceae0, roughness: 0.8, side: THREE.DoubleSide });
+const shaftM = new THREE.Mesh(new THREE.BoxGeometry(BL.SHW, 1, BL.SHD), shaftMat);
+const knobM = new THREE.Mesh(new THREE.BoxGeometry(BL.SHW + 0.004, 0.09, BL.SHD + 0.004), bladeMat);
+let bladeM = null, curveCur = null, stickOn = false;
+for (const m of [shaftM, knobM]) { m.matrixAutoUpdate = false; m.frustumCulled = false; m.visible = false; m.castShadow = true; scene.add(m); }
+function buildBladeGeo(bp) {
+  const n = bp.n, TB = BL.TB, pos = [];
+  const q = (a, b, c, d) => { pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], a[0], a[1], a[2], c[0], c[1], c[2], d[0], d[1], d[2]); };
+  const V = (i, top, back) => [bp.u[i], top ? bp.h[i] : 0, back ? -bp.c[i] - TB : -bp.c[i]];
+  for (let i = 0; i < n; i++) {
+    q(V(i, 0, 0), V(i + 1, 0, 0), V(i + 1, 1, 0), V(i, 1, 0));
+    q(V(i + 1, 0, 1), V(i, 0, 1), V(i, 1, 1), V(i + 1, 1, 1));
+    q(V(i, 1, 0), V(i + 1, 1, 0), V(i + 1, 1, 1), V(i, 1, 1));
+    q(V(i + 1, 0, 0), V(i, 0, 0), V(i, 0, 1), V(i + 1, 0, 1));
+  }
+  q(V(0, 0, 1), V(0, 0, 0), V(0, 1, 0), V(0, 1, 1));
+  q(V(n, 0, 0), V(n, 0, 1), V(n, 1, 1), V(n, 1, 0));
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
+}
+function setCurve(id) {
+  const cv = curveById(id); st.curve = cv.id; curveCur = cv;
+  const bp = makeProfile(cv); STK.bp = bp;
+  if (bladeM) { scene.remove(bladeM); bladeM.geometry.dispose(); }
+  bladeM = new THREE.Mesh(buildBladeGeo(bp), bladeMat); bladeM.matrixAutoUpdate = false; bladeM.frustumCulled = false; bladeM.castShadow = true; bladeM.visible = stickOn; scene.add(bladeM);
+}
 
 // controllers (grips carry the hand pose)
 const hands = { left: null, right: null };
@@ -460,11 +817,12 @@ function newRun() {
   return {
     frames: [[], [], []], secs: [0, 0, 0], last: 0, skip: 90, hz: 0, asked: st.wantHz, t0: performance.now(),
     ctl: { left: false, right: false }, profiles: [], notes: [], hs: [], calDone: false,
-    sk: { dist: 0, mov: 0, top: 0, brakes: 0, brakeT: 0, bumps: 0, hard: 0, snaps: 0, speedT: [0, 0, 0], vigMax: 0, yOff: 0 }
+    sk: { dist: 0, mov: 0, top: 0, brakes: 0, brakeT: 0, bumps: 0, hard: 0, snaps: 0, speedT: [0, 0, 0], vigMax: 0, yOff: 0, crossT: 0, punches: 0 },
+    pk: { contacts: 0, hits: 0, goals: 0, posts: 0, boards: 0, outs: 0, best: 0, last: 0, scrapeT: 0, cal: 0, stickT: 0 }
   };
 }
 const run = newRun();
-function resetRun() { Object.assign(run, newRun()); st.hits = 0; st.topKmh = 0; }
+function resetRun() { Object.assign(run, newRun()); st.hits = 0; st.topKmh = 0; pClock = 0; }
 function pct(a, p) { const s = a.slice().sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; }
 function levelStats(f, hz0, secs) {
   if (!f || f.length < 30) return null;
@@ -486,7 +844,7 @@ function applyLevel(l) {
 // Ice has almost no friction forwards and a lot sideways, so you glide, push to speed up, and
 // turn by carving: the direction of travel swings toward where you point the stick, as fast as the
 // edges can bite. All speeds are metres per second.
-const SK2 = { start: 3.2, push: 3.4, drag0: 0.25, drag2: 0.006, edge: 7.5, wmax: 3.2, back: 3.0, brake: 8 };
+const SK2 = { start: 3.2, push: 3.4, drag0: 0.25, drag2: 0.006, edge: 7.5, wmax: 3.2, back: 3.0, brake: 8, cross: 0.8, crossSave: 0.035, punchW: 1.2, punchLoss: 0.2 };
 const NETD = 1.04, NETW = 0.915, GX = 89 * FT;
 function boardsPush(x, z, m) {
   const ax = Math.abs(x), az = Math.abs(z), cx = RK.L / 2 - RK.R, cz = RK.W / 2 - RK.R, rp = RK.R - m;
@@ -517,22 +875,33 @@ function bump(S, b) {
   if (-vn > 0.8) { const k = 1 - clamp((-vn - 0.8) / 10, 0, 0.3); S.vx *= k; S.vz *= k; }   // a real hit costs speed, leaning on the boards does not
   return -vn;
 }
-// S: { x, z, vx, vz } the body. inp: { m 0..1 stick strength, dx, dz unit direction you want, brake 0..1 }
+// S: { x, z, vx, vz } the body. inp: { m 0..1 stick strength, dx, dz unit direction you want, brake 0..1, assist }
+// assist (default on): crossovers keep your speed through an arc, and a stick pushed well to the side at speed makes a
+// punch turn (a quick half-stop turn: tight, and it costs speed).
+const sm01 = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
 function skateStep(S, inp, dt, vmax) {
-  let sp = Math.hypot(S.vx, S.vz), ux = sp > 1e-6 ? S.vx / sp : 0, uz = sp > 1e-6 ? S.vz / sp : 0, lat = 0, turn = 0, pushing = false;
-  const has = inp.m > 0.001;
+  let sp = Math.hypot(S.vx, S.vz), ux = sp > 1e-6 ? S.vx / sp : 0, uz = sp > 1e-6 ? S.vz / sp : 0, lat = 0, turn = 0, pushing = false, punch = 0, cross = 0, pl = S.pl || 0;
+  const has = inp.m > 0.001, assist = inp.assist !== false, pl0 = pl; let plSet = false;
   if (has && sp > 0.6) {
     const cosA = inp.dx * ux + inp.dz * uz;
     if (cosA > -0.35) {
       // carve toward the stick, limited by how hard the edges can bite at this speed
       const ang = Math.atan2(ux * inp.dz - uz * inp.dx, cosA);
-      const wlim = Math.min(SK2.wmax, SK2.edge / Math.max(sp, 1));
+      if (assist && sp > 3) {                                          // punch turn: the stick well off to the side (80 degrees or more) makes a quick half-stop turn that lasts until you are nearly round
+        const aa = Math.abs(ang), want = aa > 1.4 || (aa > 0.45 && pl > 0.05);
+        pl = clamp(pl + (want ? 8 : -5) * dt, 0, 1); plSet = true;
+      }
+      punch = pl * clamp((sp - 2.5) / 1.5, 0, 1);
+      const wlim = Math.min(SK2.wmax, SK2.edge / Math.max(sp, 1)) * (1 + SK2.punchW * punch);
       const w = clamp(ang / dt, -wlim, wlim) * clamp(inp.m * 1.4 + 0.2, 0, 1);
       const c = Math.cos(w * dt), s = Math.sin(w * dt), nx = ux * c - uz * s, nz = ux * s + uz * c;
       ux = nx; uz = nz; turn = w; lat = Math.abs(w) * sp;
-      sp *= 1 - 0.05 * Math.abs(w) * dt;                               // carving costs a little speed
+      if (assist && punch < 0.5) cross = sm01((Math.abs(w) - 0.3) / 0.4);
+      sp *= 1 - (0.05 - SK2.crossSave * cross + SK2.punchLoss * punch) * Math.abs(w) * dt;   // carving costs a little speed; crossovers save most of it, a punch turn costs more
       const vt = inp.m * vmax;                                           // the stick sets the speed you push toward
-      if (cosA > 0.3 && sp < vt) { sp = Math.min(vt, sp + SK2.push * (1 - 0.85 * sp / vmax) * cosA * dt); pushing = true; }
+      let pf = cosA > 0.3 ? cosA : 0;
+      if (cross > 0) pf = Math.max(pf, cross * (SK2.cross + (1 - SK2.cross) * Math.max(cosA, 0)));   // crossovers: you keep striding through the arc
+      if (pf > 0 && sp < vt) { sp = Math.min(vt, sp + SK2.push * (1 - 0.85 * sp / vmax) * pf * dt); pushing = true; }
     } else sp = Math.max(0, sp - SK2.back * inp.m * dt);               // stick pulled back against travel: lean on the edges
   } else if (has) {
     // from a standstill (or nearly) you can push off in any direction, backwards included
@@ -540,6 +909,7 @@ function skateStep(S, inp, dt, vmax) {
     sp = Math.hypot(nvx, nvz); if (sp > 1e-6) { ux = nvx / sp; uz = nvz / sp; }
     pushing = true;
   }
+  if (!plSet) pl = Math.max(0, pl - 5 * dt); S.pl = pl;
   sp = Math.max(0, sp - (SK2.drag0 + SK2.drag2 * sp * sp) * dt);       // glide: very little drag
   if (inp.brake > 0.05) sp = Math.max(0, sp - SK2.brake * inp.brake * dt);
   if (sp > vmax) sp = Math.max(vmax, sp - 2.5 * dt);
@@ -548,10 +918,10 @@ function skateStep(S, inp, dt, vmax) {
   let hit = 0;
   const b1 = boardsPush(S.x, S.z, 0.5); if (b1) hit = Math.max(hit, bump(S, b1));
   const b2 = netPush(S.x, S.z, 0.4); if (b2) hit = Math.max(hit, bump(S, b2));
-  return { speed: Math.hypot(S.vx, S.vz), lat, turn, pushing, hit };
+  return { speed: Math.hypot(S.vx, S.vz), lat, turn, pushing, hit, punch, cross };
 }
 const S = { x: 0, z: 0, vx: 0, vz: 0 };
-let skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
+let skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0, punch: 0, cross: 0 };
 const wrapPi = a => a - TAU * Math.floor((a + Math.PI) / TAU);
 
 // ---------------------------------------------------------------- comfort: vignette, toast, sound
@@ -580,7 +950,9 @@ toastM.position.set(0, -0.28, -1.0); toastM.renderOrder = 1001; toastM.visible =
 let toastT = 0;
 function toast(msg) {
   tcx.clearRect(0, 0, 512, 96); tcx.fillStyle = 'rgba(10,16,22,0.85)'; tcx.fillRect(0, 0, 512, 96);
-  tcx.fillStyle = '#e6edf3'; tcx.font = '600 38px sans-serif'; tcx.textAlign = 'center'; tcx.textBaseline = 'middle'; tcx.fillText(msg, 256, 50);
+  tcx.fillStyle = '#e6edf3'; tcx.textAlign = 'center'; tcx.textBaseline = 'middle';
+  let fs = 38; tcx.font = '600 ' + fs + 'px sans-serif'; while (tcx.measureText(msg).width > 480 && fs > 18) { fs -= 2; tcx.font = '600 ' + fs + 'px sans-serif'; }
+  tcx.fillText(msg, 256, 50);
   ttex.needsUpdate = true; toastT = 2.4; toastM.visible = true; toastM.material.opacity = 1;
 }
 function updateToast(dt) {
@@ -601,11 +973,24 @@ function makeAudio() {
   bf.type = 'highpass'; bf.frequency.value = 3200; bg.gain.value = 0; bs.connect(bf); bf.connect(bg); bg.connect(master); bs.start();
   const cs = loop(), cf = ctx.createBiquadFilter(), cg = ctx.createGain();            // distant crowd murmur
   cs.playbackRate.value = 0.5; cf.type = 'lowpass'; cf.frequency.value = 380; cg.gain.value = 0; cs.connect(cf); cf.connect(cg); cg.connect(master); cs.start();
-  const burst = (freq, q, peak, len, type) => {
+  const sc = loop(), sf = ctx.createBiquadFilter(), sg = ctx.createGain();            // stick scraping the ice
+  sf.type = 'bandpass'; sf.frequency.value = 3800; sf.Q.value = 1.2; sg.gain.value = 0; sc.connect(sf); sf.connect(sg); sg.connect(master); sc.start();
+  const spat = pos => {                                                              // a sound that comes from somewhere in the rink
+    if (!pos) return master;
+    const pn = ctx.createPanner(); pn.panningModel = 'equalpower'; pn.distanceModel = 'inverse'; pn.refDistance = 2; pn.rolloffFactor = 0.7; pn.maxDistance = 120;
+    if (pn.positionX) { pn.positionX.value = pos.x; pn.positionY.value = pos.y; pn.positionZ.value = pos.z; } else if (pn.setPosition) pn.setPosition(pos.x, pos.y, pos.z);
+    pn.connect(master); return pn;
+  };
+  const burst = (freq, q, peak, len, type, pos) => {
     const t = ctx.currentTime, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
     s.buffer = nb; f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = q;
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0005, t + len);
-    s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random(), len + 0.05); s.stop(t + len + 0.1);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + Math.min(0.02, len / 3)); g.gain.exponentialRampToValueAtTime(0.0005, t + len);
+    s.connect(f); f.connect(g); g.connect(spat(pos)); s.start(t, Math.random(), len + 0.05); s.stop(t + len + 0.1);
+  };
+  const tone = (f0, f1, peak, len, type, pos) => {
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + len);
+    g.gain.setValueAtTime(peak, t); g.gain.exponentialRampToValueAtTime(0.0005, t + len); o.connect(g); g.connect(spat(pos)); o.start(t); o.stop(t + len + 0.05);
   };
   return {
     ctx,
@@ -617,11 +1002,25 @@ function makeAudio() {
       g.gain.setValueAtTime(a, t); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.25); o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.3);
       burst(500, 0.7, a * 0.5, 0.2, 'lowpass');
     },
+    tap(v, pos) { const a = clamp(v / 25, 0.05, 1); burst(2000 + 60 * v, 2.5, 0.06 + 0.3 * a, 0.05, 'bandpass', pos); tone(190, 95, 0.05 + 0.2 * a, 0.07, 'sine', pos); if (v > 14) burst(1300, 0.8, 0.25 * a, 0.14, 'bandpass', pos); },
+    ping(v, pos) { const a = clamp(v / 25, 0.15, 1); tone(1750, 1730, 0.22 * a, 1.0, 'sine', pos); tone(2780, 2760, 0.12 * a, 0.7, 'sine', pos); tone(980, 970, 0.14 * a, 1.1, 'sine', pos); burst(3000, 1, 0.12 * a, 0.05, 'bandpass', pos); },
+    bang(v, pos) { const a = clamp(v / 22, 0.1, 1); burst(260, 0.7, 0.8 * a, 0.18, 'lowpass', pos); tone(120, 55, 0.4 * a, 0.16, 'sine', pos); },
+    glass(v, pos) { const a = clamp(v / 22, 0.1, 1); burst(850, 3, 0.55 * a, 0.35, 'bandpass', pos); tone(430, 380, 0.12 * a, 0.4, 'triangle', pos); tone(110, 60, 0.25 * a, 0.12, 'sine', pos); },
+    net(v, pos) { burst(520, 0.6, 0.12 + 0.3 * clamp(v / 25, 0, 1), 0.3, 'bandpass', pos); },
+    tick(v, pos) { burst(1500, 3, 0.03 + 0.05 * clamp(v / 8, 0, 1), 0.04, 'bandpass', pos); },
+    horn(pos) { tone(233, 233, 0.22, 1.1, 'sawtooth', pos); tone(311, 311, 0.16, 1.1, 'sawtooth', pos); tone(117, 117, 0.1, 1.1, 'square', pos); },
+    scrape(level) { const t = ctx.currentTime; sg.gain.setTargetAtTime(level * 0.1, t, 0.04); sf.frequency.setTargetAtTime(2600 + 1800 * level, t, 0.05); },
+    listen(p, f) {
+      const L = ctx.listener; try {
+        if (L.positionX) { L.positionX.value = p.x; L.positionY.value = p.y; L.positionZ.value = p.z; L.forwardX.value = f.x; L.forwardY.value = f.y; L.forwardZ.value = f.z; L.upX.value = 0; L.upY.value = 1; L.upZ.value = 0; }
+        else if (L.setPosition) { L.setPosition(p.x, p.y, p.z); L.setOrientation(f.x, f.y, f.z, 0, 1, 0); }
+      } catch (e) { /* ignore */ }
+    },
     update(info, vmax, brake, level) {
       const t = ctx.currentTime, f = clamp(info.speed / vmax, 0, 1.2);
       hg.gain.setTargetAtTime(info.speed > 0.3 ? clamp(0.004 + 0.075 * Math.pow(f, 1.3) + 0.012 * info.lat, 0, 0.16) : 0, t, 0.08);
       hf.frequency.setTargetAtTime(1800 + 2600 * f, t, 0.1);
-      bg.gain.setTargetAtTime(brake > 0.05 && info.speed > 1 ? clamp(brake * info.speed / 6, 0, 1) * 0.16 : 0, t, 0.05);
+      bg.gain.setTargetAtTime(brake > 0.05 && info.speed > 1 ? clamp(brake * info.speed / 6, 0, 1) * 0.16 : (info.punch > 0.3 ? info.punch * 0.1 : 0), t, 0.05);
       cg.gain.setTargetAtTime(level === 0 ? 0 : level === 1 ? 0.03 : 0.05, t, 0.5);
     },
     close() { try { master.gain.value = 0; ctx.close(); } catch (e) { /* ignore */ } }
@@ -635,7 +1034,7 @@ const V = new THREE.Vector3(), V2 = new THREE.Vector3();
 const prevBtn = { left: [], right: [] };
 const headQ = new THREE.Quaternion();
 const BODY = { yaw: 0, ok: false };
-let boardT = 0, needPuck = false, snapArmed = true, calibReq = false, strideT = 0, braking = false, lastYaw = 0;
+let punching = false, boardT = 0, needPuck = false, snapArmed = true, calibReq = false, strideT = 0, braking = false, lastYaw = 0;
 function headYaw() {
   const f = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion);
   if (f.x * f.x + f.z * f.z > 0.04) lastYaw = Math.atan2(f.z, f.x);               // looking straight up or down: keep the last heading
@@ -647,12 +1046,12 @@ function rotateRig(delta, hw) {
   rig.rotation.y += delta; BODY.yaw -= delta; lastYaw -= delta;
 }
 function calibrate(headY, forced) {
-  if (st.height === 'standing') { st.yOff = 0; if (forced) toast('Standing: your real height'); return; }
+  if (st.height === 'standing') { st.yOff = 0; if (forced) toast('Stick and height set (standing)'); return; }
   if (!(headY > 0.3)) { if (!run.notes.includes('Your head height was not available, so the height setting did nothing.')) run.notes.push('Your head height was not available, so the height setting did nothing.'); return; }
   if (st.height === 'auto' && !forced && headY >= 1.3) { st.yOff = 0; return; }
   st.yOff = clamp(EYE - headY, 0, 1);
   run.sk.yOff = st.yOff;
-  if (forced || st.yOff > 0.02) toast('Height set: eyes at ' + (headY + st.yOff).toFixed(2) + ' m');
+  if (forced) toast('Stick and height set: eyes at ' + (headY + st.yOff).toFixed(2) + ' m'); else if (st.yOff > 0.02) toast('Height set: eyes at ' + (headY + st.yOff).toFixed(2) + ' m');
 }
 function cycleSpeed() {
   st.speed = (st.speed + 1) % 3; saveSettings(); const e = $('speed'); if (e) e.value = String(st.speed);
@@ -668,12 +1067,13 @@ function pollInput(dt, hw, hy) {
     const pb = prevBtn[h], edge = i => !!(gp.buttons[i] && gp.buttons[i].pressed) && !pb[i];
     if (h === 'left') {
       if (edge(4)) { s.end(); return; }
-      if (edge(5)) calibReq = true;
+      if (edge(5)) { calibReq = true; STK.calReq = true; run.pk.cal++; }
       sx = ax[0]; sy = ax[1];
       const tr = gp.buttons[0]; brake = tr ? (tr.value || (tr.pressed ? 1 : 0)) : 0;
     } else {
       if (edge(4)) cycleSpeed();
-      if (edge(5)) resetPuck();
+      if (edge(5)) placePuck();
+      if (edge(3)) nextCurve();
       tx = ax[0];
       if (Math.abs(ax[1]) > 0.25) st.len = clamp(st.len - ax[1] * 0.5 * dt, 1.2, 2.0);
     }
@@ -705,92 +1105,93 @@ function pollInput(dt, hw, hy) {
     dx = fx * fw - fz * rt; dz = fz * fw + fx * rt;
   }
   S.x = hw.x; S.z = hw.z;                                                  // your body is where your head is
-  skInfo = skateStep(S, { m, dx, dz, brake }, dt, SPEEDS[st.speed]);
+  skInfo = skateStep(S, { m, dx, dz, brake, assist: st.assist }, dt, SPEEDS[st.speed]);
   rig.position.x += S.x - hw.x; rig.position.z += S.z - hw.z;
   skInfo.brake = brake;
 }
-function updateStick(dt, headFlat) {
-  const lowH = st.shot === 'right' ? 'right' : 'left', topH = lowH === 'right' ? 'left' : 'right';
-  const lo = hands[lowH], tp = hands[topH];
-  if (!lo || !tp) { SK.have = false; stick.visible = false; return; }
-  const top = new THREE.Vector3().setFromMatrixPosition(tp.grip.matrixWorld), low = new THREE.Vector3().setFromMatrixPosition(lo.grip.matrixWorld);
-  const v = low.clone().sub(top), sep = v.length();
-  const lq = new THREE.Quaternion(); lo.grip.matrixWorld.decompose(V, lq, V2);
-  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(lq);
-  const w = clamp((sep - 0.08) / 0.12, 0, 1);
-  const a = (sep > 1e-4 ? v.clone().multiplyScalar(1 / sep) : fwd.clone()).multiplyScalar(w).add(fwd.clone().multiplyScalar(1 - w)).normalize();
-  const butt = top.clone().addScaledVector(a, -0.1);
-  const end = low.clone().addScaledVector(a, Math.max(0.1, st.len - 0.1 - clamp(sep, 0.2, 0.9)));
-  // blade lies along the head direction, perpendicular to the shaft
-  const r = headFlat.clone().addScaledVector(a, -headFlat.dot(a));
-  if (r.lengthSq() < 1e-4) r.set(1, 0, 0); r.normalize();
-  const up = a.clone().negate(); up.addScaledVector(r, -up.dot(r)); if (up.lengthSq() < 1e-4) up.set(0, 1, 0); up.normalize();
-  const side = new THREE.Vector3().crossVectors(r, up).normalize();
-  const mid = butt.clone().add(end).multiplyScalar(0.5), len = end.distanceTo(butt);
-  shaft.position.copy(mid); shaft.scale.set(1, len, 1); shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), a);
-  const toe = end.clone().addScaledVector(r, 0.3);
-  blade.position.copy(end).addScaledVector(r, 0.15).addScaledVector(up, 0.0375);
-  blade.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(r, up, side));
-  stick.visible = true;
-  if (SK.have) { SK.pE.copy(SK.E); SK.pT.copy(SK.T); } else { SK.pE.copy(end); SK.pT.copy(toe); }
-  SK.E.copy(end); SK.T.copy(toe); SK.have = true; SK.lowHand = lowH; SK.topHand = topH; SK.len = len;
+const QT = new THREE.Quaternion(), PV = new THREE.Vector3(), SV = new THREE.Vector3();
+const STA = { tx: 0, ty: 0, tz: 0, lx: 0, ly: 0, lz: 0, qx: 0, qy: 0, qz: 0, qw: 1, fx: 1, fz: 0, dt: 0.011 };
+let bladeSp = 0, handLo = 'right', handTop = 'left', pClock = 0, lastHitToast = -9, scrapeBuzz = 0;
+function updateStick(dt) {
+  handLo = st.shot === 'right' ? 'right' : 'left'; handTop = handLo === 'right' ? 'left' : 'right';
+  const lo = hands[handLo], tp = hands[handTop];
+  if (!lo || !tp) { stickOn = false; shaftM.visible = knobM.visible = false; if (bladeM) bladeM.visible = false; return; }
+  tp.grip.matrixWorld.decompose(PV, QT, SV); STA.tx = PV.x; STA.ty = PV.y; STA.tz = PV.z; STA.qx = QT.x; STA.qy = QT.y; STA.qz = QT.z; STA.qw = QT.w;
+  lo.grip.matrixWorld.decompose(PV, QT, SV); STA.lx = PV.x; STA.ly = PV.y; STA.lz = PV.z;
+  STA.fx = HF.x; STA.fz = HF.z; STA.dt = dt; STK.hand = st.shot === 'right' ? 1 : -1; STK.len = st.len;
+  stickSolve(STA);
+  if (STK.autoFired) { STK.autoFired = false; run.pk.cal++; toast('Stick set. Y sets it again'); }
+  applyStickMeshes(); stickOn = true;
+  const F = STK.F, Fp = STK.Fp;
+  bladeSp = Math.hypot(F.Ox - Fp.Ox, F.Oy - Fp.Oy, F.Oz - Fp.Oz) / Math.max(dt, 1e-3);
 }
-let lastHit = 0;
-function stickPuck(dt) {
-  const trav = SK.have ? Math.max(Math.hypot(SK.E.x - SK.pE.x, SK.E.z - SK.pE.z), Math.hypot(SK.T.x - SK.pT.x, SK.T.z - SK.pT.z)) : 0;
-  const SUB = clamp(Math.ceil(trav / 0.025), 4, 48), h = dt / SUB;
-  for (let s = 1; s <= SUB; s++) {
-    if (SK.have) {
-      const k = s / SUB, ex = SK.pE.x + (SK.E.x - SK.pE.x) * k, ey = SK.pE.y + (SK.E.y - SK.pE.y) * k, ez = SK.pE.z + (SK.E.z - SK.pE.z) * k;
-      const tx = SK.pT.x + (SK.T.x - SK.pT.x) * k, ty = SK.pT.y + (SK.T.y - SK.pT.y) * k, tz = SK.pT.z + (SK.T.z - SK.pT.z) * k;
-      const dx = tx - ex, dz = tz - ez, dd = dx * dx + dz * dz;
-      const u = dd > 1e-6 ? clamp(((P.x - ex) * dx + (P.z - ez) * dz) / dd, 0, 1) : 0;
-      const qx = ex + dx * u, qy = ey + (ty - ey) * u, qz = ez + dz * u;
-      const vEx = (SK.E.x - SK.pE.x) / dt, vEz = (SK.E.z - SK.pE.z) / dt, vTx = (SK.T.x - SK.pT.x) / dt, vTz = (SK.T.z - SK.pT.z) / dt;
-      const vx = vEx + (vTx - vEx) * u, vz = vEz + (vTz - vEz) * u;
-      const rx = P.x - qx, rz = P.z - qz, d = Math.hypot(rx, rz), reach = PR + 0.03;
-      if (qy < 0.1 && qy > -0.15 && d < reach) {
-        const nx = d > 1e-4 ? rx / d : 1, nz = d > 1e-4 ? rz / d : 0;
-        const vrel = (vx - P.vx) * nx + (vz - P.vz) * nz;
-        if (vrel > 0) {
-          const kick = 1.05 + 0.4 * clamp((vrel - 2) / 8, 0, 1);
-          P.vx += nx * vrel * kick; P.vz += nz * vrel * kick;
-          const tvx = vx - nx * (vx * nx + vz * nz), tvz = vz - nz * (vx * nx + vz * nz); P.vx += tvx * 0.25; P.vz += tvz * 0.25;
-          const now = performance.now();
-          if (now - lastHit > 140) { st.hits++; lastHit = now; const a = clamp(0.2 + vrel / 8, 0.2, 1); buzz(SK.lowHand, a, 40); buzz(SK.topHand, a * 0.5, 30); }
-        }
-        P.x = qx + nx * (reach + 0.002); P.z = qz + nz * (reach + 0.002);
-      }
-    }
-    P.x += P.vx * h; P.z += P.vz * h;
-    const f = Math.max(0, 1 - 0.1 * h); P.vx *= f; P.vz *= f;
-    // boards
-    const ax = Math.abs(P.x), az = Math.abs(P.z), cx = RK.L / 2 - RK.R, cz = RK.W / 2 - RK.R, rp = RK.R - PR;
-    let nx = 0, nz = 0, pen = 0;
-    if (ax > cx && az > cz) { const ddx = ax - cx, ddz = az - cz, dist = Math.hypot(ddx, ddz); if (dist > rp) { nx = -Math.sign(P.x) * ddx / dist; nz = -Math.sign(P.z) * ddz / dist; pen = dist - rp; } }
-    else if (ax > RK.L / 2 - PR) { nx = -Math.sign(P.x); pen = ax - (RK.L / 2 - PR); }
-    else if (az > RK.W / 2 - PR) { nz = -Math.sign(P.z); pen = az - (RK.W / 2 - PR); }
-    if (pen > 0) { P.x += nx * pen; P.z += nz * pen; const vn = P.vx * nx + P.vz * nz; if (vn < 0) { P.vx -= 1.55 * vn * nx; P.vz -= 1.55 * vn * nz; } }
+function applyStickMeshes() {
+  const F = STK.F, len = STK.len;
+  // shaft: across (E), along the shaft (S, scaled to its length), depth (E x S)
+  const zx = F.Ey * F.Sz - F.Ez * F.Sy, zy = F.Ez * F.Sx - F.Ex * F.Sz, zz = F.Ex * F.Sy - F.Ey * F.Sx;
+  shaftM.matrix.set(F.Ex, F.Sx * len, zx, F.Ox + F.Sx * len * 0.5, F.Ey, F.Sy * len, zy, F.Oy + F.Sy * len * 0.5, F.Ez, F.Sz * len, zz, F.Oz + F.Sz * len * 0.5, 0, 0, 0, 1);
+  knobM.matrix.set(F.Ex, F.Sx, zx, F.Ox + F.Sx * (len - 0.045), F.Ey, F.Sy, zy, F.Oy + F.Sy * (len - 0.045), F.Ez, F.Sz, zz, F.Oz + F.Sz * (len - 0.045), 0, 0, 0, 1);
+  const tb = BL.TB / 2;
+  if (bladeM) bladeM.matrix.set(F.Ux, F.Px, F.Wx, F.Ox + F.Wx * tb, F.Uy, F.Py, F.Wy, F.Oy + F.Wy * tb, F.Uz, F.Pz, F.Wz, F.Oz + F.Wz * tb, 0, 0, 0, 1);
+  shaftM.matrixWorldNeedsUpdate = knobM.matrixWorldNeedsUpdate = true; if (bladeM) { bladeM.matrixWorldNeedsUpdate = true; bladeM.visible = true; }
+  shaftM.visible = knobM.visible = true;
+}
+function puckFrame(dt) {
+  pClock += dt;
+  if (PK.out > 1.2) { placePuck(); EV.length = 0; run.pk.outs++; toast('Puck out of play'); }
+  puckAdvance(dt, stickOn, POWERS[st.power], pClock);
+  puck.position.set(PK.x, PK.y, PK.z); puck.rotation.y = PK.rot;
+  const k = 1 / (1 + Math.max(0, PK.y - PUCK.HH) * 1.6);
+  puckShadow.position.set(PK.x, 0.006, PK.z); puckShadow.scale.set(k, k, 1); puckShadow.material.opacity = 0.32 * k;
+}
+function pkEffects(dt) {
+  const kp = run.pk;
+  for (const e of EV) {
+    if (e.k === 'tap') {
+      kp.contacts++; st.hits++;
+      buzz(handLo, clamp(0.15 + e.v / 22, 0.15, 1), 28); buzz(handTop, clamp(0.1 + e.v / 40, 0.1, 0.6), 22);
+      if (audio) audio.tap(e.v, e);
+    } else if (e.k === 'launch') {
+      const k = e.v * 3.6; kp.hits++; kp.last = k; if (k > kp.best) kp.best = k; st.topKmh = kp.best;
+      if (e.v > 10 && pClock - lastHitToast > 1.2) { lastHitToast = pClock; toast('Hit ' + Math.round(k) + ' km/h'); }
+    } else if (e.k === 'goal') {
+      kp.goals++; toast('GOAL  ' + Math.round(e.v * 3.6) + ' km/h'); if (audio) audio.horn(e); buzz('left', 0.7, 150); buzz('right', 0.7, 150);
+    } else if (e.k === 'post') {
+      kp.posts++; if (audio) audio.ping(e.v, e); buzz(handLo, 0.3, 40); buzz(handTop, 0.2, 40);
+    } else if (e.k === 'board') { kp.boards++; if (audio) audio.bang(e.v, e); }
+    else if (e.k === 'glass') { kp.boards++; if (audio) audio.glass(e.v, e); }
+    else if (e.k === 'net') { if (audio) audio.net(e.v, e); }
+    else if (e.k === 'ice') { if (audio) audio.tick(e.v, e); }
   }
-  st.topKmh = Math.max(st.topKmh, Math.hypot(P.vx, P.vz) * 3.6);
-  puck.position.set(P.x, 0.0125, P.z);
+  EV.length = 0;
+  // the blade scraping the ice
+  const scr = stickOn && STK.onIce && bladeSp > 1 && STK.depth > 0.002;
+  if (scr) {
+    kp.scrapeT += dt; scrapeBuzz -= dt; if (scrapeBuzz <= 0) { scrapeBuzz = 0.09; buzz(handLo, 0.07, 14); }
+  }
+  if (stickOn) kp.stickT += dt;
+  if (audio) audio.scrape(scr ? clamp(bladeSp / 8, 0.1, 1) * clamp(0.3 + STK.depth / 0.03, 0.3, 1) : 0);
 }
 function boardText() {
   const lv = run.frames[st.level], recent = lv.slice(-120);
   const fps = recent.length > 10 ? Math.round(1000 / (recent.reduce((a, b) => a + b, 0) / recent.length)) : 0;
   const hz = run.hz || 0, period = hz ? 1000 / hz : 14;
   const slow = lv.length ? Math.round(100 * lv.filter(d => d > period * 1.5).length / lv.length) : 0;
+  const kp = run.pk, cv = curveCur || curveById(st.curve);
   drawBoard({
     spd: String(Math.round(kmh(skInfo.speed))),
-    l2: 'Top ' + Math.round(kmh(run.sk.top)) + ' km/h     Distance ' + Math.round(run.sk.dist) + ' m',
-    l3: 'FPS ' + (fps || '--') + '  (' + NAMES[st.level] + ')     Slow frames ' + slow + '%',
-    l4: SPEED_NAMES[st.speed] + ' top speed     Trigger brakes     Y sets height'
+    l2: 'Last hit ' + Math.round(kp.last) + ' km/h     Best ' + Math.round(kp.best),
+    l3: 'Goals ' + kp.goals + '     Hits ' + kp.hits + '     Posts ' + kp.posts,
+    l4: 'FPS ' + (fps || '--') + '  (' + NAMES[st.level] + ')     Slow frames ' + slow + '%',
+    l5: cv.name + ' ' + cv.code + '  lie ' + cv.lie + '     ' + POWER_NAMES[st.power] + ' power     Top ' + Math.round(kmh(run.sk.top)) + ' km/h'
   });
 }
 function effects(dt) {
   const k = run.sk, sp = skInfo.speed, brake = skInfo.brake || 0;
   k.dist += sp * dt; if (sp > 0.5) k.mov += dt;
   k.top = Math.max(k.top, sp); k.speedT[st.speed] += dt;
+  if (skInfo.cross > 0.5) k.crossT += dt;
+  if (skInfo.punch > 0.6) { if (!punching) { punching = true; k.punches++; buzz('left', 0.25, 40); buzz('right', 0.25, 40); } } else if (skInfo.punch < 0.2) punching = false;
   if (brake > 0.3 && sp > 1) { k.brakeT += dt; if (!braking) { braking = true; k.brakes++; } } else if (brake < 0.15 || sp <= 1) braking = false;
   if (skInfo.hit > 0.8) {
     k.bumps++; k.hard = Math.max(k.hard, skInfo.hit);
@@ -802,6 +1203,7 @@ function effects(dt) {
     if (strideT <= 0) { strideT = 0.62 - 0.25 * clamp(sp / SPEEDS[st.speed], 0, 1); if (audio) audio.stride(clamp(sp / SPEEDS[st.speed], 0, 1)); buzz('left', 0.08, 25); }
   } else strideT = Math.min(strideT, 0.15);
   if (audio) audio.update(skInfo, SPEEDS[st.speed], brake, st.level);
+  pkEffects(dt);
   updateVig(dt, skInfo); updateToast(dt);
 }
 const HF = new THREE.Vector3();
@@ -822,9 +1224,10 @@ function vrFrame(t, frame, dt) {
   const f = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion); HF.set(f.x, 0, f.z);
   if (HF.lengthSq() < 0.04) HF.set(Math.cos(lastYaw), 0, Math.sin(lastYaw)); HF.normalize();
   if (vp) { const p = vp.transform.position; const w = rig.localToWorld(V2.set(p.x, p.y, p.z)); H.x = w.x; H.z = w.z; H.fx = HF.x; H.fz = HF.z; H.ok = true; }
-  if (needPuck && H.ok) { resetPuck(); needPuck = false; }
-  updateStick(dt, HF);
-  stickPuck(dt);
+  if (hw && audio) audio.listen(hw, V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion));
+  if (needPuck && H.ok) { placePuck(); needPuck = false; }
+  updateStick(dt);
+  puckFrame(dt);
   effects(dt);
   if (t - boardT > 500) { boardT = t; boardText(); }
 }
@@ -833,7 +1236,7 @@ function previewFrame(t, dt) {
   orbit += dt * 0.07;
   camera.position.set(Math.cos(orbit) * 30, 15, Math.sin(orbit) * 30 * 0.8); camera.lookAt(0, 0.5, 0);
   if (st.dbgCam) { camera.position.set(...st.dbgCam.p); camera.lookAt(...st.dbgCam.t); }
-  stickPuck(dt);
+  puckFrame(dt); EV.length = 0;
   if (t - previewT > 700) { previewT = t; drawBoard({ spd: '0', l2: 'Preview only. Enter VR in the headset.', l3: 'Scene: ' + NAMES[st.level] + '  (' + (st.level + 1) + ' of 3)', l4: SPEED_NAMES[st.speed] + ' top speed' }); }
 }
 let lastT = 0;
@@ -848,7 +1251,7 @@ function sizePreview() {
   camera.aspect = 16 / 9; camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', sizePreview); sizePreview();
-resetPuck();
+setCurve(st.curve); placePuck();
 
 // ---------------------------------------------------------------- session control
 function explain(e) {
@@ -875,6 +1278,8 @@ async function enterVR() {
     S.x = -10; S.z = 0; S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
     BODY.ok = false; st.yOff = 0; snapArmed = true; calibReq = false; braking = false; vigU = 0; lastYaw = -Math.PI / 2;
     H.ok = false; needPuck = true; if (audio) audio.resume();
+    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false;
+    toast('Ready stance, blade near the ice. Y sets the stick');
     try {
       const sup = session.supportedFrameRates ? Array.from(session.supportedFrameRates) : [];
       run.supported = sup;
@@ -887,17 +1292,18 @@ async function enterVR() {
 }
 function onEnd() {
   st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
-  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0;
-  const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, frames: run.frames.map(a => a.slice()) };
+  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; shaftM.visible = knobM.visible = false; if (bladeM) bladeM.visible = false;
+  const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, pk: { ...run.pk }, frames: run.frames.map(a => a.slice()) };
   buildResult(ended);
 }
-const SAVE_KEY = 'ravens-vr2-last';
+const SAVE_KEY = 'ravens-vr3-last';
 let baseLines = [], lastRows = [];
 function renderTable(rows) {
   const tb = $('lvtable'); tb.innerHTML = '';
   rows.forEach((r, i) => { const tr = document.createElement('tr'); r.forEach((c, j) => { const td = document.createElement(i === 0 ? 'th' : 'td'); td.textContent = c; if (r.length === 2 && j === 1) td.colSpan = 5; tr.appendChild(td); }); tb.appendChild(tr); });
 }
-const picked = () => ({ cf: (document.querySelector('input[name="cf"]:checked') || {}).value || '', cb: Array.from(document.querySelectorAll('input[name="cb"]:checked')).map(x => x.value) });
+const picked = () => ({ cf: (document.querySelector('input[name="cf"]:checked') || {}).value || '', cb: Array.from(document.querySelectorAll('input[name="cb"]:checked')).map(x => x.value),
+  sf: (document.querySelector('input[name="sf"]:checked') || {}).value || '', sb: Array.from(document.querySelectorAll('input[name="sb"]:checked')).map(x => x.value) });
 function comfortLine() {
   const p = picked();
   if (!p.cf && !p.cb.length) return 'Comfort: not rated yet';
@@ -906,7 +1312,12 @@ function comfortLine() {
 function saveResult() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify({ v: $('verdict').textContent, rows: lastRows, base: baseLines, pick: picked() })); } catch (e) { /* storage is optional */ }
 }
-function refreshRep() { $('rep').textContent = baseLines.concat([comfortLine()]).join('\n'); saveResult(); }
+function stickLine() {
+  const p = picked();
+  if (!p.sf && !p.sb.length) return 'Stick and puck: not rated yet';
+  return 'Stick and puck: ' + (p.sf || 'no overall rating') + (p.sb.length ? '. Problems: ' + p.sb.join(', ') : '');
+}
+function refreshRep() { $('rep').textContent = baseLines.concat([comfortLine(), stickLine()]).join('\n'); saveResult(); }
 function loadResult() {
   try {
     const j = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -915,14 +1326,16 @@ function loadResult() {
     const p = j.pick || {};
     document.querySelectorAll('input[name="cf"]').forEach(x => { x.checked = x.value === p.cf; });
     document.querySelectorAll('input[name="cb"]').forEach(x => { x.checked = (p.cb || []).includes(x.value); });
+    document.querySelectorAll('input[name="sf"]').forEach(x => { x.checked = x.value === p.sf; });
+    document.querySelectorAll('input[name="sb"]').forEach(x => { x.checked = (p.sb || []).includes(x.value); });
     refreshRep();
   } catch (e) { /* ignore a bad save */ }
 }
 function fmt(n, d) { return n == null || Number.isNaN(n) ? '--' : n.toFixed(d == null ? 0 : d); }
 function buildResult(r) {
   $('result').hidden = false;
-  document.querySelectorAll('input[name="cf"],input[name="cb"]').forEach(x => { x.checked = false; });
-  const lines = ['Ravens VR Phase 2 report', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+  document.querySelectorAll('input[name="cf"],input[name="cb"],input[name="sf"],input[name="sb"]').forEach(x => { x.checked = false; });
+  const lines = ['Ravens VR Phase 3 report', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     'Page: ' + (probeInfo.frame ? 'inside a frame (VR permission ' + probeInfo.policy + ')' : 'its own page'),
     'Browser: ' + (probeInfo.device || probeInfo.ua.slice(0, 80)), 'VR supported: ' + (probeInfo.vr === null ? 'unknown' : probeInfo.vr ? 'yes' : 'no')];
   const rows = [['Scene', 'Seconds', 'Average', 'Low 1%', 'Worst', 'Slow']];
@@ -933,11 +1346,14 @@ function buildResult(r) {
   const secs = (performance.now() - r.t0) / 1000, k = r.sk, mv = k.mov > 1 ? k.dist / k.mov : 0;
   lines.push('Session: ran ' + fmt(secs) + ' s', 'Refresh: ' + (r.hz ? r.hz + ' Hz' : 'unknown') + (r.asked ? ', asked for ' + r.asked + ' Hz' : ', headset default') + (r.supported && r.supported.length ? ' (offered: ' + r.supported.join(', ') + ')' : ''),
     'Controllers: left ' + (r.ctl.left ? 'yes' : 'no') + ', right ' + (r.ctl.right ? 'yes' : 'no') + (r.profiles.length ? ' (' + r.profiles.join(', ') + ')' : ''));
-  lines.push('Settings: steer ' + st.steer + ', turn ' + st.turn + ', vignette ' + ['off', 'light', 'medium', 'strong'][st.vig] + ', height ' + st.height + (k.yOff > 0.02 ? ' (raised ' + Math.round(k.yOff * 100) + ' cm)' : '') + ', sound ' + (st.sound ? 'on' : 'off') + ', shot ' + st.shot);
+  const cv = curveCur || curveById(st.curve), pk = r.pk || run.pk;
+  lines.push('Settings: steer ' + st.steer + ', turn ' + st.turn + ', vignette ' + ['off', 'light', 'medium', 'strong'][st.vig] + ', height ' + st.height + (k.yOff > 0.02 ? ' (raised ' + Math.round(k.yOff * 100) + ' cm)' : '') + ', sound ' + (st.sound ? 'on' : 'off'));
+  lines.push('Stick: ' + curveLabel(cv) + ', shaft ' + st.len.toFixed(2) + ' m, shoots ' + st.shot + ', shot power ' + POWER_NAMES[st.power] + ', skating assist ' + (st.assist ? 'on' : 'off') + ', stick set ' + pk.cal + ' times, held ' + fmt(pk.stickT) + ' s');
   lines.push('Time at each top speed: ' + SPEED_NAMES.map((n, i) => n + ' ' + fmt(k.speedT[i]) + ' s').join(', '));
   lines.push('Skating: ' + fmt(k.dist) + ' m, top ' + fmt(kmh(k.top)) + ' km/h, average while moving ' + fmt(kmh(mv)) + ' km/h',
     'Braking: ' + k.brakes + ' stops, ' + fmt(k.brakeT, 1) + ' s on the trigger. Boards and nets: ' + k.bumps + ' hits, hardest ' + fmt(kmh(k.hard)) + ' km/h. Snap turns: ' + k.snaps + '. Vignette peak ' + fmt(k.vigMax * 100) + '%',
-    'Puck hits: ' + st.hits + ', fastest ' + fmt(st.topKmh) + ' km/h, stick ' + st.len.toFixed(2) + ' m');
+    'Assist: crossover time ' + fmt(k.crossT, 1) + ' s, punch turns ' + k.punches);
+  lines.push('Puck: ' + pk.contacts + ' touches, ' + pk.hits + ' hits over 22 km/h, hardest ' + fmt(pk.best) + ' km/h, ' + pk.goals + ' goals, ' + pk.posts + ' post or bar hits, ' + pk.boards + ' off the boards, ' + pk.outs + ' out of play, ice scrape ' + fmt(pk.scrapeT, 1) + ' s');
   const holds = [];
   for (let l = 0; l < 3; l++) {
     const s = levelStats(r.frames[l], r.hz, r.secs[l]);
@@ -975,10 +1391,32 @@ async function probe() {
   $('enter-note').textContent = $('enter').disabled ? 'Enter VR switches on in the Quest browser.' : 'Put the headset on first, then press it.';
 }
 function syncUI() {
+  $('curve').value = st.curve; $('power').value = String(st.power); $('assist').value = st.assist ? 'on' : 'off';
   $('shot').value = st.shot; $('hz').value = String(st.wantHz); $('speed').value = String(st.speed); $('steer').value = st.steer;
   $('turn').value = st.turn; $('vig').value = String(st.vig); $('height').value = st.height; $('sound').value = st.sound ? 'on' : 'off';
 }
-syncUI(); applyLevel(st.level);
+function drawCurve() {
+  const cv = curveCur || curveById(st.curve), bp = makeProfile(cv), cvs = $('curve-cv'), g = cvs.getContext('2d'), W = cvs.width, Hh = cvs.height;
+  const cs = getComputedStyle(document.documentElement), fg = cs.getPropertyValue('--fg').trim() || '#000', ac = cs.getPropertyValue('--accent').trim() || '#06c', mu = cs.getPropertyValue('--muted').trim() || '#666';
+  g.clearRect(0, 0, W, Hh);
+  const sc = (W - 120) / 0.33, x0 = 60, y0 = 56;
+  g.fillStyle = ac; g.globalAlpha = 0.85; g.beginPath();
+  for (let i = 0; i <= bp.n; i++) { const x = x0 + bp.u[i] * sc, y = y0 + bp.c[i] * sc * 3.2; if (i) g.lineTo(x, y); else g.moveTo(x, y); }
+  for (let i = bp.n; i >= 0; i--) g.lineTo(x0 + bp.u[i] * sc, y0 + (bp.c[i] + BL.TB) * sc * 3.2);
+  g.closePath(); g.fill(); g.globalAlpha = 1;
+  g.strokeStyle = mu; g.setLineDash([5, 5]); g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + cv.len * sc, y0); g.stroke(); g.setLineDash([]);
+  g.fillStyle = fg; g.font = '600 20px sans-serif'; g.fillText('heel', x0 - 4, y0 - 24); g.textAlign = 'right'; g.fillText('toe', x0 + cv.len * sc + 4, y0 - 24); g.textAlign = 'left';
+  g.fillStyle = mu; g.font = '18px sans-serif'; g.fillText('Top view, face side up. The dashed line is the straight heel-to-toe line. Depth is exaggerated 3x.', x0 - 40, Hh - 14);
+  $('curve-info').textContent = cv.name + (cv.code !== cv.name ? ' ' + cv.code : '') + ': lie ' + cv.lie + ', blade ' + Math.round(cv.len * 1000) / 10 + ' cm, ' + (cv.hh / 10).toFixed(1) + ' cm tall at the heel, deepest cut ' + (bp.mc * 1000).toFixed(0) + ' mm, face opened ' + cv.loft + '°. ' + cv.note + '. Lie, length and height come from the shop page; the shape is my approximation' + (cv.approx ? ' (this one has no page of its own)' : '') + '.';
+}
+function nextCurve() {
+  const i = CURVES.findIndex(c => c.id === st.curve); setCurve(CURVES[(i + 1) % CURVES.length].id); saveSettings();
+  const e = $('curve'); if (e) e.value = st.curve; drawCurve(); toast(curveLabel(curveCur));
+}
+{
+  const sel = $('curve'); CURVES.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = curveLabel(c); sel.appendChild(o); });
+}
+syncUI(); applyLevel(st.level); drawCurve();
 loadResult();
 probe();
 if (navigator.xr && navigator.xr.addEventListener) navigator.xr.addEventListener('devicechange', probe);
@@ -986,15 +1424,17 @@ $('enter').addEventListener('click', enterVR);
 document.querySelectorAll('#lvl button').forEach(b => b.addEventListener('click', () => { applyLevel(+b.dataset.l); saveSettings(); }));
 const bind = (id, key, conv) => $(id).addEventListener('change', e => { st[key] = conv ? conv(e.target.value) : e.target.value; saveSettings(); });
 bind('shot', 'shot'); bind('hz', 'wantHz', Number); bind('speed', 'speed', Number); bind('steer', 'steer'); bind('turn', 'turn'); bind('vig', 'vig', Number);
-bind('height', 'height'); bind('sound', 'sound', v => v === 'on');
-document.querySelectorAll('input[name="cf"],input[name="cb"]').forEach(x => x.addEventListener('change', refreshRep));
+bind('height', 'height'); bind('sound', 'sound', v => v === 'on'); bind('power', 'power', Number); bind('assist', 'assist', v => v === 'on');
+$('curve').addEventListener('change', e => { setCurve(e.target.value); saveSettings(); drawCurve(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener && matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawCurve());
+document.querySelectorAll('input[name="cf"],input[name="cb"],input[name="sf"],input[name="sb"]').forEach(x => x.addEventListener('change', refreshRep));
 $('copy').addEventListener('click', async () => {
   const txt = $('rep').textContent, out = $('copied');
   try { await navigator.clipboard.writeText(txt); out.textContent = 'Copied.'; }
   catch (e) { try { const r = document.createRange(); r.selectNodeContents($('rep')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); out.textContent = 'Selected. Copy it with your keyboard.'; } catch (e2) { out.textContent = 'Select the text above and copy it.'; } }
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
-if (/[?&]debug\b/.test(location.search)) window.__vr2 = { skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, stickPuck, resetPuck, P, SK, H, hands, crowd, RK, BODY, headQ, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
+if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
 })();
 </script>
 
