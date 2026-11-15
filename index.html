@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
-<title>Ravens VR Test</title>
+<title>Ravens VR Skating</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,13 +70,17 @@ table.lv{border-collapse:collapse;width:100%;font-size:15px;margin:6px 0 12px}
 table.lv th,table.lv td{text-align:left;padding:6px 10px 6px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
 table.lv th{font-family:var(--display);letter-spacing:.06em;text-transform:uppercase;font-size:13px;color:var(--muted);font-weight:600}
 .tw{overflow-x:auto}
+fieldset.f{border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;margin:0;display:flex;flex-wrap:wrap;gap:6px 16px;min-width:0}
+fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;min-height:32px}
+.chk input{width:18px;height:18px;accent-color:var(--accent)}
 </style>
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Phase 0</p>
-    <h1>Does VR start, and does it hold up?</h1>
-    <p class="lede">A rink-sized scene, placeholder skaters and a stick on your controllers. Open this page in the Quest browser, press Enter VR and skate around for a few minutes. It measures the frame rate for you.</p>
+    <p class="eyebrow">Ravens VR · Phase 2</p>
+    <h1>Skate the empty rink</h1>
+    <p class="lede">No teammates and no game yet: just you, a stand-in stick and the ice. Open this page in the Quest browser, press Enter VR and skate for about ten minutes. What I need to know is how it feels: speed, turning, stopping, and whether anything makes you uneasy.</p>
   </header>
 
   <section class="card" aria-label="Checks">
@@ -98,23 +102,51 @@ table.lv th{font-family:var(--display);letter-spacing:.06em;text-transform:upper
     <div class="msg bad" id="err" hidden role="alert"></div>
   </section>
 
-  <section class="stage" aria-label="Preview">
-    <h2>Preview</h2>
-    <div class="glwrap"><canvas id="gl" aria-label="3D preview of the rink"></canvas></div>
-    <div class="row">
-      <span class="note">Scene load:</span>
-      <div class="seg" role="group" aria-label="Scene load" id="lvl">
-        <button type="button" data-l="0" aria-pressed="true">Light</button>
-        <button type="button" data-l="1" aria-pressed="false">Medium</button>
-        <button type="button" data-l="2" aria-pressed="false">Heavy</button>
-      </div>
-    </div>
-    <p class="note" id="lvl-note"></p>
-  </section>
-
   <section class="card" aria-label="Settings">
     <h2>Before you go in</h2>
     <div class="grid2">
+      <label class="f">Top speed
+        <select id="speed">
+          <option value="0">Easy (16 km/h)</option>
+          <option value="1" selected>Normal (23 km/h)</option>
+          <option value="2">Fast (31 km/h)</option>
+        </select>
+      </label>
+      <label class="f">Steer by
+        <select id="steer">
+          <option value="body" selected>Your body (follows past 35°)</option>
+          <option value="head">Your head (where you look)</option>
+        </select>
+      </label>
+      <label class="f">Turning
+        <select id="turn">
+          <option value="snap30" selected>Snap 30° (right thumbstick)</option>
+          <option value="snap45">Snap 45° (right thumbstick)</option>
+          <option value="smooth">Smooth (right thumbstick)</option>
+          <option value="off">Off (turn your body)</option>
+        </select>
+      </label>
+      <label class="f">Comfort vignette
+        <select id="vig">
+          <option value="0">Off</option>
+          <option value="1" selected>Light</option>
+          <option value="2">Medium</option>
+          <option value="3">Strong</option>
+        </select>
+      </label>
+      <label class="f">Your height
+        <select id="height">
+          <option value="auto" selected>Auto (lifts you if sitting)</option>
+          <option value="standing">Standing (your real height)</option>
+          <option value="seated">Seated (eyes at 1.62 m)</option>
+        </select>
+      </label>
+      <label class="f">Sound
+        <select id="sound">
+          <option value="on" selected>On</option>
+          <option value="off">Off</option>
+        </select>
+      </label>
       <label class="f">Which way you shoot
         <select id="shot">
           <option value="right" selected>Right (left hand on top, right hand low)</option>
@@ -129,26 +161,57 @@ table.lv th{font-family:var(--display);letter-spacing:.06em;text-transform:upper
         </select>
       </label>
     </div>
-    <p class="note" style="margin-top:10px">The refresh rate only changes if the headset offers it. The report says what you actually got.</p>
+    <p class="note" style="margin-top:10px">These are saved on this device. Top speed can also be changed inside VR. The refresh rate only changes if the headset offers it, and the report says what you got.</p>
   </section>
 
   <section class="card" aria-label="In the headset">
     <h2>In the headset</h2>
     <ol class="how">
-      <li><b>Left thumbstick</b> skates, slowly. Just push it.</li>
-      <li><b>Hold both controllers like a stick.</b> The stick runs through both hands.</li>
-      <li><b>Hit the puck</b> in front of you. The controllers buzz when the blade touches it.</li>
-      <li><b>A</b> steps the scene Light, Medium, Heavy. Give each one about 30 seconds.</li>
-      <li><b>B</b> resets the puck. <b>Right thumbstick</b> up and down changes the stick length. Click it to change how low you stand.</li>
-      <li>The board in front of you shows the live frame rate. <b>X</b> (left controller) leaves VR. If you feel unwell, take the headset off.</li>
-      <li>When you leave VR, the <b>Last VR session</b> card appears at the bottom of this page. It is saved, so it is still there if you reload.</li>
+      <li><b>Left thumbstick</b> skates. Push the way you want to go, and let go to glide. Push a little for a slow stride and fully for top speed.</li>
+      <li><b>Left trigger</b> brakes. Squeeze for a hockey stop. Pulling the thumbstick back against your travel slows you more gently.</li>
+      <li><b>Right thumbstick</b> left and right turns you (snap or smooth, as set above). Up and down changes the stick length.</li>
+      <li><b>A</b> (right controller) steps the top speed Easy, Normal, Fast. <b>B</b> puts the puck back in front of you.</li>
+      <li><b>Y</b> (left controller) sets your height. Sit or stand up straight first, then press it. <b>X</b> leaves VR.</li>
+      <li>The stick and puck are still the Phase 0 stand-ins. Skate into the boards and the nets: they stop you.</li>
+      <li>The scoreboard over centre ice shows your speed and the frame rate. If you feel unwell, take the headset off.</li>
+      <li>When you leave VR, the <b>Last VR session</b> card appears at the bottom of this page. It asks how it felt and is saved if you reload.</li>
     </ol>
+  </section>
+
+  <section class="stage" aria-label="Preview">
+    <h2>Preview</h2>
+    <div class="glwrap"><canvas id="gl" aria-label="3D preview of the rink"></canvas></div>
+    <div class="row">
+      <span class="note">Scene load:</span>
+      <div class="seg" role="group" aria-label="Scene load" id="lvl">
+        <button type="button" data-l="0" aria-pressed="false">Light</button>
+        <button type="button" data-l="1" aria-pressed="false">Medium</button>
+        <button type="button" data-l="2" aria-pressed="true">Heavy</button>
+      </div>
+    </div>
+    <p class="note" id="lvl-note"></p>
   </section>
 
   <section class="card" id="result" aria-label="Last VR session" hidden>
     <h2>Last VR session</h2>
     <div class="verdict" id="verdict"></div>
     <div class="tw"><table class="lv" id="lvtable"></table></div>
+    <div class="grid2" style="margin-bottom:12px">
+      <fieldset class="f" id="cf-overall"><legend>How did it feel?</legend>
+        <label class="chk"><input type="radio" name="cf" value="Fine"> Fine</label>
+        <label class="chk"><input type="radio" name="cf" value="A bit off"> A bit off</label>
+        <label class="chk"><input type="radio" name="cf" value="Uncomfortable"> Uncomfortable</label>
+      </fieldset>
+      <fieldset class="f" id="cf-parts"><legend>Anything bother you?</legend>
+        <label class="chk"><input type="checkbox" name="cb" value="acceleration"> Speeding up</label>
+        <label class="chk"><input type="checkbox" name="cb" value="turning"> Turning</label>
+        <label class="chk"><input type="checkbox" name="cb" value="braking"> Stopping</label>
+        <label class="chk"><input type="checkbox" name="cb" value="boards"> Hitting the boards</label>
+        <label class="chk"><input type="checkbox" name="cb" value="top speed"> Top speed</label>
+        <label class="chk"><input type="checkbox" name="cb" value="looking around"> Looking around</label>
+        <label class="chk"><input type="checkbox" name="cb" value="nothing"> Nothing</label>
+      </fieldset>
+    </div>
     <pre class="rep" id="rep"></pre>
     <div class="row" style="margin-top:12px">
       <button class="btn alt" id="copy" type="button">Copy report</button>
@@ -156,6 +219,7 @@ table.lv th{font-family:var(--display);letter-spacing:.06em;text-transform:upper
     </div>
   </section>
 </main>
+
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script>
@@ -166,7 +230,23 @@ const RK = { L: 200 * FT, W: 85 * FT, R: 28 * FT };           // rink in metres:
 const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const st = { level: 0, shot: 'right', wantHz: 0, len: 1.55, stance: -0.15, move: true, inVR: false, hits: 0, topKmh: 0 };
+const SKEY = 'ravens-vr2-settings';
+const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true };
+function loadSettings() {
+  const o = Object.assign({}, DEF);
+  try {
+    const j = JSON.parse(localStorage.getItem(SKEY) || 'null');
+    if (j && typeof j === 'object') {
+      const ok = (v, a) => a.includes(v);
+      if (ok(j.level, [0, 1, 2])) o.level = j.level; if (ok(j.shot, ['right', 'left'])) o.shot = j.shot; if (ok(j.wantHz, [0, 90, 120])) o.wantHz = j.wantHz;
+      if (ok(j.speed, [0, 1, 2])) o.speed = j.speed; if (ok(j.steer, ['body', 'head'])) o.steer = j.steer; if (ok(j.turn, ['snap30', 'snap45', 'smooth', 'off'])) o.turn = j.turn;
+      if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
+    }
+  } catch (e) { /* storage is optional */ }
+  return o;
+}
+function saveSettings() { try { const o = {}; for (const k of Object.keys(DEF)) o[k] = st[k]; localStorage.setItem(SKEY, JSON.stringify(o)); } catch (e) { /* optional */ } }
+const st = Object.assign(loadSettings(), { len: 1.55, yOff: 0, inVR: false, hits: 0, topKmh: 0 });
 const probeInfo = { frame: false, policy: 'unknown', xr: false, vr: null, vrErr: '', ua: '', device: '' };
 
 function chip(id, kind, label, detail) {
@@ -308,62 +388,33 @@ const crowd = new THREE.InstancedMesh(new THREE.BoxGeometry(0.42, 0.92, 0.34), n
   crowd.frustumCulled = false; crowd.count = 0; scene.add(crowd);
 }
 
-// placeholder skaters
+// materials for the stand-in stick
 const MATS = {
-  a: new THREE.MeshStandardMaterial({ color: 0x1c1f26, roughness: 0.8 }), b: new THREE.MeshStandardMaterial({ color: 0xe9edf2, roughness: 0.8 }),
-  skin: new THREE.MeshStandardMaterial({ color: 0xd9b08c, roughness: 0.8 }), pants: new THREE.MeshStandardMaterial({ color: 0x2a2d35, roughness: 0.9 }),
-  wood: new THREE.MeshStandardMaterial({ color: 0x8a6b3f, roughness: 0.6 }), tape: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 })
+  wood: new THREE.MeshStandardMaterial({ color: 0x8a6b3f, roughness: 0.6 }),
+  tape: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 })
 };
-const skaters = [];
-function makeSkater(team, i) {
-  const g = new THREE.Group();
-  const jersey = MATS[team];
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.42, 3, 8), jersey); torso.position.y = 1.17; torso.rotation.z = 0.0; g.add(torso);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.125, 12, 8), MATS.skin); head.position.y = 1.66; g.add(head);
-  const legs = [];
-  for (const z of [-0.1, 0.1]) {
-    const piv = new THREE.Group(); piv.position.set(0, 0.88, z);
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.86, 0.13), MATS.pants); leg.position.y = -0.43; piv.add(leg); g.add(piv); legs.push(piv);
-  }
-  const stick = new THREE.Group(); stick.position.set(0.42, 0.55, 0.28);
-  const sh = new THREE.Mesh(new THREE.BoxGeometry(0.03, 1.35, 0.03), MATS.wood); sh.position.y = 0.2; sh.rotation.z = -0.5; stick.add(sh);
-  const bl = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.07, 0.015), MATS.tape); bl.position.set(0.36, -0.42, 0); stick.add(bl);
-  g.add(stick);
-  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
-  const rx = 6 + (i % 5) * 4.2, rz = 3 + (i % 4) * 2.2;
-  g.userData = { legs, cx: ((i * 37) % 11 - 5) * 0.9, cz: ((i * 13) % 5 - 2) * 0.8, rx, rz, a: i * 0.9, w: (0.35 + (i % 6) * 0.07) * (i % 2 ? 1 : -1), ph: i };
-  scene.add(g); skaters.push(g); return g;
-}
-for (let i = 0; i < 20; i++) makeSkater(i % 2 ? 'a' : 'b', i);
-function moveSkaters(dt) {
-  for (let i = 0; i < skaters.length; i++) {
-    const g = skaters[i]; if (!g.visible) continue; const u = g.userData;
-    u.a += u.w * dt;
-    const x = u.cx + u.rx * Math.cos(u.a), z = u.cz + u.rz * Math.sin(u.a);
-    const vx = -u.rx * Math.sin(u.a) * u.w, vz = u.rz * Math.cos(u.a) * u.w;
-    g.position.set(x, 0, z); g.rotation.y = Math.atan2(-vz, vx);
-    const sp = Math.hypot(vx, vz), sw = Math.sin(u.a * 6 * Math.sign(u.w) + u.ph) * Math.min(0.5, sp * 0.08);
-    u.legs[0].rotation.z = sw; u.legs[1].rotation.z = -sw;
-  }
-}
-
-// stats board (world-locked sign near the start)
+// scoreboard hung over centre ice: four faces share one canvas
 const bc = document.createElement('canvas'); bc.width = 1024; bc.height = 512;
 const bx = bc.getContext('2d');
 const btex = new THREE.CanvasTexture(bc); if ('colorSpace' in btex) btex.colorSpace = THREE.SRGBColorSpace;
-const board = new THREE.Group();
-board.add(new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.3, 0.06), new THREE.MeshStandardMaterial({ color: 0x14181f })));
-const face = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.2), new THREE.MeshBasicMaterial({ map: btex })); face.position.z = 0.035; board.add(face);
-const pole = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 0.08), new THREE.MeshStandardMaterial({ color: 0x14181f })); pole.position.y = -1.15; board.add(pole);
-board.position.set(-6.4, 1.9, 0); board.rotation.y = -Math.PI / 2; scene.add(board);
+{
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(4.9, 2.5, 4.9), new THREE.MeshStandardMaterial({ color: 0x14181f, roughness: 0.7 })));
+  const fm = new THREE.MeshBasicMaterial({ map: btex });
+  for (let k = 0; k < 4; k++) {
+    const a = k * Math.PI / 2, f = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 2.4), fm);
+    f.rotation.y = a; f.position.set(Math.sin(a) * 2.46, 0, Math.cos(a) * 2.46); g.add(f);
+  }
+  g.position.set(0, 7.5, 0); scene.add(g);
+}
 function drawBoard(l) {
   bx.fillStyle = '#0d131a'; bx.fillRect(0, 0, 1024, 512);
-  bx.fillStyle = '#5aa9ee'; bx.font = '600 38px sans-serif'; bx.fillText('RAVENS VR  ·  PHASE 0', 40, 64);
-  bx.fillStyle = '#e6edf3'; bx.font = '700 150px sans-serif'; bx.fillText(l.fps, 40, 220);
-  bx.font = '500 44px sans-serif'; bx.fillStyle = '#93a2b0'; bx.fillText('frames per second', 40 + (l.fps.length * 85), 220);
+  bx.fillStyle = '#5aa9ee'; bx.font = '600 38px sans-serif'; bx.fillText('RAVENS VR  ·  PHASE 2', 40, 64);
+  bx.fillStyle = '#e6edf3'; bx.font = '700 170px sans-serif'; bx.fillText(l.spd, 40, 238);
+  bx.font = '500 48px sans-serif'; bx.fillStyle = '#93a2b0'; bx.fillText('km/h', 60 + l.spd.length * 98, 238);
   bx.fillStyle = '#e6edf3'; bx.font = '500 42px sans-serif';
-  bx.fillText(l.l2, 40, 292); bx.fillText(l.l3, 40, 350); bx.fillText(l.l4, 40, 408);
-  bx.fillStyle = '#93a2b0'; bx.font = '500 34px sans-serif'; bx.fillText('A scene   B puck   X exit   right stick: length', 40, 470);
+  bx.fillText(l.l2, 40, 310); bx.fillText(l.l3, 40, 366);
+  bx.fillStyle = '#93a2b0'; bx.font = '500 34px sans-serif'; bx.fillText(l.l4, 40, 440);
   btex.needsUpdate = true;
 }
 
@@ -403,8 +454,17 @@ const buzz = (h, a, ms) => {
 };
 
 // ---------------------------------------------------------------- session stats
-const run = { frames: [[], [], []], secs: [0, 0, 0], last: 0, skip: 0, hz: 0, asked: 0, t0: 0, ctl: { left: false, right: false }, profiles: [], notes: [], live: [] };
-function resetRun() { Object.assign(run, { frames: [[], [], []], secs: [0, 0, 0], last: 0, skip: 90, hz: 0, asked: st.wantHz, t0: performance.now(), ctl: { left: false, right: false }, profiles: [], notes: [], live: [] }); st.hits = 0; st.topKmh = 0; }
+const SPEEDS = [4.5, 6.5, 8.5], SPEED_NAMES = ['Easy', 'Normal', 'Fast'], EYE = 1.62;
+const kmh = v => v * 3.6;
+function newRun() {
+  return {
+    frames: [[], [], []], secs: [0, 0, 0], last: 0, skip: 90, hz: 0, asked: st.wantHz, t0: performance.now(),
+    ctl: { left: false, right: false }, profiles: [], notes: [], hs: [], calDone: false,
+    sk: { dist: 0, mov: 0, top: 0, brakes: 0, brakeT: 0, bumps: 0, hard: 0, snaps: 0, speedT: [0, 0, 0], vigMax: 0, yOff: 0 }
+  };
+}
+const run = newRun();
+function resetRun() { Object.assign(run, newRun()); st.hits = 0; st.topKmh = 0; }
 function pct(a, p) { const s = a.slice().sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; }
 function levelStats(f, hz0, secs) {
   if (!f || f.length < 30) return null;
@@ -415,27 +475,192 @@ function levelStats(f, hz0, secs) {
 function applyLevel(l) {
   st.level = l;
   crowd.count = l === 0 ? 0 : (l === 1 ? Math.min(1200, crowdSpots.length) : crowdSpots.length);
-  skaters.forEach((g, i) => { g.visible = i < 10 || l >= 1; });
   pts.forEach(p => { p.intensity = l >= 1 ? 0.55 : 0; });
   sun.castShadow = l >= 2;
   run.skip = 90;
   document.querySelectorAll('#lvl button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.l === l)));
-  $('lvl-note').textContent = l === 0 ? 'Light: the rink and 10 placeholder skaters.' : l === 1 ? 'Medium: adds a crowd of about 1,200, 10 more skaters and arena lights.' : 'Heavy: adds the full crowd of about ' + crowdSpots.length.toLocaleString('en') + ' and shadows.';
+  $('lvl-note').textContent = l === 0 ? 'Light: the rink and the arena shell.' : l === 1 ? 'Medium: adds a crowd of about 1,200 and arena lights.' : 'Heavy: adds the full crowd of about ' + crowdSpots.length.toLocaleString('en') + ' and shadows. This held 85 to 90 fps on your Quest in Phase 0.';
 }
-applyLevel(0);
 
-// ---------------------------------------------------------------- per-frame
-const V = new THREE.Vector3(), V2 = new THREE.Vector3(), Q = new THREE.Quaternion();
-const move = { vx: 0, vz: 0 }, prevBtn = { left: [], right: [] };
-const headQ = new THREE.Quaternion();
-let boardT = 0, needPuck = false;
-function insideRink(x, z, m) {
-  const ax = Math.abs(x), az = Math.abs(z), cx = RK.L / 2 - RK.R, cz = RK.W / 2 - RK.R, r = RK.R - m;
-  if (ax > cx && az > cz) return Math.hypot(ax - cx, az - cz) <= r;
-  return ax <= RK.L / 2 - m && az <= RK.W / 2 - m;
+// ---------------------------------------------------------------- skating model
+// Ice has almost no friction forwards and a lot sideways, so you glide, push to speed up, and
+// turn by carving: the direction of travel swings toward where you point the stick, as fast as the
+// edges can bite. All speeds are metres per second.
+const SK2 = { start: 3.2, push: 3.4, drag0: 0.25, drag2: 0.006, edge: 7.5, wmax: 3.2, back: 3.0, brake: 8 };
+const NETD = 1.04, NETW = 0.915, GX = 89 * FT;
+function boardsPush(x, z, m) {
+  const ax = Math.abs(x), az = Math.abs(z), cx = RK.L / 2 - RK.R, cz = RK.W / 2 - RK.R, rp = RK.R - m;
+  if (ax > cx && az > cz) {
+    const ddx = ax - cx, ddz = az - cz, d = Math.hypot(ddx, ddz);
+    return d > rp ? { nx: -Math.sign(x) * ddx / d, nz: -Math.sign(z) * ddz / d, pen: d - rp } : null;
+  }
+  if (ax > RK.L / 2 - m) return { nx: -Math.sign(x), nz: 0, pen: ax - (RK.L / 2 - m) };
+  if (az > RK.W / 2 - m) return { nx: 0, nz: -Math.sign(z), pen: az - (RK.W / 2 - m) };
+  return null;
 }
-function pollInput(dt) {
+function netPush(x, z, m) {
+  const zl = NETW + m;
+  for (const s of [-1, 1]) {
+    const x0 = s > 0 ? GX - m : -GX - NETD - m, x1 = s > 0 ? GX + NETD + m : -GX + m;
+    if (x > x0 && x < x1 && Math.abs(z) < zl) {
+      const dx = Math.min(x - x0, x1 - x), dz = zl - Math.abs(z);
+      return dx < dz ? { nx: (x - x0 < x1 - x) ? -1 : 1, nz: 0, pen: dx } : { nx: 0, nz: z >= 0 ? 1 : -1, pen: dz };
+    }
+  }
+  return null;
+}
+function bump(S, b) {
+  S.x += b.nx * b.pen; S.z += b.nz * b.pen;
+  const vn = S.vx * b.nx + S.vz * b.nz;
+  if (vn >= 0) return 0;
+  S.vx -= 1.15 * vn * b.nx; S.vz -= 1.15 * vn * b.nz;
+  if (-vn > 0.8) { const k = 1 - clamp((-vn - 0.8) / 10, 0, 0.3); S.vx *= k; S.vz *= k; }   // a real hit costs speed, leaning on the boards does not
+  return -vn;
+}
+// S: { x, z, vx, vz } the body. inp: { m 0..1 stick strength, dx, dz unit direction you want, brake 0..1 }
+function skateStep(S, inp, dt, vmax) {
+  let sp = Math.hypot(S.vx, S.vz), ux = sp > 1e-6 ? S.vx / sp : 0, uz = sp > 1e-6 ? S.vz / sp : 0, lat = 0, turn = 0, pushing = false;
+  const has = inp.m > 0.001;
+  if (has && sp > 0.6) {
+    const cosA = inp.dx * ux + inp.dz * uz;
+    if (cosA > -0.35) {
+      // carve toward the stick, limited by how hard the edges can bite at this speed
+      const ang = Math.atan2(ux * inp.dz - uz * inp.dx, cosA);
+      const wlim = Math.min(SK2.wmax, SK2.edge / Math.max(sp, 1));
+      const w = clamp(ang / dt, -wlim, wlim) * clamp(inp.m * 1.4 + 0.2, 0, 1);
+      const c = Math.cos(w * dt), s = Math.sin(w * dt), nx = ux * c - uz * s, nz = ux * s + uz * c;
+      ux = nx; uz = nz; turn = w; lat = Math.abs(w) * sp;
+      sp *= 1 - 0.05 * Math.abs(w) * dt;                               // carving costs a little speed
+      const vt = inp.m * vmax;                                           // the stick sets the speed you push toward
+      if (cosA > 0.3 && sp < vt) { sp = Math.min(vt, sp + SK2.push * (1 - 0.85 * sp / vmax) * cosA * dt); pushing = true; }
+    } else sp = Math.max(0, sp - SK2.back * inp.m * dt);               // stick pulled back against travel: lean on the edges
+  } else if (has) {
+    // from a standstill (or nearly) you can push off in any direction, backwards included
+    const nvx = S.vx + inp.dx * SK2.start * inp.m * dt, nvz = S.vz + inp.dz * SK2.start * inp.m * dt;
+    sp = Math.hypot(nvx, nvz); if (sp > 1e-6) { ux = nvx / sp; uz = nvz / sp; }
+    pushing = true;
+  }
+  sp = Math.max(0, sp - (SK2.drag0 + SK2.drag2 * sp * sp) * dt);       // glide: very little drag
+  if (inp.brake > 0.05) sp = Math.max(0, sp - SK2.brake * inp.brake * dt);
+  if (sp > vmax) sp = Math.max(vmax, sp - 2.5 * dt);
+  S.vx = ux * sp; S.vz = uz * sp;
+  S.x += S.vx * dt; S.z += S.vz * dt;
+  let hit = 0;
+  const b1 = boardsPush(S.x, S.z, 0.5); if (b1) hit = Math.max(hit, bump(S, b1));
+  const b2 = netPush(S.x, S.z, 0.4); if (b2) hit = Math.max(hit, bump(S, b2));
+  return { speed: Math.hypot(S.vx, S.vz), lat, turn, pushing, hit };
+}
+const S = { x: 0, z: 0, vx: 0, vz: 0 };
+let skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
+const wrapPi = a => a - TAU * Math.floor((a + Math.PI) / TAU);
+
+// ---------------------------------------------------------------- comfort: vignette, toast, sound
+const vigTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(0.5, 'rgba(0,0,0,0)'); gr.addColorStop(0.8, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,1)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c);
+})();
+const vig = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshBasicMaterial({ map: vigTex, transparent: true, depthTest: false, depthWrite: false, fog: false }));
+vig.position.z = -0.8; vig.renderOrder = 1000; vig.visible = false; vig.frustumCulled = false; camera.add(vig);
+let vigU = 0;
+function updateVig(dt, info) {
+  const base = [0, 0.35, 0.6, 0.9][st.vig] || 0;
+  const tgt = info.speed > 0.4 ? base * clamp(info.speed / SPEEDS[st.speed] + Math.abs(info.turn) * 0.25 + (info.hit > 0.8 ? 0.3 : 0), 0, 1) : 0;
+  vigU += (tgt - vigU) * (1 - Math.exp(-dt * (tgt > vigU ? 4 : 1.5)));
+  vig.visible = vigU > 0.01; vig.material.opacity = clamp(vigU * 4, 0, 1);
+  const sc = 1.7 - 1.15 * vigU; vig.scale.set(sc, sc, 1);
+  run.sk.vigMax = Math.max(run.sk.vigMax, vigU);
+}
+const tc = document.createElement('canvas'); tc.width = 512; tc.height = 96;
+const tcx = tc.getContext('2d');
+const ttex = new THREE.CanvasTexture(tc); if ('colorSpace' in ttex) ttex.colorSpace = THREE.SRGBColorSpace;
+const toastM = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.094), new THREE.MeshBasicMaterial({ map: ttex, transparent: true, depthTest: false, depthWrite: false, fog: false, opacity: 0 }));
+toastM.position.set(0, -0.28, -1.0); toastM.renderOrder = 1001; toastM.visible = false; toastM.frustumCulled = false; camera.add(toastM);
+let toastT = 0;
+function toast(msg) {
+  tcx.clearRect(0, 0, 512, 96); tcx.fillStyle = 'rgba(10,16,22,0.85)'; tcx.fillRect(0, 0, 512, 96);
+  tcx.fillStyle = '#e6edf3'; tcx.font = '600 38px sans-serif'; tcx.textAlign = 'center'; tcx.textBaseline = 'middle'; tcx.fillText(msg, 256, 50);
+  ttex.needsUpdate = true; toastT = 2.4; toastM.visible = true; toastM.material.opacity = 1;
+}
+function updateToast(dt) {
+  if (toastT <= 0) return;
+  toastT -= dt; toastM.material.opacity = clamp(toastT / 0.5, 0, 1); if (toastT <= 0) toastM.visible = false;
+}
+function makeAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+  let ctx; try { ctx = new AC(); } catch (e) { return null; }
+  try { if (ctx.resume) ctx.resume(); } catch (e) { /* needs a tap first */ }
+  const master = ctx.createGain(); master.gain.value = 0.8; master.connect(ctx.destination);
+  const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = nb.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const loop = () => { const s = ctx.createBufferSource(); s.buffer = nb; s.loop = true; return s; };
+  const hs = loop(), hf = ctx.createBiquadFilter(), hg = ctx.createGain();            // blade hiss while gliding and carving
+  hf.type = 'bandpass'; hf.frequency.value = 2500; hf.Q.value = 0.8; hg.gain.value = 0; hs.connect(hf); hf.connect(hg); hg.connect(master); hs.start();
+  const bs = loop(), bf = ctx.createBiquadFilter(), bg = ctx.createGain();            // scrape while braking
+  bf.type = 'highpass'; bf.frequency.value = 3200; bg.gain.value = 0; bs.connect(bf); bf.connect(bg); bg.connect(master); bs.start();
+  const cs = loop(), cf = ctx.createBiquadFilter(), cg = ctx.createGain();            // distant crowd murmur
+  cs.playbackRate.value = 0.5; cf.type = 'lowpass'; cf.frequency.value = 380; cg.gain.value = 0; cs.connect(cf); cf.connect(cg); cg.connect(master); cs.start();
+  const burst = (freq, q, peak, len, type) => {
+    const t = ctx.currentTime, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = nb; f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0005, t + len);
+    s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random(), len + 0.05); s.stop(t + len + 0.1);
+  };
+  return {
+    ctx,
+    resume() { try { ctx.resume(); } catch (e) { /* ignore */ } },
+    stride(f) { burst(1100 + 500 * f, 1.2, 0.06 + 0.05 * f, 0.18); },
+    thump(v) {
+      const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(), a = clamp(v / 8, 0.15, 1) * 0.5;
+      o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+      g.gain.setValueAtTime(a, t); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.25); o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.3);
+      burst(500, 0.7, a * 0.5, 0.2, 'lowpass');
+    },
+    update(info, vmax, brake, level) {
+      const t = ctx.currentTime, f = clamp(info.speed / vmax, 0, 1.2);
+      hg.gain.setTargetAtTime(info.speed > 0.3 ? clamp(0.004 + 0.075 * Math.pow(f, 1.3) + 0.012 * info.lat, 0, 0.16) : 0, t, 0.08);
+      hf.frequency.setTargetAtTime(1800 + 2600 * f, t, 0.1);
+      bg.gain.setTargetAtTime(brake > 0.05 && info.speed > 1 ? clamp(brake * info.speed / 6, 0, 1) * 0.16 : 0, t, 0.05);
+      cg.gain.setTargetAtTime(level === 0 ? 0 : level === 1 ? 0.03 : 0.05, t, 0.5);
+    },
+    close() { try { master.gain.value = 0; ctx.close(); } catch (e) { /* ignore */ } }
+  };
+}
+let audio = null;
+const closeAudio = () => { if (audio) { audio.close(); audio = null; } };
+
+// ---------------------------------------------------------------- per-frame input
+const V = new THREE.Vector3(), V2 = new THREE.Vector3();
+const prevBtn = { left: [], right: [] };
+const headQ = new THREE.Quaternion();
+const BODY = { yaw: 0, ok: false };
+let boardT = 0, needPuck = false, snapArmed = true, calibReq = false, strideT = 0, braking = false, lastYaw = 0;
+function headYaw() {
+  const f = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion);
+  if (f.x * f.x + f.z * f.z > 0.04) lastYaw = Math.atan2(f.z, f.x);               // looking straight up or down: keep the last heading
+  return lastYaw;
+}
+function rotateRig(delta, hw) {
+  const px = rig.position.x - hw.x, pz = rig.position.z - hw.z, c = Math.cos(delta), s = Math.sin(delta);
+  rig.position.x = hw.x + px * c + pz * s; rig.position.z = hw.z - px * s + pz * c;
+  rig.rotation.y += delta; BODY.yaw -= delta; lastYaw -= delta;
+}
+function calibrate(headY, forced) {
+  if (st.height === 'standing') { st.yOff = 0; if (forced) toast('Standing: your real height'); return; }
+  if (!(headY > 0.3)) { if (!run.notes.includes('Your head height was not available, so the height setting did nothing.')) run.notes.push('Your head height was not available, so the height setting did nothing.'); return; }
+  if (st.height === 'auto' && !forced && headY >= 1.3) { st.yOff = 0; return; }
+  st.yOff = clamp(EYE - headY, 0, 1);
+  run.sk.yOff = st.yOff;
+  if (forced || st.yOff > 0.02) toast('Height set: eyes at ' + (headY + st.yOff).toFixed(2) + ' m');
+}
+function cycleSpeed() {
+  st.speed = (st.speed + 1) % 3; saveSettings(); const e = $('speed'); if (e) e.value = String(st.speed);
+  toast('Top speed: ' + SPEED_NAMES[st.speed] + ' (' + Math.round(kmh(SPEEDS[st.speed])) + ' km/h)');
+}
+function pollInput(dt, hw, hy) {
   const s = renderer.xr.getSession(); if (!s) return;
+  let sx = 0, sy = 0, brake = 0, tx = 0;
   for (const src of s.inputSources) {
     const gp = src.gamepad, h = src.handedness; if (!gp || (h !== 'left' && h !== 'right')) continue;
     run.ctl[h] = true; if (src.profiles && src.profiles[0] && !run.profiles.includes(src.profiles[0])) run.profiles.push(src.profiles[0]);
@@ -443,26 +668,46 @@ function pollInput(dt) {
     const pb = prevBtn[h], edge = i => !!(gp.buttons[i] && gp.buttons[i].pressed) && !pb[i];
     if (h === 'left') {
       if (edge(4)) { s.end(); return; }
-      const mag = Math.hypot(ax[0], ax[1]);
-      let tx = 0, tz = 0;
-      if (st.move && mag > 0.15) {
-        const f = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion); f.y = 0; f.normalize();
-        const k = Math.min(1, (mag - 0.15) / 0.85) * 3.2;
-        tx = (f.x * -ax[1] + (-f.z) * ax[0]) / mag * k; tz = (f.z * -ax[1] + f.x * ax[0]) / mag * k;
-      }
-      const a = 1 - Math.exp(-dt * 2.2);
-      move.vx += (tx - move.vx) * a; move.vz += (tz - move.vz) * a;
-      const nx = rig.position.x + move.vx * dt, nz = rig.position.z + move.vz * dt;
-      if (insideRink(nx, nz, 0.9)) { rig.position.x = nx; rig.position.z = nz; } else { move.vx = move.vz = 0; }
+      if (edge(5)) calibReq = true;
+      sx = ax[0]; sy = ax[1];
+      const tr = gp.buttons[0]; brake = tr ? (tr.value || (tr.pressed ? 1 : 0)) : 0;
     } else {
-      if (edge(4)) applyLevel((st.level + 1) % 3);
+      if (edge(4)) cycleSpeed();
       if (edge(5)) resetPuck();
-      if (edge(3)) { st.stance = st.stance === 0 ? -0.15 : st.stance === -0.15 ? -0.3 : 0; }
+      tx = ax[0];
       if (Math.abs(ax[1]) > 0.25) st.len = clamp(st.len - ax[1] * 0.5 * dt, 1.2, 2.0);
     }
     for (let i = 0; i < gp.buttons.length; i++) pb[i] = !!gp.buttons[i].pressed;
   }
-  rig.position.y = st.stance;
+  // height: measured over the first second, and again whenever Y is pressed
+  if (hw) {
+    if (!run.calDone) { run.hs.push(hy); if (run.hs.length >= 60) { const a = run.hs.slice().sort((p, q) => p - q); calibrate(a[a.length >> 1], false); run.calDone = true; } }
+    if (calibReq) { calibReq = false; calibrate(hy, true); }
+  } else calibReq = false;
+  rig.position.y = st.yOff;
+  if (!hw) return;
+  // turning: snap or smooth, always about the head so the world does not swing around you
+  if (st.turn === 'smooth') { if (Math.abs(tx) > 0.2) rotateRig(-tx * 1.3 * dt, hw); }
+  else if (st.turn === 'snap30' || st.turn === 'snap45') {
+    if (Math.abs(tx) < 0.35) snapArmed = true;
+    else if (snapArmed && Math.abs(tx) > 0.75) { snapArmed = false; rotateRig(-Math.sign(tx) * (st.turn === 'snap45' ? Math.PI / 4 : Math.PI / 6), hw); run.sk.snaps++; }
+  }
+  // which way is forward: your head, or your body (which follows the head once it is 35 degrees off)
+  const hyaw = headYaw();
+  if (!BODY.ok) { BODY.yaw = hyaw; BODY.ok = true; }
+  else { const diff = wrapPi(hyaw - BODY.yaw), lim = 0.61; if (Math.abs(diff) > lim) BODY.yaw += (diff - Math.sign(diff) * lim) * (1 - Math.exp(-dt * 10)); }
+  const yaw = st.steer === 'head' ? hyaw : BODY.yaw;
+  const mag = Math.hypot(sx, sy);
+  let m = 0, dx = 0, dz = 0;
+  if (mag > 0.12) {
+    m = Math.pow(clamp((mag - 0.12) / 0.88, 0, 1), 1.15);
+    const fx = Math.cos(yaw), fz = Math.sin(yaw), fw = -sy / mag, rt = sx / mag;
+    dx = fx * fw - fz * rt; dz = fz * fw + fx * rt;
+  }
+  S.x = hw.x; S.z = hw.z;                                                  // your body is where your head is
+  skInfo = skateStep(S, { m, dx, dz, brake }, dt, SPEEDS[st.speed]);
+  rig.position.x += S.x - hw.x; rig.position.z += S.z - hw.z;
+  skInfo.brake = brake;
 }
 function updateStick(dt, headFlat) {
   const lowH = st.shot === 'right' ? 'right' : 'left', topH = lowH === 'right' ? 'left' : 'right';
@@ -530,18 +775,36 @@ function stickPuck(dt) {
   st.topKmh = Math.max(st.topKmh, Math.hypot(P.vx, P.vz) * 3.6);
   puck.position.set(P.x, 0.0125, P.z);
 }
-function boardText(now) {
+function boardText() {
   const lv = run.frames[st.level], recent = lv.slice(-120);
   const fps = recent.length > 10 ? Math.round(1000 / (recent.reduce((a, b) => a + b, 0) / recent.length)) : 0;
   const hz = run.hz || 0, period = hz ? 1000 / hz : 14;
   const slow = lv.length ? Math.round(100 * lv.filter(d => d > period * 1.5).length / lv.length) : 0;
   drawBoard({
-    fps: String(fps || '--'),
-    l2: 'Scene: ' + NAMES[st.level] + '  (' + (st.level + 1) + ' of 3)   ' + (hz ? hz + ' Hz' : ''),
-    l3: 'Slow frames: ' + slow + '%   Hits: ' + st.hits + '   Fastest: ' + Math.round(st.topKmh) + ' km/h',
-    l4: 'Stick ' + st.len.toFixed(2) + ' m   Stance ' + Math.round(st.stance * 100) + ' cm'
+    spd: String(Math.round(kmh(skInfo.speed))),
+    l2: 'Top ' + Math.round(kmh(run.sk.top)) + ' km/h     Distance ' + Math.round(run.sk.dist) + ' m',
+    l3: 'FPS ' + (fps || '--') + '  (' + NAMES[st.level] + ')     Slow frames ' + slow + '%',
+    l4: SPEED_NAMES[st.speed] + ' top speed     Trigger brakes     Y sets height'
   });
 }
+function effects(dt) {
+  const k = run.sk, sp = skInfo.speed, brake = skInfo.brake || 0;
+  k.dist += sp * dt; if (sp > 0.5) k.mov += dt;
+  k.top = Math.max(k.top, sp); k.speedT[st.speed] += dt;
+  if (brake > 0.3 && sp > 1) { k.brakeT += dt; if (!braking) { braking = true; k.brakes++; } } else if (brake < 0.15 || sp <= 1) braking = false;
+  if (skInfo.hit > 0.8) {
+    k.bumps++; k.hard = Math.max(k.hard, skInfo.hit);
+    const a = clamp(skInfo.hit / 8, 0.2, 1); buzz('left', a, 80); buzz('right', a, 80);
+    if (audio) audio.thump(skInfo.hit);
+  }
+  if (skInfo.pushing && sp > 0.8) {
+    strideT -= dt;
+    if (strideT <= 0) { strideT = 0.62 - 0.25 * clamp(sp / SPEEDS[st.speed], 0, 1); if (audio) audio.stride(clamp(sp / SPEEDS[st.speed], 0, 1)); buzz('left', 0.08, 25); }
+  } else strideT = Math.min(strideT, 0.15);
+  if (audio) audio.update(skInfo, SPEEDS[st.speed], brake, st.level);
+  updateVig(dt, skInfo); updateToast(dt);
+}
+const HF = new THREE.Vector3();
 function vrFrame(t, frame, dt) {
   if (run.last) {
     const d = t - run.last;
@@ -549,15 +812,21 @@ function vrFrame(t, frame, dt) {
   }
   run.last = t;
   const ref = renderer.xr.getReferenceSpace(), vp = ref && frame.getViewerPose(ref);
-  if (vp) { const o = vp.transform.orientation; headQ.set(o.x, o.y, o.z, o.w); }
-  pollInput(dt);
+  let hw = null, hy = 0;
+  if (vp) {
+    const o = vp.transform.orientation, p = vp.transform.position; headQ.set(o.x, o.y, o.z, o.w);
+    rig.updateMatrixWorld(true); hw = rig.localToWorld(new THREE.Vector3(p.x, p.y, p.z)); hy = p.y;
+  }
+  pollInput(dt, hw, hy);
   rig.updateMatrixWorld(true);
-  const hf = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion).clone(); hf.y = 0; if (hf.lengthSq() < 1e-4) hf.set(1, 0, 0); hf.normalize();
-  if (vp) { const p = vp.transform.position; const w = rig.localToWorld(new THREE.Vector3(p.x, p.y, p.z)); H.x = w.x; H.z = w.z; H.fx = hf.x; H.fz = hf.z; H.ok = true; }
+  const f = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion); HF.set(f.x, 0, f.z);
+  if (HF.lengthSq() < 0.04) HF.set(Math.cos(lastYaw), 0, Math.sin(lastYaw)); HF.normalize();
+  if (vp) { const p = vp.transform.position; const w = rig.localToWorld(V2.set(p.x, p.y, p.z)); H.x = w.x; H.z = w.z; H.fx = HF.x; H.fz = HF.z; H.ok = true; }
   if (needPuck && H.ok) { resetPuck(); needPuck = false; }
-  updateStick(dt, hf);
+  updateStick(dt, HF);
   stickPuck(dt);
-  if (t - boardT > 500) { boardT = t; boardText(t); }
+  effects(dt);
+  if (t - boardT > 500) { boardT = t; boardText(); }
 }
 let orbit = 0, previewT = 0;
 function previewFrame(t, dt) {
@@ -565,13 +834,12 @@ function previewFrame(t, dt) {
   camera.position.set(Math.cos(orbit) * 30, 15, Math.sin(orbit) * 30 * 0.8); camera.lookAt(0, 0.5, 0);
   if (st.dbgCam) { camera.position.set(...st.dbgCam.p); camera.lookAt(...st.dbgCam.t); }
   stickPuck(dt);
-  if (t - previewT > 700) { previewT = t; drawBoard({ fps: '--', l2: 'Scene: ' + NAMES[st.level] + '  (' + (st.level + 1) + ' of 3)', l3: 'Preview only. Enter VR in the headset.', l4: 'Stick ' + st.len.toFixed(2) + ' m' }); }
+  if (t - previewT > 700) { previewT = t; drawBoard({ spd: '0', l2: 'Preview only. Enter VR in the headset.', l3: 'Scene: ' + NAMES[st.level] + '  (' + (st.level + 1) + ' of 3)', l4: SPEED_NAMES[st.speed] + ' top speed' }); }
 }
 let lastT = 0;
 renderer.setAnimationLoop((t, frame) => {
   const dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0.016; lastT = t;
   if (renderer.xr.isPresenting && frame) vrFrame(t, frame, dt); else previewFrame(t, dt);
-  moveSkaters(dt);
   renderer.render(scene, camera);
 });
 function sizePreview() {
@@ -595,15 +863,18 @@ let failure = '';
 async function enterVR() {
   showErr(''); failure = '';
   if (!navigator.xr) { failure = explain(); showErr(failure); return; }
+  closeAudio(); if (st.sound) audio = makeAudio();                       // created inside the tap, so the browser allows sound
   let session;
   try { session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] }); }
-  catch (e) { failure = explain(e); showErr(failure); buildResult(null); return; }
+  catch (e) { failure = explain(e); showErr(failure); closeAudio(); buildResult(null); return; }
   try {
     resetRun(); st.inVR = true;
     session.addEventListener('end', onEnd);
     await renderer.xr.setSession(session);
-    rig.position.set(-10, st.stance, 0); rig.rotation.y = -Math.PI / 2; move.vx = move.vz = 0;
-    H.ok = false; needPuck = true;
+    rig.position.set(-10, 0, 0); rig.rotation.y = -Math.PI / 2;
+    S.x = -10; S.z = 0; S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
+    BODY.ok = false; st.yOff = 0; snapArmed = true; calibReq = false; braking = false; vigU = 0; lastYaw = -Math.PI / 2;
+    H.ok = false; needPuck = true; if (audio) audio.resume();
     try {
       const sup = session.supportedFrameRates ? Array.from(session.supportedFrameRates) : [];
       run.supported = sup;
@@ -612,59 +883,76 @@ async function enterVR() {
       run.hz = Math.round(session.frameRate || 0);
     } catch (e) { run.notes.push('Could not change the refresh rate: ' + (e && e.name || 'error')); }
     run.skip = 90;
-  } catch (e) { st.inVR = false; failure = 'VR started but the 3D view could not attach: ' + (e && e.message || e); showErr(failure); buildResult(null); }
+  } catch (e) { st.inVR = false; closeAudio(); failure = 'VR started but the 3D view could not attach: ' + (e && e.message || e); showErr(failure); buildResult(null); }
 }
 function onEnd() {
   st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
-  const ended = { ...run, frames: run.frames.map(a => a.slice()) };
+  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0;
+  const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, frames: run.frames.map(a => a.slice()) };
   buildResult(ended);
 }
-const SAVE_KEY = 'ravens-vr0-last';
+const SAVE_KEY = 'ravens-vr2-last';
+let baseLines = [], lastRows = [];
 function renderTable(rows) {
   const tb = $('lvtable'); tb.innerHTML = '';
   rows.forEach((r, i) => { const tr = document.createElement('tr'); r.forEach((c, j) => { const td = document.createElement(i === 0 ? 'th' : 'td'); td.textContent = c; if (r.length === 2 && j === 1) td.colSpan = 5; tr.appendChild(td); }); tb.appendChild(tr); });
 }
-function saveResult(rows) {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ v: $('verdict').textContent, rows, r: $('rep').textContent })); } catch (e) { /* storage is optional */ }
+const picked = () => ({ cf: (document.querySelector('input[name="cf"]:checked') || {}).value || '', cb: Array.from(document.querySelectorAll('input[name="cb"]:checked')).map(x => x.value) });
+function comfortLine() {
+  const p = picked();
+  if (!p.cf && !p.cb.length) return 'Comfort: not rated yet';
+  return 'Comfort: ' + (p.cf || 'no overall rating') + (p.cb.length ? '. Bothered by: ' + p.cb.join(', ') : '');
 }
+function saveResult() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ v: $('verdict').textContent, rows: lastRows, base: baseLines, pick: picked() })); } catch (e) { /* storage is optional */ }
+}
+function refreshRep() { $('rep').textContent = baseLines.concat([comfortLine()]).join('\n'); saveResult(); }
 function loadResult() {
   try {
     const j = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-    if (!j || !j.r) return;
-    $('result').hidden = false; $('verdict').textContent = j.v; renderTable(j.rows || []); $('rep').textContent = j.r;
+    if (!j || !j.base) return;
+    $('result').hidden = false; $('verdict').textContent = j.v; lastRows = j.rows || []; baseLines = j.base; renderTable(lastRows);
+    const p = j.pick || {};
+    document.querySelectorAll('input[name="cf"]').forEach(x => { x.checked = x.value === p.cf; });
+    document.querySelectorAll('input[name="cb"]').forEach(x => { x.checked = (p.cb || []).includes(x.value); });
+    refreshRep();
   } catch (e) { /* ignore a bad save */ }
 }
-function fmt(n, d) { return n == null ? '--' : n.toFixed(d == null ? 0 : d); }
+function fmt(n, d) { return n == null || Number.isNaN(n) ? '--' : n.toFixed(d == null ? 0 : d); }
 function buildResult(r) {
   $('result').hidden = false;
-  const lines = ['Ravens VR Phase 0 report', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+  document.querySelectorAll('input[name="cf"],input[name="cb"]').forEach(x => { x.checked = false; });
+  const lines = ['Ravens VR Phase 2 report', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     'Page: ' + (probeInfo.frame ? 'inside a frame (VR permission ' + probeInfo.policy + ')' : 'its own page'),
     'Browser: ' + (probeInfo.device || probeInfo.ua.slice(0, 80)), 'VR supported: ' + (probeInfo.vr === null ? 'unknown' : probeInfo.vr ? 'yes' : 'no')];
   const rows = [['Scene', 'Seconds', 'Average', 'Low 1%', 'Worst', 'Slow']];
   if (!r) {
     lines.push('Session: did not start', 'Reason: ' + (failure || 'unknown'));
-    $('verdict').textContent = 'VR did not start';
-    $('rep').textContent = lines.join('\n'); renderTable([]); saveResult([]); return;
+    $('verdict').textContent = 'VR did not start'; baseLines = lines; lastRows = []; renderTable([]); refreshRep(); return;
   }
-  const secs = (performance.now() - r.t0) / 1000;
+  const secs = (performance.now() - r.t0) / 1000, k = r.sk, mv = k.mov > 1 ? k.dist / k.mov : 0;
   lines.push('Session: ran ' + fmt(secs) + ' s', 'Refresh: ' + (r.hz ? r.hz + ' Hz' : 'unknown') + (r.asked ? ', asked for ' + r.asked + ' Hz' : ', headset default') + (r.supported && r.supported.length ? ' (offered: ' + r.supported.join(', ') + ')' : ''),
     'Controllers: left ' + (r.ctl.left ? 'yes' : 'no') + ', right ' + (r.ctl.right ? 'yes' : 'no') + (r.profiles.length ? ' (' + r.profiles.join(', ') + ')' : ''));
+  lines.push('Settings: steer ' + st.steer + ', turn ' + st.turn + ', vignette ' + ['off', 'light', 'medium', 'strong'][st.vig] + ', height ' + st.height + (k.yOff > 0.02 ? ' (raised ' + Math.round(k.yOff * 100) + ' cm)' : '') + ', sound ' + (st.sound ? 'on' : 'off') + ', shot ' + st.shot);
+  lines.push('Time at each top speed: ' + SPEED_NAMES.map((n, i) => n + ' ' + fmt(k.speedT[i]) + ' s').join(', '));
+  lines.push('Skating: ' + fmt(k.dist) + ' m, top ' + fmt(kmh(k.top)) + ' km/h, average while moving ' + fmt(kmh(mv)) + ' km/h',
+    'Braking: ' + k.brakes + ' stops, ' + fmt(k.brakeT, 1) + ' s on the trigger. Boards and nets: ' + k.bumps + ' hits, hardest ' + fmt(kmh(k.hard)) + ' km/h. Snap turns: ' + k.snaps + '. Vignette peak ' + fmt(k.vigMax * 100) + '%',
+    'Puck hits: ' + st.hits + ', fastest ' + fmt(st.topKmh) + ' km/h, stick ' + st.len.toFixed(2) + ' m');
   const holds = [];
   for (let l = 0; l < 3; l++) {
     const s = levelStats(r.frames[l], r.hz, r.secs[l]);
-    if (!s) { rows.push([NAMES[l], 'not tested']); lines.push(NAMES[l] + ': not tested'); }
+    if (!s) { rows.push([NAMES[l], 'not tested']); }
     else {
       rows.push([NAMES[l], fmt(s.secs), fmt(s.avg) + ' fps', fmt(s.low) + ' fps', fmt(s.worst) + ' ms', fmt(s.slow * 100) + '%']);
-      lines.push(NAMES[l] + ': ' + fmt(s.secs) + ' s, avg ' + fmt(s.avg) + ' fps, low 1% ' + fmt(s.low) + ' fps, worst ' + fmt(s.worst) + ' ms, slow frames ' + fmt(s.slow * 100) + '%');
+      lines.push('Frames, ' + NAMES[l] + ': ' + fmt(s.secs) + ' s, avg ' + fmt(s.avg) + ' fps, low 1% ' + fmt(s.low) + ' fps, worst ' + fmt(s.worst) + ' ms, slow ' + fmt(s.slow * 100) + '%');
       if (s.secs >= 10) holds.push([NAMES[l], s.avg >= s.hz * 0.95 && s.slow < 0.05]);
     }
   }
-  lines.push('Puck hits: ' + st.hits + ', fastest ' + fmt(st.topKmh) + ' km/h', 'Stick: ' + st.len.toFixed(2) + ' m, stance ' + Math.round(st.stance * 100) + ' cm, shot ' + st.shot);
   if (r.notes.length) lines.push('Notes: ' + r.notes.join(' '));
   const good = holds.filter(h => h[1]).map(h => h[0]);
-  $('verdict').textContent = !holds.length ? 'Too short to judge. Give each scene about 30 seconds.' : good.length === holds.length ? 'Holds steady on ' + good.join(', ') : good.length ? 'Steady up to ' + good[good.length - 1] + ', drops after that' : 'Does not hold steady, even on the lightest scene tested';
+  $('verdict').textContent = secs < 60 ? 'Too short to judge. Skate for a few minutes.' : !holds.length ? 'Frame rate: too short to judge' : good.length === holds.length ? 'Frame rate holds steady on ' + good.join(', ') : good.length ? 'Frame rate steady up to ' + good[good.length - 1] + ', drops after that' : 'Frame rate does not hold steady';
   lines.push('Verdict: ' + $('verdict').textContent);
-  $('rep').textContent = lines.join('\n'); renderTable(rows); saveResult(rows);
+  baseLines = lines; lastRows = rows; renderTable(rows); refreshRep();
 }
 
 // ---------------------------------------------------------------- page wiring
@@ -686,20 +974,27 @@ async function probe() {
   $('enter').disabled = !(probeInfo.xr && probeInfo.vr);
   $('enter-note').textContent = $('enter').disabled ? 'Enter VR switches on in the Quest browser.' : 'Put the headset on first, then press it.';
 }
+function syncUI() {
+  $('shot').value = st.shot; $('hz').value = String(st.wantHz); $('speed').value = String(st.speed); $('steer').value = st.steer;
+  $('turn').value = st.turn; $('vig').value = String(st.vig); $('height').value = st.height; $('sound').value = st.sound ? 'on' : 'off';
+}
+syncUI(); applyLevel(st.level);
 loadResult();
 probe();
 if (navigator.xr && navigator.xr.addEventListener) navigator.xr.addEventListener('devicechange', probe);
 $('enter').addEventListener('click', enterVR);
-document.querySelectorAll('#lvl button').forEach(b => b.addEventListener('click', () => applyLevel(+b.dataset.l)));
-$('shot').addEventListener('change', e => { st.shot = e.target.value; });
-$('hz').addEventListener('change', e => { st.wantHz = +e.target.value; });
+document.querySelectorAll('#lvl button').forEach(b => b.addEventListener('click', () => { applyLevel(+b.dataset.l); saveSettings(); }));
+const bind = (id, key, conv) => $(id).addEventListener('change', e => { st[key] = conv ? conv(e.target.value) : e.target.value; saveSettings(); });
+bind('shot', 'shot'); bind('hz', 'wantHz', Number); bind('speed', 'speed', Number); bind('steer', 'steer'); bind('turn', 'turn'); bind('vig', 'vig', Number);
+bind('height', 'height'); bind('sound', 'sound', v => v === 'on');
+document.querySelectorAll('input[name="cf"],input[name="cb"]').forEach(x => x.addEventListener('change', refreshRep));
 $('copy').addEventListener('click', async () => {
   const txt = $('rep').textContent, out = $('copied');
   try { await navigator.clipboard.writeText(txt); out.textContent = 'Copied.'; }
   catch (e) { try { const r = document.createRange(); r.selectNodeContents($('rep')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); out.textContent = 'Selected. Copy it with your keyboard.'; } catch (e2) { out.textContent = 'Select the text above and copy it.'; } }
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
-if (/[?&]debug\b/.test(location.search)) window.__vr0 = { stickPuck, moveSkaters, RK, st, P, SK, H, hands, rig, run, scene, camera, renderer, skaters, crowd, applyLevel, resetPuck, levelStats, buildResult };
+if (/[?&]debug\b/.test(location.search)) window.__vr2 = { skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, stickPuck, resetPuck, P, SK, H, hands, crowd, RK, BODY, headQ, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
 })();
 </script>
 
