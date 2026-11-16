@@ -88,9 +88,9 @@ details.rate[open]>summary{margin-bottom:10px}
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Phase 3 · round 4</p>
+    <p class="eyebrow">Ravens VR · Phase 3 · round 5</p>
     <h1>Stick and puck</h1>
-    <p class="lede">Round 4 of the stick and puck test. Shots lift more easily when you open the blade, the puck stays on your blade through snap turns (hold the right trigger to keep it), your lower hand now rolls the blade, there is a pause menu in the headset (press X) and the gloves look like gloves. Press Enter VR and spend about ten minutes stickhandling, turning, passing and shooting.</p>
+    <p class="lede">Round 5 of the stick and puck test. The blade now rests on the ice by itself, shots lift much more easily (and the puck help lets go sooner when you open the blade), and you can take your lower hand off the stick with the A button and put it back. Press Enter VR and spend about ten minutes stickhandling, passing and shooting.</p>
   </header>
 
   <details class="card" aria-label="Checks">
@@ -215,6 +215,21 @@ details.rate[open]>summary{margin-bottom:10px}
           <option value="3">Strong</option>
         </select>
       </label>
+      <label class="f">Blade to ice (the blade rests on the ice by itself)
+        <select id="ice">
+          <option value="0">Off (the blade goes where your hands go)</option>
+          <option value="1">Light</option>
+          <option value="2" selected>Normal</option>
+          <option value="3">Strong</option>
+        </select>
+      </label>
+      <label class="f">Lower-hand switch (go to one hand)
+        <select id="onem">
+          <option value="btn" selected>A button (right controller)</option>
+          <option value="grip">Hold the lower hand's grip button</option>
+          <option value="off">Off (always two hands)</option>
+        </select>
+      </label>
       <label class="f">Shot power
         <select id="power">
           <option value="0">Raw (blade speed only)</option>
@@ -250,13 +265,15 @@ details.rate[open]>summary{margin-bottom:10px}
     <summary>In the headset: controls</summary>
     <ol class="how">
       <li><b>Both hands hold the stick.</b> Your top hand (left, for a right shot) is on the butt end and your lower hand slides along the shaft. Your gloves stay on the shaft: the lower one slides up and down as your hand does, and moving your hand sideways steers the stick, like a real two-hand grip.</li>
-      <li><b>Open the blade with your lower wrist.</b> Twist the lower controller about the stick (your right wrist for a right shot) and the blade rolls: the gold edge is the top of the face. An open blade lifts the puck when you shoot, and <b>Shot lift</b> in the menu sets how much help you get. The game learns how you normally hold the controllers, so a different grip does not leave the blade rolled; only a real twist does.</li>
+      <li><b>One hand.</b> Press <b>A</b> (right controller) to take your lower hand off the stick: the glove stays with your hand and the stick follows your top hand alone, for a one-handed reach. Press <b>A</b> again to take hold: your lower hand has to be on the shaft, and if it is not yet the game waits a few seconds and grabs the moment it gets there. The menu can switch this to the lower hand's grip button instead (squeeze for two hands, let go for one).</li>
+      <li><b>The blade stays on the ice.</b> With your hands low the blade rests flat on the ice, and if your hands sit a little high the stick stretches a few centimetres so the blade still touches. Lift your hands on purpose (a saucer pass, a shot, a lift) and it comes off the ice at once. <b>Blade to ice</b> in the menu sets how much help you get.</li>
+      <li><b>Open the blade with your lower wrist.</b> Twist the lower controller about the stick (your right wrist for a right shot) and the blade rolls: the gold edge is the top of the face. An open blade lifts the puck when you shoot (a hard sweep with an open blade, or a flick of the hands up, now sends it well off the ice), and <b>Shot lift</b> in the menu sets how much help you get. The game learns how you normally hold the controllers, so a different grip does not leave the blade rolled; only a real twist does.</li>
       <li><b>Keep the puck.</b> Hold the <b>right trigger</b> and the puck stays on your blade where it is, through snap turns, quick stickhandling and skating. It glows gold while you keep it. A real swing at it (a shot or a hard pass) or letting go of the trigger releases it. With the trigger down, a puck within a few centimetres of the blade is pulled in as well.</li>
       <li><b>Puck help</b> (on Normal) catches a pass on your blade, carries the puck while you skate, carries it round with you on a snap turn, and slows a puck you have just nudged so you can catch up with it. It lets go the moment you swing at the puck, so passes and shots are not changed. You feel a soft buzz while the puck is on your blade, a tap for each touch, and a stronger kick for passes and shots.</li>
       <li><b>Get into your ready stance</b> with the blade just above the ice and keep it there for a second: the stick calibrates itself so the blade sits flat. Press <b>Y</b> any time to do it again (it also resets your height).</li>
       <li><b>Left thumbstick</b> skates. Push a little for a slow stride, fully for top speed. In an arc you crossover automatically, and pushing the stick well to the side at speed makes a punch turn (quick, and it costs speed). <b>Left trigger</b> brakes.</li>
       <li><b>Right thumbstick</b> left and right turns you. Up and down sets the stick length (it starts at 58 in). <b>Click it</b> to change curve.</li>
-      <li><b>A</b> (right) steps the top speed. <b>B</b> puts the puck back in front of you. <b>X</b> (left) opens the menu: point at it with either controller and pull the trigger. The right thumbstick left and right changes tab. The game stands still while it is open.</li>
+      <li><b>A</b> (right) switches between one hand and two. <b>B</b> puts the puck back in front of you. <b>X</b> (left) opens the menu (top speed is in there now): point at it with either controller and pull the trigger. The right thumbstick left and right changes tab. The game stands still while it is open.</li>
       <li>The scoreboard over centre ice shows your speed, your last hit and best, goals, the frame rate, your stick length, whether you are keeping the puck, and the wrist roll the game sees. If you feel unwell, take the headset off.</li>
       <li>When you leave VR, the <b>Last VR session</b> card appears at the bottom of this page. It is saved if you reload.</li>
     </ol>
@@ -351,6 +368,20 @@ details.rate[open]>summary{margin-bottom:10px}
         <label class="chk"><input type="radio" name="lf" value="Lofts too much"> Lofts too much</label>
         <label class="chk"><input type="radio" name="lf" value="No change"> No change</label>
       </fieldset>
+      <fieldset class="f"><legend>Blade on the ice</legend>
+        <label class="chk"><input type="radio" name="ic" value="Always there, good"> Always there, good</label>
+        <label class="chk"><input type="radio" name="ic" value="Better, still floats"> Better, still floats</label>
+        <label class="chk"><input type="radio" name="ic" value="Sticks to the ice"> Sticks to the ice</label>
+        <label class="chk"><input type="radio" name="ic" value="Stretching looks odd"> The stick stretching looks odd</label>
+        <label class="chk"><input type="radio" name="ic" value="No change"> No change</label>
+      </fieldset>
+      <fieldset class="f"><legend>One hand on the stick</legend>
+        <label class="chk"><input type="radio" name="oh" value="Clean, works"> Clean, works</label>
+        <label class="chk"><input type="radio" name="oh" value="Works, a bit clumsy"> Works, a bit clumsy</label>
+        <label class="chk"><input type="radio" name="oh" value="Hard to grab again"> Hard to grab it again</label>
+        <label class="chk"><input type="radio" name="oh" value="Stick jumps"> Stick jumps when I switch</label>
+        <label class="chk"><input type="radio" name="oh" value="Did not try"> Did not try</label>
+      </fieldset>
       <fieldset class="f"><legend>Keep puck (trigger) and snap turns</legend>
         <label class="chk"><input type="radio" name="hf" value="Keeps the puck, works"> Keeps the puck, works</label>
         <label class="chk"><input type="radio" name="hf" value="Fine without it"> Fine without it</label>
@@ -420,7 +451,7 @@ const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
-const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower' };
+const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'btn' };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -431,7 +462,7 @@ function loadSettings() {
       if (ok(j.speed, [0, 1, 2])) o.speed = j.speed; if (ok(j.steer, ['body', 'head'])) o.steer = j.steer; if (ok(j.turn, ['snap30', 'snap45', 'smooth', 'off'])) o.turn = j.turn;
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
-      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP;
+      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['btn', 'grip', 'off'])) o.oneM = j.oneM;
     }
   } catch (e) { /* storage is optional */ }
   return o;
@@ -662,7 +693,9 @@ const FRAME_H = 1.22, POST_R = 0.03, WALL_TOP = 2.62, BOARD_TOP = 1.12;
 const POWERS = [1.0, 1.35, 1.8], POWER_NAMES = ['Raw', 'Natural', 'Boosted'];
 const ROLLS = [0, 0.6, 1.0, 1.4, 1.9], ROLL_NAMES = ['Off (blade stays flat)', 'Gentle', 'Normal', 'Strong', 'Extra strong'];
 const ASSISTS = [0, 0.5, 1, 1.6], ASSIST_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
-const LIFTS = [0, 0.5, 0.9, 1.4], LIFT_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
+const LIFTS = [0, 1.2, 2.4, 3.6], LIFT_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
+// blade to ice: below the first height (m, of the blade's lowest point above the ice) the blade rests on the ice; it lets go gradually up to the second
+const ICES = [[0, 0], [0.10, 0.45], [0.26, 0.80], [0.45, 1.10]], ICE_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
 const ROLL_SRC = ['lower', 'top', 'both'], ROLL_SRC_NAMES = ['Lower hand', 'Top hand', 'Both hands'];
 const sstep = t => { t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
 
@@ -702,8 +735,8 @@ const hAt = (bp, u) => { const t = clamp(u / bp.Lb, 0, 1) * bp.n, i = Math.min(b
 // O + u U + v P + (w + TB/2) W, with the face at w = -curve depth.
 const newFrame = () => ({ Ox: 0, Oy: 0, Oz: 0, Ux: 1, Uy: 0, Uz: 0, Px: 0, Py: 1, Pz: 0, Wx: 0, Wy: 0, Wz: 1, Sx: 0, Sy: 1, Sz: 0, Ex: 1, Ey: 0, Ez: 0 });
 function copyFrame(a, b) { for (const k in b) a[k] = b[k]; return a; }
-function frameFrom(F, bp, hand, sx, sy, sz, wx, wy, wz, ox, oy, oz) {
-  const cl = Math.cos(bp.lieAng), sl = Math.sin(bp.lieAng);
+function frameFrom(F, bp, hand, sx, sy, sz, wx, wy, wz, ox, oy, oz, lie) {
+  const la = lie === undefined ? bp.lieAng : lie, cl = Math.cos(la), sl = Math.sin(la);
   const ex = hand * (wy * sz - wz * sy), ey = hand * (wz * sx - wx * sz), ez = hand * (wx * sy - wy * sx);
   const ux = cl * sx + sl * ex, uy = cl * sy + sl * ey, uz = cl * sz + sl * ez;
   const px = (sx - cl * ux) / sl, py = (sy - cl * uy) / sl, pz = (sz - cl * uz) / sl;
@@ -747,7 +780,8 @@ const STK = { ok: false, cal: false, calReq: false, calN: 0, hand: 1, len: 1.473
   sx: -0.7, sy: 0.7, sz: 0, hx: 1, hz: 0, w0: [0, 0, -1], wx: 0, wy: 0, wz: -1, onIce: false, depth: 0, sep: 0, nearT: 0, flat: 0,
   s0: [0, 0, 1], mOne: 0, mC: 0, wasOne: false, roll: 0, q0: [0, 0, 0, 1], bendA: 0,
   mLock: 0, wasLock: false, dLock: 0.5, r0: 0, th: 0, rollG: 0, tLo: 0.6, tTop: 1.39,
-  s1: [0, 0, 1], w1: [0, 0, -1], r0lo: 0, thLo: 0, r0a: 0, wlo: 0 };
+  s1: [0, 0, 1], w1: [0, 0, -1], r0lo: 0, thLo: 0, r0a: 0, wlo: 0,
+  ext: 0, wg: 0, lieD: 0, ym0: 0, pym0: null, pymF: 0, rvy: 0, evy: 0, dvy: 0 };
 const _q = { x: 0, y: 0, z: 0, w: 1 }, _qi = { x: 0, y: 0, z: 0, w: 1 }, _v = [0, 0, 0], _r = [0, 0, 0], _ql = { x: 0, y: 0, z: 0, w: 1 }, _qli = { x: 0, y: 0, z: 0, w: 1 }, _cs = [0, 0, 0], _ca = [0, 0, 0], _cw = [0, 0, 0], _rn = [0, 0, 0];
 // twist (radians, about the unit axis a) of the rotation from q0 to q, both in the world frame
 function twistAbout(q0, q, ax, ay, az) {
@@ -768,7 +802,7 @@ function neutralFace(hand, sx, sy, sz, fx, fz, o) {
   idealW(hand, sx, sz, fx, fz, o); const d = o[0] * sx + o[1] * sy + o[2] * sz; o[0] -= d * sx; o[1] -= d * sy; o[2] -= d * sz;
   const m = Math.hypot(o[0], o[1], o[2]) || 1; o[0] /= m; o[1] /= m; o[2] /= m; return o;
 }
-function stickReset(bp, hand, len) { const K = STK; K.bp = bp; K.hand = hand; K.len = len; K.ok = false; K.cal = false; K.calReq = false; K.nearT = 0; K.flat = 0; K.depth = 0; K.onIce = false; K.had = false; K.autoDone = false; K.autoFired = false; K.mOne = 0; K.mC = 0; K.wasOne = false; K.roll = 0; K.mLock = 0; K.wasLock = false; K.r0 = 0; K.th = 0; K.rollG = 0; K.r0lo = 0; K.thLo = 0; K.r0a = 0; K.wlo = 0; }
+function stickReset(bp, hand, len) { const K = STK; K.bp = bp; K.hand = hand; K.len = len; K.ok = false; K.cal = false; K.calReq = false; K.nearT = 0; K.flat = 0; K.depth = 0; K.onIce = false; K.had = false; K.autoDone = false; K.autoFired = false; K.mOne = 0; K.mC = 0; K.wasOne = false; K.roll = 0; K.mLock = 0; K.wasLock = false; K.r0 = 0; K.th = 0; K.rollG = 0; K.r0lo = 0; K.thLo = 0; K.r0a = 0; K.wlo = 0; K.ext = 0; K.wg = 0; K.lieD = 0; K.pym0 = null; K.rvy = 0; K.evy = 0; K.dvy = 0; }
 // A: tx..tz top hand, lx..lz lower hand, qx..qw top controller orientation, lqx..lqw lower controller orientation (rsrc 0 top, 1 lower, 2 both: whose twist rolls the blade), fx fz body forward, one 1 = lower hand let go, lock 1 = lower hand held
 // fixed on the shaft where it is (the stick then follows the top controller), gain blade-roll gain, bend wrist-bend share, adapt 0 = no learning of how you hold
 function stickSolve(A) {
@@ -855,13 +889,26 @@ function stickSolve(A) {
   if (K.mLock > 0) { const m = K.mLock; ox0 += (A.tx - sx * K.dLock - ox0) * m; oy0 += (A.ty - sy * K.dLock - oy0) * m; oz0 += (A.tz - sz * K.dLock - oz0) * m; }
   const w = [0, 0, 0]; faceFor(sx, sy, sz, w);
   frameFrom(K.F, bp, hand, sx, sy, sz, w[0], w[1], w[2], ox0 - sx * Ld, oy0 - sy * Ld, oz0 - sz * Ld);
+  // blade to ice (A.ih0, A.ih1 = 0: off). The blade rests on the ice by default: the stick reaches down to it, like a player bending to it, and the blade lies flat
+  // on it (the angle between blade and shaft gives a little). Lift the hands and the blade lets go gradually. Hands and gloves stay where the controllers are.
+  const ym0 = lowestY(K.F, bp); K.ym0 = ym0; K.ext = 0; K.wg = 0; K.lieD = 0; let lieU;
+  if (A.ih1 > 0 && sy > 0.12) {
+    const wg = 1 - sstep((ym0 - A.ih0) / (A.ih1 - A.ih0));
+    if (wg > 0.002) {
+      const dl = clamp(Math.atan2(sy, -K.F.Ey) - bp.lieAng, -0.5, 0.5) * wg, lie = bp.lieAng + dl;
+      frameFrom(K.F, bp, hand, sx, sy, sz, w[0], w[1], w[2], ox0 - sx * Ld, oy0 - sy * Ld, oz0 - sz * Ld, lie);
+      const ym1 = lowestY(K.F, bp), e = clamp((ym1 - ym0 * (1 - wg)) / Math.max(sy, 0.3), -0.12, 0.45);
+      frameFrom(K.F, bp, hand, sx, sy, sz, w[0], w[1], w[2], ox0 - sx * (Ld + e), oy0 - sy * (Ld + e), oz0 - sz * (Ld + e), lie);
+      K.ext = e; K.wg = wg; K.lieD = dl; lieU = lie;
+    }
+  }
   // ice: the blade cannot go through it. If it would, flatten the shaft about the held point until the blade rests on the ice.
   let ym = lowestY(K.F, bp); K.depth = Math.max(0, -ym); K.onIce = false;
   const hl = Math.hypot(sx, sz); if (hl > 0.05) { K.hx = sx / hl; K.hz = sz / hl; }
-  if (ym < 0) {
-    const phi0 = Math.asin(clamp(sy, -1, 1)), trial = phi => {
+  if (ym < -0.0002) {
+    const phi0 = Math.asin(clamp(sy, -1, 1)), Lx = Ld + K.ext, trial = phi => {
       const cs = Math.cos(phi), tx = cs * K.hx, ty = Math.sin(phi), tz = cs * K.hz, tw = [0, 0, 0]; faceFor(tx, ty, tz, tw);
-      frameFrom(K.Ft, bp, hand, tx, ty, tz, tw[0], tw[1], tw[2], ox0 - tx * Ld, oy0 - ty * Ld, oz0 - tz * Ld); return lowestY(K.Ft, bp);
+      frameFrom(K.Ft, bp, hand, tx, ty, tz, tw[0], tw[1], tw[2], ox0 - tx * Lx, oy0 - ty * Lx, oz0 - tz * Lx, lieU); return lowestY(K.Ft, bp);
     };
     let lo = phi0 - 0.6, hi = phi0;
     if (trial(lo) < 0) hi = lo; else for (let i = 0; i < 10; i++) { const mid = (lo + hi) / 2; if (trial(mid) < 0) hi = mid; else lo = mid; }
@@ -869,19 +916,23 @@ function stickSolve(A) {
     sx = K.F.Sx; sy = K.F.Sy; sz = K.F.Sz;
   }
   K.sx = sx; K.sy = sy; K.sz = sz; K.wx = K.F.Wx; K.wy = K.F.Wy; K.wz = K.F.Wz; K.ok = true;
+  // how fast the hands move the blade up, which the ice hides: the puck still feels a flick (lift help, scooping)
+  const ymF = lowestY(K.F, bp);
+  if (K.pym0 === null) { K.rvy = 0; K.evy = 0; } else { const kv = 1 - Math.exp(-dt / 0.03); K.rvy += ((ym0 - K.pym0) / dt - K.rvy) * kv; K.evy += ((ymF - K.pymF) / dt - K.evy) * kv; }
+  K.pym0 = ym0; K.pymF = ymF; K.dvy = K.wg > 0.02 ? clamp(K.rvy - K.evy, 0, 6) : 0;
   if (!K.had || A.tele) { copyFrame(K.Fp, K.F); K.had = true; if (A.tele) { K.Fp.Ox -= (A.svx || 0) * dt; K.Fp.Oz -= (A.svz || 0) * dt; } }   // tele: the rig was turned, so the jump is not blade speed; the blade moves with the skater
   // where the two gloves sit along the shaft, from the heel: the top one at the top hand, the lower one where your lower hand slides to (or where it is locked)
-  const F = K.F, tFree = clamp((A.lx - F.Ox) * F.Sx + (A.ly - F.Oy) * F.Sy + (A.lz - F.Oz) * F.Sz, 0.3, K.len - BL.KB - 0.12), tLock = K.len - BL.KB - K.dLock;
-  K.tLo = tFree + (tLock - tFree) * K.mLock; K.tTop = K.len - BL.KB;
+  const F = K.F, tFree = clamp((A.lx - F.Ox) * F.Sx + (A.ly - F.Oy) * F.Sy + (A.lz - F.Oz) * F.Sz, 0.3, K.len + K.ext - BL.KB - 0.12), tLock = K.len + K.ext - BL.KB - K.dLock;
+  K.tLo = tFree + (tLock - tFree) * K.mLock; K.tTop = K.len + K.ext - BL.KB;
   // one-off automatic calibration: once the blade has been near the ice for half a second you are in your ready stance
-  const gap = lowestY(K.F, bp);
+  const gap = ym0;
   if (!K.autoDone) { if (gap < 0.08) K.nearT += A.dt; else K.nearT = 0; if (K.nearT > 0.5) { K.autoDone = true; K.calReq = true; K.autoFired = true; } }
   return K;
 }
 
 // ---- the puck
 const PK = { x: 0, y: PUCK.HH, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, rot: 0, out: 0, inNet: false, goalLatch: false, watch: 0, wPeak: 0, last: 0, tapAt: -9, ctl: 0,
-  cr: 0, rel: -9, touch: -9, touchT: 0, touchOk: -9, wasCr: false, vrm: 0, catchAt: -9, crT: 0, carryV: 0, near: 9, liftAt: -9, lift: 0 };
+  cr: 0, rel: -9, touch: -9, touchT: 0, touchOk: -9, wasCr: false, vrm: 0, catchAt: -9, crT: 0, carryV: 0, near: 9, liftAt: -9, lift: 0, liftSum: 0 };
 // puck help: s is its strength (0 = off), hx hz where you stand, svx svz how you are moving
 const PA = { s: 0, hx: 0, hz: 0, svx: 0, svz: 0, keep: 0, lift: 0 };
 const EV = [];                       // events from this frame: { k, v, x, y, z }
@@ -909,7 +960,7 @@ function bladeContact(F, bp, cx, cy, cz, C) {
   }
   return best > 0;
 }
-function resetPuck(x, z) { PK.x = x; PK.z = z; PK.y = PUCK.HH; PK.vx = PK.vy = PK.vz = 0; PK.spin = 0; PK.out = 0; PK.inNet = false; PK.goalLatch = false; PK.watch = 0; PK.tapAt = -9; PK.cr = 0; PK.rel = -9; PK.touch = -9; PK.touchT = 0; PK.wasCr = false; PK.vrm = 0; PK.near = 9; PK.liftAt = -9; }
+function resetPuck(x, z) { PK.liftSum = 0; PK.x = x; PK.z = z; PK.y = PUCK.HH; PK.vx = PK.vy = PK.vz = 0; PK.spin = 0; PK.out = 0; PK.inNet = false; PK.goalLatch = false; PK.watch = 0; PK.tapAt = -9; PK.cr = 0; PK.rel = -9; PK.touch = -9; PK.touchT = 0; PK.wasCr = false; PK.vrm = 0; PK.near = 9; PK.liftAt = -9; }
 function segHit(x0, y0, z0, x1, y1, z1, r, e, k) {
   const dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, l2 = dx * dx + dy * dy + dz * dz;
   const t = l2 > 0 ? clamp(((PK.x - x0) * dx + (PK.y - y0) * dy + (PK.z - z0) * dz) / l2, 0, 1) : 0;
@@ -1020,7 +1071,8 @@ function puckHelp(dt, now, haveBlade) {
     const i = clamp(Math.round(uP / bp.Lb * bp.n), 0, bp.n), wl = -bp.c[i] + PUCK.R + 0.004 - BL.TB / 2;
     bpt(Fn, uP, PUCK.HH, wl, _T); pointVel(Fn, Fp, uP, PUCK.HH, wl, dt, _vp);
     PK.carryV = Math.hypot(_vp[0] - PA.svx, _vp[2] - PA.svz);
-    if (PK.carryV > (kp ? 6.5 : 3)) PK.rel = Math.max(PK.rel, now + (kp ? 0.25 : 0.4));              // a swing at it: let it go
+    const openF = 1 - 0.4 * sstep((Fn.Wy - 0.16) / 0.2);                                                 // an open face means a shot: let go sooner
+    if (PK.carryV > (kp ? 6.5 : 3) * openF) PK.rel = Math.max(PK.rel, now + (kp ? 0.25 : 0.4));        // a swing at it: let it go
     const dxp = _T[0] - PK.x, dyp = _T[1] - PK.y, dzp = _T[2] - PK.z, d3 = Math.hypot(dxp, dyp, dzp);
     PK.near = d3;
     vr = Math.hypot(PK.vx - _vp[0], PK.vz - _vp[2]);
@@ -1077,7 +1129,7 @@ function puckAdvance(dt, haveBlade, power, now) {
         if (!bladeContact(_Fk, bp, PK.x, PK.y, PK.z, _C)) break;
         const nx = _C.nx, ny = _C.ny, nz = _C.nz;
         PK.x += nx * _C.pen; PK.y += ny * _C.pen; PK.z += nz * _C.pen;
-        pointVel(Fn, Fp, _C.cu, _C.cv, _C.cw, dt, _vb);
+        pointVel(Fn, Fp, _C.cu, _C.cv, _C.cw, dt, _vb); _vb[1] += STK.dvy;
         const rx = PK.vx - _vb[0], ry = PK.vy - _vb[1], rz = PK.vz - _vb[2], vn = rx * nx + ry * ny + rz * nz;
         if (vn < 0) {
           const glued = PA.keep && PK.cr > 0.4 && -vn < 6, e = glued ? 0 : 0.35 * clamp((-vn - 1.2) / 4.3, 0, 1) * (PA.s > 0 ? 1 - (1 - Math.max(0.3, 1 - 0.4 * PA.s)) * (1 - sstep((-vn - 4) / 6)) : 1), bn = _vb[0] * nx + _vb[1] * ny + _vb[2] * nz;
@@ -1085,18 +1137,19 @@ function puckAdvance(dt, haveBlade, power, now) {
           PK.vx += nx * imp; PK.vy += ny * imp; PK.vz += nz * imp;
           const tx = rx - vn * nx, ty = ry - vn * ny, tz = rz - vn * nz, ts = Math.hypot(tx, ty, tz);
           if (ts > 1e-6) { const j = Math.min(ts, 0.4 * imp); PK.vx -= tx / ts * j; PK.vy -= ty / ts * j; PK.vz -= tz / ts * j; PK.spin += clamp((nx * tz - nz * tx) * 4, -40, 40) * 0.2; }
-          if (PA.lift > 0 && imp > 2.5 && PK.y < PUCK.HH + 0.03 && now - PK.liftAt > 0.05) {          // lift help: an open face, or hands lifting, gets the puck off the ice
+          if (PA.lift > 0 && imp > 1.4 && PK.y < PUCK.HH + 0.03) {          // lift help: how open the face is, how fast the puck goes, and hands flicking up, get the puck off the ice
+            if (now - PK.liftAt > 0.25) PK.liftSum = 0;
             PK.liftAt = now;
-            const hs = Math.hypot(PK.vx, PK.vz), open = sstep((_Fk.Wy - 0.11) / 0.17), up = clamp(_vb[1], 0, 5), hard = sstep((imp - 2.5) / 3.5);
-            let dv = PA.lift * hard * (0.13 * Math.min(hs, 14) * open + 0.25 * up); const cap = 0.4 * hs + 0.5;
-            if (PK.vy + dv > cap) dv = Math.max(0, cap - PK.vy);
-            PK.vy += dv; PK.lift = dv; if (dv > 0.5) EV.push({ k: 'lift', v: dv, x: PK.x, y: PK.y, z: PK.z });
+            const hs = Math.hypot(PK.vx, PK.vz), ang = clamp(_Fk.Wy - 0.07, 0, 0.5), up = clamp(_vb[1], 0, 6), hard = sstep((imp - 1.4) / 3.2);
+            const want = PA.lift * hard * (hs * ang * 1.0 + 0.45 * up), cap = Math.min(0.38 * hs + 0.7, 6.5);
+            let add = Math.max(0, want - PK.liftSum); if (PK.vy + add > cap) add = Math.max(0, cap - PK.vy);
+            PK.vy += add; PK.liftSum += add; PK.lift = PK.liftSum; if (add > 0.4) EV.push({ k: 'lift', v: PK.liftSum, x: PK.x, y: PK.y, z: PK.z });
           }
           if ((imp > 0.8 || (imp > 0.3 && PK.cr < 0.3)) && now - PK.tapAt > 0.07) { PK.tapAt = now; EV.push({ k: 'tap', v: imp, x: PK.x, y: PK.y, z: PK.z }); }
           if (imp > 3) { PK.watch = 0.1; PK.wPeak = 0; }
           PK.ctl += h; PK.touch = now;
           if (imp < 6 && PK.cr < 0.3 && PK.touchT <= 0 && now - PK.touchOk > 0.5) { PK.touchT = 0.15; PK.touchOk = now; }
-          if ((PA.s > 0 || PA.keep) && imp > 2.5 && (_vb[0] - PA.svx) * nx + _vb[1] * ny + (_vb[2] - PA.svz) * nz > (PA.keep ? 6 : 3)) PK.rel = Math.max(PK.rel, now + (PA.keep ? 0.25 : 0.4));
+          if ((PA.s > 0 || PA.keep) && imp > 2.5 && (_vb[0] - PA.svx) * nx + _vb[1] * ny + (_vb[2] - PA.svz) * nz > (PA.keep ? 6 : 3) * (1 - 0.4 * sstep((_Fk.Wy - 0.16) / 0.2))) PK.rel = Math.max(PK.rel, now + (PA.keep ? 0.25 : 0.4));
         }
       }
     }
@@ -1229,7 +1282,7 @@ function newRun() {
     frames: [[], [], []], secs: [0, 0, 0], last: 0, skip: 90, hz: 0, asked: st.wantHz, t0: performance.now(),
     ctl: { left: false, right: false }, profiles: [], notes: [], hs: [], calDone: false,
     sk: { dist: 0, mov: 0, top: 0, brakes: 0, brakeT: 0, bumps: 0, hard: 0, snaps: 0, speedT: [0, 0, 0], vigMax: 0, yOff: 0, crossT: 0, punches: 0 },
-    pk: { contacts: 0, hits: 0, goals: 0, posts: 0, boards: 0, outs: 0, best: 0, last: 0, scrapeT: 0, cal: 0, stickT: 0, shots: 0, onT: 0, errSum: 0, keepT: 0, keepN: 0, lifts: 0, apex: 0, rollMin: 0, rollMax: 0, rollT: 0, r0Min: 0, r0Max: 0, catches: 0, tN: 0, tSum: 0, tRel: 0, tMax: 0 }
+    pk: { contacts: 0, hits: 0, goals: 0, posts: 0, boards: 0, outs: 0, best: 0, last: 0, scrapeT: 0, cal: 0, stickT: 0, shots: 0, onT: 0, errSum: 0, keepT: 0, keepN: 0, lifts: 0, apex: 0, rollMin: 0, rollMax: 0, rollT: 0, r0Min: 0, r0Max: 0, catches: 0, tN: 0, tSum: 0, tRel: 0, tMax: 0, oneT: 0, oneN: 0, iceT: 0, extSum: 0, extMax: 0, extMin: 0, lieMax: 0 }
   };
 }
 const run = newRun();
@@ -1361,6 +1414,7 @@ const toastM = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.094), new THREE.Mes
 toastM.position.set(0, -0.28, -1.0); toastM.renderOrder = 1001; toastM.visible = false; toastM.frustumCulled = false; camera.add(toastM);
 let toastT = 0;
 function toast(msg) {
+  if (window.__toasts) window.__toasts.push(msg);
   tcx.clearRect(0, 0, 512, 96); tcx.fillStyle = 'rgba(10,16,22,0.85)'; tcx.fillRect(0, 0, 512, 96);
   tcx.fillStyle = '#e6edf3'; tcx.textAlign = 'center'; tcx.textBaseline = 'middle';
   let fs = 38; tcx.font = '600 ' + fs + 'px sans-serif'; while (tcx.measureText(msg).width > 480 && fs > 18) { fs -= 2; tcx.font = '600 ' + fs + 'px sans-serif'; }
@@ -1459,6 +1513,8 @@ const headQ = new THREE.Quaternion();
 const BODY = { yaw: 0, ok: false };
 let punching = false, boardT = 0, needPuck = false, snapArmed = true, calibReq = false, strideT = 0, braking = false, lastYaw = 0;
 let keepOn = false, snapTele = false, recalT = 0, lenT = 0, lenDirty = false, carryBuzz = 0;
+let handsOne = false, grabPend = 0;                                  // one hand on the stick, and a grab waiting for the lower hand to arrive
+const GRAB_R = 0.11;                                                  // how close (m) the lower hand has to be to the shaft to take hold of it
 function headYaw() {
   const f = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion);
   if (f.x * f.x + f.z * f.z > 0.04) lastYaw = Math.atan2(f.z, f.x);               // looking straight up or down: keep the last heading
@@ -1485,6 +1541,38 @@ function setKeep(v) {
   if (st.keepM === 'toggle') toast(v ? 'Keeping the puck' : 'Puck released');
   buzz(handLo, 0.25, 22); buzz(handTop, 0.15, 22); if (audio) audio.click(v);
 }
+// How far the lower controller is from the shaft (the nearest point of the part of the shaft a hand could hold), in metres.
+function loGripDist() {
+  const F = STK.F; let t = (STA.lx - F.Ox) * F.Sx + (STA.ly - F.Oy) * F.Sy + (STA.lz - F.Oz) * F.Sz;
+  t = clamp(t, 0.35, Math.max(0.4, STK.tTop - 0.15));
+  return Math.hypot(F.Ox + F.Sx * t - STA.lx, F.Oy + F.Sy * t - STA.ly, F.Oz + F.Sz * t - STA.lz);
+}
+// one hand: your lower hand lets go and the stick follows your top hand alone. Two hands: the lower hand has to be on the shaft to take hold of it;
+// if it is not yet, the grab waits a few seconds and happens the moment the hand gets there, so the stick never jumps across the room.
+function setHands(one) {
+  if (st.oneM === 'off') one = false;
+  if (one) {
+    grabPend = 0; if (handsOne) return;
+    handsOne = true; run.pk.oneN++; toast('One hand: your lower hand is free'); buzz(handLo, 0.2, 20); if (audio) audio.click(true); return;
+  }
+  if (!handsOne) { grabPend = 0; return; }
+  if (loGripDist() <= GRAB_R) { handsOne = false; grabPend = 0; toast('Two hands'); buzz(handLo, 0.3, 25); buzz(handTop, 0.15, 20); if (audio) audio.click(false); }
+  else { grabPend = 3; toast('Bring your lower hand to the stick'); }
+}
+function toggleHands() {
+  if (st.oneM === 'off') return;
+  if (grabPend > 0) { grabPend = 0; toast('Staying on one hand'); return; }
+  setHands(!handsOne);
+}
+function handsStep(dt) {
+  if (st.oneM === 'off' && (handsOne || grabPend)) { handsOne = false; grabPend = 0; }
+  if (grabPend > 0) {
+    grabPend -= dt;
+    if (loGripDist() <= GRAB_R * 0.8) setHands(false);
+    else if (grabPend <= 0) { grabPend = 0; toast('Staying on one hand'); }
+  }
+  if (handsOne) run.pk.oneT += dt;
+}
 function cycleSpeed() {
   st.speed = (st.speed + 1) % 3; saveSettings(); const e = $('speed'); if (e) e.value = String(st.speed);
   toast('Top speed: ' + SPEED_NAMES[st.speed] + ' (' + Math.round(kmh(SPEEDS[st.speed])) + ' km/h)');
@@ -1497,13 +1585,17 @@ function pollInput(dt, hw, hy) {
     run.ctl[h] = true; if (src.profiles && src.profiles[0] && !run.profiles.includes(src.profiles[0])) run.profiles.push(src.profiles[0]);
     const ax = gp.axes.length >= 4 ? [gp.axes[2], gp.axes[3]] : [gp.axes[0] || 0, gp.axes[1] || 0];
     const pb = prevBtn[h], edge = i => !!(gp.buttons[i] && gp.buttons[i].pressed) && !pb[i];
+    if (st.oneM === 'grip' && h === (st.shot === 'right' ? 'right' : 'left')) {                    // lower-hand grip: squeeze = two hands, let go = one hand
+      const gr = !!(gp.buttons[1] && gp.buttons[1].pressed);
+      if (gr && !pb[1]) setHands(false); else if (!gr && pb[1]) setHands(true);
+    }
     if (h === 'left') {
       if (edge(4)) openMenu();
       if (edge(5)) { calibReq = true; STK.calReq = true; run.pk.cal++; }
       sx = ax[0]; sy = ax[1];
       const tr = gp.buttons[0]; brake = tr ? (tr.value || (tr.pressed ? 1 : 0)) : 0;
     } else {
-      if (edge(4)) cycleSpeed();
+      if (edge(4) && st.oneM === 'btn') toggleHands();
       if (edge(5)) placePuck();
       if (edge(3)) nextCurve();
       const lt = gp.buttons[0], lv = lt ? (lt.value || (lt.pressed ? 1 : 0)) : 0;                    // the right trigger keeps the puck on the blade
@@ -1560,7 +1652,8 @@ function updateStick(dt) {
   tp.grip.matrixWorld.decompose(PV, QT, SV); STA.tx = PV.x; STA.ty = PV.y; STA.tz = PV.z; STA.qx = QT.x; STA.qy = QT.y; STA.qz = QT.z; STA.qw = QT.w;
   lo.grip.matrixWorld.decompose(PV, QT, SV); STA.lx = PV.x; STA.ly = PV.y; STA.lz = PV.z; STA.lqx = QT.x; STA.lqy = QT.y; STA.lqz = QT.z; STA.lqw = QT.w;
   STA.fx = HF.x; STA.fz = HF.z; STA.dt = dt; STK.hand = st.shot === 'right' ? 1 : -1; STK.len = st.len;
-  STA.one = 0; STA.lock = 0; STA.gain = ROLLS[st.rollG]; STA.bend = st.bendOn ? 0.8 : 0; STA.rsrc = RSRC[st.rollSrc]; STA.tele = snapTele; snapTele = false; STA.svx = S.vx; STA.svz = S.vz;
+  handsStep(dt); { const ic = ICES[st.iceP] || ICES[0]; STA.ih0 = ic[0]; STA.ih1 = ic[1]; }
+  STA.one = handsOne ? 1 : 0; STA.lock = 0; STA.gain = ROLLS[st.rollG]; STA.bend = st.bendOn ? 0.8 : 0; STA.rsrc = RSRC[st.rollSrc]; STA.tele = snapTele; snapTele = false; STA.svx = S.vx; STA.svz = S.vz;
   stickSolve(STA);
   if (STK.autoFired) { STK.autoFired = false; run.pk.cal++; toast('Stick set. Y sets it again'); }
   applyStickMeshes(); stickOn = true;
@@ -1568,12 +1661,15 @@ function updateStick(dt) {
   bladeSp = Math.hypot(F.Ox - Fp.Ox, F.Oy - Fp.Oy, F.Oz - Fp.Oz) / Math.max(dt, 1e-3);
   for (const hnd of [lo, tp]) { const g0 = hnd.grip.children[0]; if (g0) g0.visible = false; }                 // the gloves on the shaft stand in for the controller balls
   const kp = run.pk; if (keepOn) kp.keepT += dt;
+  kp.extSum += STK.ext * dt; if (STK.ext > kp.extMax) kp.extMax = STK.ext; if (STK.ext < kp.extMin) kp.extMin = STK.ext; if (STK.wg > 0.3) kp.iceT += dt; { const ld = Math.abs(STK.lieD) * 57.2958; if (ld > kp.lieMax) kp.lieMax = ld; }
   if (STK.cal && STK.ok) { const rd = STK.rollG * 57.2958, r0 = STK.r0a * 57.2958; if (rd < kp.rollMin) kp.rollMin = rd; if (rd > kp.rollMax) kp.rollMax = rd; if (Math.abs(rd) > 15) kp.rollT += dt; if (r0 < kp.r0Min) kp.r0Min = r0; if (r0 > kp.r0Max) kp.r0Max = r0; }
 }
 const HEADW = new THREE.Vector3();
 // a glove sits on the shaft t metres from the heel; its cuff points toward that shoulder, made square to the shaft
-function placeGlove(g, t, hand) {
-  const F = STK.F, px = F.Ox + F.Sx * t, py = F.Oy + F.Sy * t, pz = F.Oz + F.Sz * t, side = hand === 'right' ? 1 : -1;
+function placeGlove(g, t, hand, free) {
+  const F = STK.F, side = hand === 'right' ? 1 : -1;
+  let px = F.Ox + F.Sx * t, py = F.Oy + F.Sy * t, pz = F.Oz + F.Sz * t;
+  if (free > 0.001) { px += (STA.lx - px) * free; py += (STA.ly - py) * free; pz += (STA.lz - pz) * free; }        // a hand that has let go stays where your hand is
   let vx = HEADW.x - HF.z * 0.26 * side - HF.x * 0.04 - px, vy = HEADW.y - 0.58 - py, vz = HEADW.z + HF.x * 0.26 * side - HF.z * 0.04 - pz;
   const d = vx * F.Sx + vy * F.Sy + vz * F.Sz; vx -= d * F.Sx; vy -= d * F.Sy; vz -= d * F.Sz;
   let l = Math.hypot(vx, vy, vz); if (l < 1e-4) { vx = F.Ex; vy = F.Ey; vz = F.Ez; l = 1; } vx /= l; vy /= l; vz /= l;
@@ -1581,7 +1677,7 @@ function placeGlove(g, t, hand) {
   g.matrix.set(F.Sx, vx, zx, px, F.Sy, vy, zy, py, F.Sz, vz, zz, pz, 0, 0, 0, 1); g.matrixWorldNeedsUpdate = true; g.visible = true;
 }
 function applyStickMeshes() {
-  const F = STK.F, len = STK.len;
+  const F = STK.F, len = STK.len + STK.ext;
   // each part: across the shaft (E), along it (S, scaled to the part's length), depth (E x S)
   const zx = F.Ey * F.Sz - F.Ez * F.Sy, zy = F.Ez * F.Sx - F.Ex * F.Sz, zz = F.Ex * F.Sy - F.Ey * F.Sx;
   for (const p of PARTS) {
@@ -1589,7 +1685,7 @@ function applyStickMeshes() {
     p.m.matrix.set(F.Ex * p.w, F.Sx * L, zx * p.d, F.Ox + F.Sx * c, F.Ey * p.w, F.Sy * L, zy * p.d, F.Oy + F.Sy * c, F.Ez * p.w, F.Sz * L, zz * p.d, F.Oz + F.Sz * c, 0, 0, 0, 1);
     p.m.matrixWorldNeedsUpdate = true; p.m.visible = true;
   }
-  placeGlove(handTop === 'left' ? gloveL : gloveR, STK.tTop, handTop); placeGlove(handLo === 'left' ? gloveL : gloveR, STK.tLo, handLo);
+  placeGlove(handTop === 'left' ? gloveL : gloveR, STK.tTop, handTop); placeGlove(handLo === 'left' ? gloveL : gloveR, STK.tLo, handLo, STK.mOne);
   (handLo === 'left' ? gloveL : gloveR).userData.gold.emissive.setHex(keepOn ? 0xa06a00 : 0x2e1c00);
   (handLo === 'left' ? gloveR : gloveL).userData.gold.emissive.setHex(0x2e1c00);
   const tb = BL.TB / 2;
@@ -1667,7 +1763,7 @@ function boardText() {
     l2: 'Last hit ' + Math.round(kp.last) + ' km/h     Best ' + Math.round(kp.best),
     l3: 'Goals ' + kp.goals + '     Hits ' + kp.hits + '     Posts ' + kp.posts,
     l4: 'FPS ' + (fps || '--') + '  (' + NAMES[st.level] + ')     Slow frames ' + slow + '%',
-    l5: cv.name + '  lie ' + cv.lie + '   ' + (Math.round(st.lenIn * 2) / 2) + ' in   ' + (keepOn ? 'KEEPING PUCK' : 'puck free') + '   roll ' + Math.round(STK.rollG * 57.2958) + '°'
+    l5: cv.name + '   ' + (Math.round(st.lenIn * 2) / 2) + ' in   ' + (handsOne ? 'ONE HAND' : 'two hands') + '   ' + (keepOn ? 'KEEPING PUCK' : 'puck free') + '   roll ' + Math.round(STK.rollG * 57.2958) + '°'
   });
 }
 function effects(dt) {
@@ -1705,7 +1801,7 @@ for (const h of ['left', 'right']) {
   const d = new THREE.Mesh(new THREE.SphereGeometry(0.011, 10, 8), new THREE.MeshBasicMaterial({ color: 0xe0a928, fog: false, depthTest: false })); d.visible = false; d.renderOrder = 902; d.frustumCulled = false; scene.add(d); dots[h] = d;
 }
 const MENU = { open: false, tab: 0, dirty: true, hov: { left: -1, right: -1 }, hits: [], leave: 0, tabArm: true };
-const TABS = ['Stick', 'Skating', 'Game'];
+const TABS = ['Stick', 'Puck', 'Skating', 'Game'];
 const cyc = (n, i, d) => (i + d + n) % n;
 function setSetting(key, val) {
   st[key] = val;
@@ -1713,23 +1809,30 @@ function setSetting(key, val) {
   else if (key === 'lenIn') st.len = st.lenIn * 0.0254;
   else if (key === 'shot') stickReset(STK.bp, val === 'right' ? 1 : -1, st.len);
   else if (key === 'level') applyLevel(val);
+  else if (key === 'oneM') { if (val === 'off') { handsOne = false; grabPend = 0; } }
   else if (key === 'height') calibReq = true;
   else if (key === 'sound') { if (val) { if (!audio) { try { audio = makeAudio(); if (audio) audio.resume(); } catch (e) { audio = null; } } } else closeAudio(); }
   saveSettings(); syncUI(); MENU.dirty = true;
 }
 const KEEP_NAMES = { hold: 'Hold the trigger', toggle: 'Press on, press off', off: 'Off' };
+const ONEM_KEYS = ['btn', 'grip', 'off'], ONEM_NAMES = { btn: 'A button', grip: 'Lower grip: hold', off: 'Off' };
 function menuRows(tab) {
   if (tab === 0) return [
     { l: 'Stick curve', v: () => { const c = curveCur || curveById(st.curve); return c.name + '  ' + c.code; }, s: d => setSetting('curve', CURVES[cyc(CURVES.length, CURVES.findIndex(c => c.id === st.curve), d)].id) },
     { l: 'Stick length', v: () => Math.round(st.lenIn) + ' in', s: d => setSetting('lenIn', clamp(Math.round(st.lenIn) + d, 50, 68)) },
+    { l: 'Lower-hand switch (one hand)', v: () => ONEM_NAMES[st.oneM], s: d => setSetting('oneM', ONEM_KEYS[cyc(3, ONEM_KEYS.indexOf(st.oneM), d)]) },
     { l: 'Blade roll amount', v: () => ROLL_NAMES[st.rollG], s: d => setSetting('rollG', cyc(ROLL_NAMES.length, st.rollG, d)) },
     { l: 'Blade roll comes from', v: () => ROLL_SRC_NAMES[ROLL_SRC.indexOf(st.rollSrc)], s: d => setSetting('rollSrc', ROLL_SRC[cyc(3, ROLL_SRC.indexOf(st.rollSrc), d)]) },
+    { l: 'Wrist bend also rolls the blade', v: () => st.bendOn ? 'On' : 'Off', s: () => setSetting('bendOn', !st.bendOn) }
+  ];
+  if (tab === 1) return [
     { l: 'Puck help', v: () => ASSIST_NAMES[st.assistP], s: d => setSetting('assistP', cyc(4, st.assistP, d)) },
     { l: 'Shot lift', v: () => LIFT_NAMES[st.liftP], s: d => setSetting('liftP', cyc(4, st.liftP, d)) },
     { l: 'Shot power', v: () => POWER_NAMES[st.power], s: d => setSetting('power', cyc(3, st.power, d)) },
-    { l: 'Keep puck (right trigger)', v: () => KEEP_NAMES[st.keepM], s: d => setSetting('keepM', ['hold', 'toggle', 'off'][cyc(3, ['hold', 'toggle', 'off'].indexOf(st.keepM), d)]) }
+    { l: 'Keep puck (right trigger)', v: () => KEEP_NAMES[st.keepM], s: d => setSetting('keepM', ['hold', 'toggle', 'off'][cyc(3, ['hold', 'toggle', 'off'].indexOf(st.keepM), d)]) },
+    { l: 'Blade to ice', v: () => ICE_NAMES[st.iceP], s: d => setSetting('iceP', cyc(4, st.iceP, d)) }
   ];
-  if (tab === 1) return [
+  if (tab === 2) return [
     { l: 'Top speed', v: () => SPEED_NAMES[st.speed] + '  ' + Math.round(kmh(SPEEDS[st.speed])) + ' km/h', s: d => setSetting('speed', cyc(3, st.speed, d)) },
     { l: 'Steer by', v: () => st.steer === 'body' ? 'Your body' : 'Your head', s: () => setSetting('steer', st.steer === 'body' ? 'head' : 'body') },
     { l: 'Turning', v: () => ({ snap30: 'Snap 30°', snap45: 'Snap 45°', smooth: 'Smooth', off: 'Off' })[st.turn], s: d => setSetting('turn', ['snap30', 'snap45', 'smooth', 'off'][cyc(4, ['snap30', 'snap45', 'smooth', 'off'].indexOf(st.turn), d)]) },
@@ -1740,8 +1843,7 @@ function menuRows(tab) {
   return [
     { l: 'Sound', v: () => st.sound ? 'On' : 'Off', s: () => setSetting('sound', !st.sound) },
     { l: 'Scene detail', v: () => NAMES[st.level], s: d => setSetting('level', cyc(3, st.level, d)) },
-    { l: 'Which way you shoot', v: () => st.shot === 'right' ? 'Right' : 'Left', s: () => setSetting('shot', st.shot === 'right' ? 'left' : 'right') },
-    { l: 'Wrist bend also rolls the blade', v: () => st.bendOn ? 'On' : 'Off', s: () => setSetting('bendOn', !st.bendOn) }
+    { l: 'Which way you shoot', v: () => st.shot === 'right' ? 'Right' : 'Left', s: () => setSetting('shot', st.shot === 'right' ? 'left' : 'right') }
   ];
 }
 function rrect(x, y, w, h, r) { mg.beginPath(); mg.moveTo(x + r, y); mg.arcTo(x + w, y, x + w, y + h, r); mg.arcTo(x + w, y + h, x, y + h, r); mg.arcTo(x, y + h, x, y, r); mg.arcTo(x, y, x + w, y, r); mg.closePath(); }
@@ -1755,9 +1857,9 @@ function drawMenu() {
   mg.textBaseline = 'middle'; mg.textAlign = 'left'; mg.fillStyle = '#e0a928'; mg.font = '700 34px system-ui, sans-serif'; mg.fillText('RAVENS VR', 38, 44);
   mg.fillStyle = '#b9a8d8'; mg.textAlign = 'right'; mg.font = '500 22px system-ui, sans-serif'; mg.fillText('Paused   ·   point and pull the trigger   ·   X resumes', MW - 38, 44);
   TABS.forEach((n, i) => {
-    widget(38 + i * 316, 78, 300, 54, i === MENU.tab ? '#5a2bb0' : '#2a1a44', () => { MENU.tab = i; });
-    mg.textAlign = 'center'; mg.fillStyle = i === MENU.tab ? '#ffffff' : '#c9bde3'; mg.font = '700 27px system-ui, sans-serif'; mg.fillText(n, 38 + i * 316 + 150, 78 + 28);
-    if (i === MENU.tab) { mg.fillStyle = '#e0a928'; mg.fillRect(38 + i * 316 + 30, 78 + 49, 240, 4); }
+    widget(38 + i * 240, 78, 232, 54, i === MENU.tab ? '#5a2bb0' : '#2a1a44', () => { MENU.tab = i; });
+    mg.textAlign = 'center'; mg.fillStyle = i === MENU.tab ? '#ffffff' : '#c9bde3'; mg.font = '700 27px system-ui, sans-serif'; mg.fillText(n, 38 + i * 240 + 116, 78 + 28);
+    if (i === MENU.tab) { mg.fillStyle = '#e0a928'; mg.fillRect(38 + i * 240 + 24, 78 + 49, 184, 4); }
   });
   menuRows(MENU.tab).forEach((r, i) => {
     const y = 152 + i * 58;
@@ -1824,7 +1926,7 @@ function menuFrame(dt) {
     if (edge(0) && hov[h] >= 0 && MENU.hits[hov[h]]) { const r = MENU.hits[hov[h]]; r.act(); MENU.dirty = true; buzz(h, 0.3, 25); if (audio && MENU.open) audio.click(true); }
     if (h === 'right') {
       const ax = gp.axes.length >= 4 ? gp.axes[2] : (gp.axes[0] || 0);
-      if (Math.abs(ax) < 0.35) MENU.tabArm = true; else if (MENU.tabArm && Math.abs(ax) > 0.75) { MENU.tabArm = false; MENU.tab = cyc(3, MENU.tab, ax > 0 ? 1 : -1); MENU.dirty = true; }
+      if (Math.abs(ax) < 0.35) MENU.tabArm = true; else if (MENU.tabArm && Math.abs(ax) > 0.75) { MENU.tabArm = false; MENU.tab = cyc(TABS.length, MENU.tab, ax > 0 ? 1 : -1); MENU.dirty = true; }
     }
     for (let i = 0; i < gp.buttons.length; i++) pb[i] = !!gp.buttons[i].pressed;
   }
@@ -1912,7 +2014,7 @@ async function enterVR() {
     S.x = -10; S.z = 0; S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
     BODY.ok = false; st.yOff = 0; snapArmed = true; calibReq = false; braking = false; vigU = 0; lastYaw = -Math.PI / 2;
     H.ok = false; needPuck = true; if (audio) audio.resume();
-    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; snapTele = false; recalT = 0; MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
+    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; handsOne = false; grabPend = 0; snapTele = false; recalT = 0; MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
     toast('Ready stance, blade near the ice. X opens the menu');
     try {
       const sup = session.supportedFrameRates ? Array.from(session.supportedFrameRates) : [];
@@ -1926,7 +2028,7 @@ async function enterVR() {
 }
 function onEnd() {
   st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
-  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; MENU.open = false; menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
+  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; handsOne = false; grabPend = 0; MENU.open = false; menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
   const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, pk: { ...run.pk }, frames: run.frames.map(a => a.slice()) };
   buildResult(ended);
 }
@@ -1936,7 +2038,7 @@ function renderTable(rows) {
   const tb = $('lvtable'); tb.innerHTML = '';
   rows.forEach((r, i) => { const tr = document.createElement('tr'); r.forEach((c, j) => { const td = document.createElement(i === 0 ? 'th' : 'td'); td.textContent = c; if (r.length === 2 && j === 1) td.colSpan = 5; tr.appendChild(td); }); tb.appendChild(tr); });
 }
-const RADIOS = ['cf', 'sf', 'af', 'pf', 'bf', 'rf', 'hf', 'kf', 'uf', 'zf', 'xf', 'lf', 'mf', 'gf'], CHECKS = ['cb', 'sb', 'kb'];
+const RADIOS = ['cf', 'sf', 'af', 'pf', 'bf', 'rf', 'hf', 'kf', 'uf', 'zf', 'xf', 'lf', 'mf', 'gf', 'ic', 'oh'], CHECKS = ['cb', 'sb', 'kb'];
 const ALLIN = RADIOS.concat(CHECKS).map(n => 'input[name="' + n + '"]').join(',');
 const picked = () => { const o = {}; for (const n of RADIOS) o[n] = (document.querySelector('input[name="' + n + '"]:checked') || {}).value || ''; for (const n of CHECKS) o[n] = Array.from(document.querySelectorAll('input[name="' + n + '"]:checked')).map(x => x.value); return o; };
 function comfortLine() {
@@ -1955,7 +2057,7 @@ function stickLine() {
 function feelLine() {
   const p = picked(), bits = [];
   if (p.af) bits.push('Accuracy: ' + p.af); if (p.pf) bits.push('Shot power: ' + p.pf); if (p.bf) bits.push('Boards: ' + p.bf);
-  if (p.rf) bits.push('Blade roll: ' + p.rf); if (p.lf) bits.push('Lifting the puck: ' + p.lf); if (p.hf) bits.push('Keep puck and snap turns: ' + p.hf); if (p.mf) bits.push('Menu and start screen: ' + p.mf); if (p.gf) bits.push('Gloves: ' + p.gf); if (p.uf) bits.push('Puck control: ' + p.uf); if (p.zf) bits.push('Sounds: ' + p.zf); if (p.xf) bits.push('Buzz: ' + p.xf); if (p.kf) bits.push('Stick length: ' + p.kf);
+  if (p.rf) bits.push('Blade roll: ' + p.rf); if (p.lf) bits.push('Lifting the puck: ' + p.lf); if (p.ic) bits.push('Blade on the ice: ' + p.ic); if (p.oh) bits.push('One hand on the stick: ' + p.oh); if (p.hf) bits.push('Keep puck and snap turns: ' + p.hf); if (p.mf) bits.push('Menu and start screen: ' + p.mf); if (p.gf) bits.push('Gloves: ' + p.gf); if (p.uf) bits.push('Puck control: ' + p.uf); if (p.zf) bits.push('Sounds: ' + p.zf); if (p.xf) bits.push('Buzz: ' + p.xf); if (p.kf) bits.push('Stick length: ' + p.kf);
   if (p.kb.length) bits.push('Also: ' + p.kb.join(', '));
   return bits.length ? bits.join('. ') : 'Accuracy, power, boards, roll, lift, keep puck, menu, gloves, puck control, sound, buzz: not rated yet';
 }
@@ -1975,7 +2077,7 @@ function fmt(n, d) { return n == null || Number.isNaN(n) ? '--' : n.toFixed(d ==
 function buildResult(r) {
   $('result').hidden = false;
   document.querySelectorAll(ALLIN).forEach(x => { x.checked = false; });
-  const lines = ['Ravens VR Phase 3 report (round 4)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+  const lines = ['Ravens VR Phase 3 report (round 5)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     'Page: ' + (probeInfo.frame ? 'inside a frame (VR permission ' + probeInfo.policy + ')' : 'its own page'),
     'Browser: ' + (probeInfo.device || probeInfo.ua.slice(0, 80)), 'VR supported: ' + (probeInfo.vr === null ? 'unknown' : probeInfo.vr ? 'yes' : 'no')];
   const rows = [['Scene', 'Seconds', 'Average', 'Low 1%', 'Worst', 'Slow']];
@@ -1996,6 +2098,8 @@ function buildResult(r) {
     'Assist: crossover time ' + fmt(k.crossT, 1) + ' s, punch turns ' + k.punches);
   lines.push('Puck: ' + pk.contacts + ' touches, ' + pk.hits + ' hits over 22 km/h, hardest ' + fmt(pk.best) + ' km/h, ' + pk.goals + ' goals, ' + pk.posts + ' post or bar hits, ' + pk.boards + ' off the boards, ' + pk.outs + ' out of play, ice scrape ' + fmt(pk.scrapeT, 1) + ' s');
   lines.push('Shot lift: ' + LIFT_NAMES[st.liftP] + ', ' + pk.lifts + ' lifted shots, highest the puck got ' + fmt(pk.apex, 2) + ' m');
+  lines.push('Blade to ice: ' + ICE_NAMES[st.iceP] + ', blade on the ice ' + fmt(pk.iceT) + ' s of ' + fmt(pk.stickT) + ' s held; stick stretch ' + fmt(pk.extMin * 100) + ' to +' + fmt(pk.extMax * 100) + ' cm (average ' + fmt(pk.stickT > 1 ? pk.extSum / pk.stickT * 100 : 0, 1) + ' cm), biggest lie change ' + fmt(pk.lieMax) + ' degrees');
+  lines.push('Hands: lower-hand switch ' + ONEM_NAMES[st.oneM] + ', one hand ' + pk.oneN + ' times for ' + fmt(pk.oneT) + ' s');
   lines.push('Puck help: ' + ASSIST_NAMES[st.assistP] + ', puck carried on the blade ' + fmt(PK.crT, 1) + ' s, ' + pk.catches + ' catches' + (pk.tN ? '; after ' + pk.tN + ' light touches the puck was moving at ' + fmt(kmh(pk.tSum / pk.tN)) + ' km/h on average, ' + fmt(kmh(pk.tRel / pk.tN)) + ' km/h relative to you (worst ' + fmt(kmh(pk.tMax)) + ')' : ''));
   lines.push('Shots at a net (over 36 km/h, heading for the goal line): ' + pk.shots + ', on target ' + pk.onT + (pk.shots ? ' (' + fmt(100 * pk.onT / pk.shots) + '%), average miss from the centre of the net ' + fmt(100 * pk.errSum / pk.shots) + ' cm' : ''));
   const holds = [];
@@ -2038,7 +2142,7 @@ function syncUI() {
   $('curve').value = st.curve; $('power').value = String(st.power); $('assist').value = st.assist ? 'on' : 'off';
   $('shot').value = st.shot; $('hz').value = String(st.wantHz); $('speed').value = String(st.speed); $('steer').value = st.steer;
   $('turn').value = st.turn; $('vig').value = String(st.vig); $('height').value = st.height; $('sound').value = st.sound ? 'on' : 'off';
-  $('len').value = String(Math.round(st.lenIn)); $('keepm').value = st.keepM; $('lift').value = String(st.liftP); $('rsrc').value = st.rollSrc; $('roll').value = String(st.rollG); $('bend').value = st.bendOn ? 'on' : 'off'; $('pa').value = String(st.assistP);
+  $('len').value = String(Math.round(st.lenIn)); $('keepm').value = st.keepM; $('lift').value = String(st.liftP); $('rsrc').value = st.rollSrc; $('roll').value = String(st.rollG); $('bend').value = st.bendOn ? 'on' : 'off'; $('pa').value = String(st.assistP); $('ice').value = String(st.iceP); $('onem').value = st.oneM;
 }
 function drawCurve() {
   const cv = curveCur || curveById(st.curve), bp = makeProfile(cv), cvs = $('curve-cv'), g = cvs.getContext('2d'), W = cvs.width, Hh = cvs.height;
@@ -2070,7 +2174,7 @@ document.querySelectorAll('#lvl button').forEach(b => b.addEventListener('click'
 const bind = (id, key, conv) => $(id).addEventListener('change', e => { st[key] = conv ? conv(e.target.value) : e.target.value; saveSettings(); });
 bind('shot', 'shot'); bind('hz', 'wantHz', Number); bind('speed', 'speed', Number); bind('steer', 'steer'); bind('turn', 'turn'); bind('vig', 'vig', Number);
 bind('height', 'height'); bind('sound', 'sound', v => v === 'on'); bind('power', 'power', Number); bind('assist', 'assist', v => v === 'on');
-bind('len', 'lenIn', Number); $('len').addEventListener('change', () => { st.len = st.lenIn * 0.0254; }); bind('keepm', 'keepM'); bind('lift', 'liftP', Number); bind('rsrc', 'rollSrc'); bind('roll', 'rollG', Number); bind('bend', 'bendOn', v => v === 'on'); bind('pa', 'assistP', Number);
+bind('len', 'lenIn', Number); $('len').addEventListener('change', () => { st.len = st.lenIn * 0.0254; }); bind('keepm', 'keepM'); bind('lift', 'liftP', Number); bind('rsrc', 'rollSrc'); bind('roll', 'rollG', Number); bind('bend', 'bendOn', v => v === 'on'); bind('pa', 'assistP', Number); bind('ice', 'iceP', Number); bind('onem', 'oneM'); $('onem').addEventListener('change', () => { if (st.oneM === 'off') { handsOne = false; grabPend = 0; } });
 $('curve').addEventListener('change', e => { setCurve(e.target.value); saveSettings(); drawCurve(); MENU.dirty = true; });
 matchMedia('(prefers-color-scheme: dark)').addEventListener && matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawCurve());
 document.querySelectorAll(ALLIN).forEach(x => x.addEventListener('change', refreshRep));
@@ -2080,7 +2184,7 @@ $('copy').addEventListener('click', async () => {
   catch (e) { try { const r = document.createRange(); r.selectNodeContents($('rep')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); out.textContent = 'Selected. Copy it with your keyboard.'; } catch (e2) { out.textContent = 'Select the text above and copy it.'; } }
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
-if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
+if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
 })();
 </script>
 
