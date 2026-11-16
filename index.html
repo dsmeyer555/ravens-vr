@@ -75,18 +75,26 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
 .chk{display:flex;gap:8px;align-items:center;font-size:15px;min-height:32px}
 .chk input{width:18px;height:18px;accent-color:var(--accent)}
 .curvebox{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+details.card>summary{cursor:pointer;font-family:var(--display);font-weight:600;font-size:20px;letter-spacing:.04em;text-transform:uppercase;list-style:none;display:flex;gap:12px;align-items:center}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:"+";margin-left:auto;font-size:26px;line-height:1;color:var(--muted)}
+details.card[open]>summary::after{content:"\2013"}
+details.card[open]>summary{margin-bottom:12px}
+details.rate{margin-bottom:12px}
+details.rate>summary{cursor:pointer;font-weight:600;font-size:16px;padding:6px 0}
+details.rate[open]>summary{margin-bottom:10px}
 .curvebox canvas{width:100%;max-width:720px;height:auto;aspect-ratio:720/190;background:var(--surface);border:1px solid var(--line);border-radius:8px}
 </style>
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Phase 3 · round 3</p>
+    <p class="eyebrow">Ravens VR · Phase 3 · round 4</p>
     <h1>Stick and puck</h1>
-    <p class="lede">Round 2 of the stick and puck test. New this time: a 58 in stick to start with, a dark purple and gold stick, wrist roll that moves the blade more, a lower hand you can let go of for one-handed stickhandling, a new net and crease, and puck rebounds off the boards that keep their speed along the wall. Press Enter VR and spend about ten minutes stickhandling, passing off the boards and shooting at the nets.</p>
+    <p class="lede">Round 4 of the stick and puck test. Shots lift more easily when you open the blade, the puck stays on your blade through snap turns (hold the right trigger to keep it), your lower hand now rolls the blade, there is a pause menu in the headset (press X) and the gloves look like gloves. Press Enter VR and spend about ten minutes stickhandling, turning, passing and shooting.</p>
   </header>
 
-  <section class="card" aria-label="Checks">
-    <h2>Checks</h2>
+  <details class="card" aria-label="Checks">
+    <summary>Checks <span class="chip wait" id="checks-sum">Checking</span></summary>
     <div class="checks">
       <div class="check"><span class="k">This page</span><span class="chip wait" id="c-frame-chip">Checking</span><span class="d" id="c-frame-d"></span></div>
       <div class="check"><span class="k">WebXR in this browser</span><span class="chip wait" id="c-xr-chip">Checking</span><span class="d" id="c-xr-d"></span></div>
@@ -94,7 +102,7 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
       <div class="check"><span class="k">3D graphics</span><span class="chip wait" id="c-gl-chip">Checking</span><span class="d" id="c-gl-d"></span></div>
       <div class="check"><span class="k">Browser</span><span class="chip wait" id="c-dev-chip">Checking</span><span class="d" id="c-dev-d"></span></div>
     </div>
-  </section>
+  </details>
 
   <section class="actions" aria-label="Start">
     <div class="row">
@@ -104,8 +112,28 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
     <div class="msg bad" id="err" hidden role="alert"></div>
   </section>
 
-  <section class="card" aria-label="Settings">
-    <h2>Before you go in</h2>
+  <section class="card" aria-label="Quick setup">
+    <h2>Quick setup</h2>
+    <div class="grid2">
+      <label class="f">Which way you shoot
+        <select id="shot">
+          <option value="right" selected>Right (left hand on top, right hand low)</option>
+          <option value="left">Left (right hand on top, left hand low)</option>
+        </select>
+      </label>
+      <label class="f">Stick length (heel to butt)
+        <select id="len"></select>
+      </label>
+      <label class="f">Stick curve
+        <select id="curve"></select>
+      </label>
+    </div>
+    <div class="curvebox"><canvas id="curve-cv" width="720" height="190" aria-label="Top view of the blade, heel on the left, toe on the right"></canvas><p class="note" id="curve-info"></p></div>
+    <p class="note" style="margin-top:10px">Everything else is in the menu inside the headset: press <b>X</b>. The same settings are here under More settings. They are saved on this device.</p>
+  </section>
+
+  <details class="card" aria-label="More settings">
+    <summary>More settings</summary>
     <div class="grid2">
       <label class="f">Top speed
         <select id="speed">
@@ -149,20 +177,7 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
           <option value="off">Off</option>
         </select>
       </label>
-      <label class="f">Stick curve
-        <select id="curve"></select>
-      </label>
-      <label class="f">Stick length (heel to butt)
-        <select id="len"></select>
-      </label>
-      <label class="f">Lock the lower hand
-        <select id="lockm">
-          <option value="hold" selected>Hold the right trigger to lock it</option>
-          <option value="latch">Press the right trigger to lock, press again to free it</option>
-          <option value="off">Never lock (both hands steer)</option>
-        </select>
-      </label>
-      <label class="f">Wrist roll moves the blade
+      <label class="f">Blade roll amount
         <select id="roll">
           <option value="0">Off (the blade stays flat)</option>
           <option value="1">Gentle (0.6 times)</option>
@@ -171,14 +186,29 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
           <option value="4">Extra strong (1.9 times)</option>
         </select>
       </label>
-      <label class="f">Wrist roll comes from
+      <label class="f">Blade roll comes from
+        <select id="rsrc">
+          <option value="lower" selected>Your lower hand (twist it about the stick)</option>
+          <option value="top">Your top hand</option>
+          <option value="both">Both hands</option>
+        </select>
+      </label>
+      <label class="f">Wrist bend also rolls the blade
         <select id="bend">
-          <option value="off" selected>Twisting only (turning the controller about the stick)</option>
-          <option value="on">Twisting and bending your top wrist</option>
+          <option value="off" selected>Off (twisting only)</option>
+          <option value="on">On (twisting and bending the top wrist)</option>
         </select>
       </label>
       <label class="f">Puck help (grace for stickhandling)
         <select id="pa">
+          <option value="0">Off (pure physics)</option>
+          <option value="1">Light</option>
+          <option value="2" selected>Normal</option>
+          <option value="3">Strong</option>
+        </select>
+      </label>
+      <label class="f">Shot lift (opening the blade lifts the puck)
+        <select id="lift">
           <option value="0">Off (pure physics)</option>
           <option value="1">Light</option>
           <option value="2" selected>Normal</option>
@@ -192,16 +222,17 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
           <option value="2">Boosted (arcade)</option>
         </select>
       </label>
+      <label class="f">Keep puck (right trigger)
+        <select id="keepm">
+          <option value="hold" selected>Hold the trigger to keep the puck</option>
+          <option value="toggle">Press to keep, press again to release</option>
+          <option value="off">Off</option>
+        </select>
+      </label>
       <label class="f">Crossovers and punch turns
         <select id="assist">
           <option value="on" selected>On (automatic)</option>
           <option value="off">Off (Phase 2 skating)</option>
-        </select>
-      </label>
-      <label class="f">Which way you shoot
-        <select id="shot">
-          <option value="right" selected>Right (left hand on top, right hand low)</option>
-          <option value="left">Left (right hand on top, left hand low)</option>
         </select>
       </label>
       <label class="f">Refresh rate to ask for
@@ -212,25 +243,24 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
         </select>
       </label>
     </div>
-    <div class="curvebox"><canvas id="curve-cv" width="720" height="190" aria-label="Top view of the blade, heel on the left, toe on the right"></canvas><p class="note" id="curve-info"></p></div>
-    <p class="note" style="margin-top:10px">These are saved on this device. Top speed can also be changed inside VR. The refresh rate only changes if the headset offers it, and the report says what you got.</p>
-  </section>
+    <p class="note" style="margin-top:10px">The refresh rate only changes if the headset offers it, and the report says what you got.</p>
+  </details>
 
-  <section class="card" aria-label="In the headset">
-    <h2>In the headset</h2>
+  <details class="card" aria-label="In the headset">
+    <summary>In the headset: controls</summary>
     <ol class="how">
-      <li><b>Both hands hold the stick.</b> Your top hand (left, for a right shot) is on the butt end and your lower hand slides along the shaft. Hold the controllers like a real stick. Your lower glove is always on the shaft: it slides up and down as your hand does, and moving your hand sideways steers the stick, like a real two-hand grip. Twisting your top wrist rolls the blade open or closed (the gold edge is the top of the face). The game learns how you normally hold the controller, so a different grip does not leave the blade rolled; only a real twist does.</li>
-      <li><b>Lock for stickhandling.</b> Hold the <b>right trigger</b> and the lower hand locks where it is on the shaft (the glove turns gold). The stick then follows your top controller alone, so your right hand can relax or move without touching the blade. Let go of the trigger to steer with both hands again. The Lock setting can make it a press-on, press-off switch, or switch it off.</li>
-      <li><b>Puck help</b> (on Normal) catches a pass on your blade, carries the puck while you skate, and slows a puck you have just nudged so you can catch up with it. It lets go the moment you swing at the puck, so passes and shots are not changed. You feel a soft buzz while the puck is on your blade, a tap for each touch, and a stronger kick for passes and shots.</li>
+      <li><b>Both hands hold the stick.</b> Your top hand (left, for a right shot) is on the butt end and your lower hand slides along the shaft. Your gloves stay on the shaft: the lower one slides up and down as your hand does, and moving your hand sideways steers the stick, like a real two-hand grip.</li>
+      <li><b>Open the blade with your lower wrist.</b> Twist the lower controller about the stick (your right wrist for a right shot) and the blade rolls: the gold edge is the top of the face. An open blade lifts the puck when you shoot, and <b>Shot lift</b> in the menu sets how much help you get. The game learns how you normally hold the controllers, so a different grip does not leave the blade rolled; only a real twist does.</li>
+      <li><b>Keep the puck.</b> Hold the <b>right trigger</b> and the puck stays on your blade where it is, through snap turns, quick stickhandling and skating. It glows gold while you keep it. A real swing at it (a shot or a hard pass) or letting go of the trigger releases it. With the trigger down, a puck within a few centimetres of the blade is pulled in as well.</li>
+      <li><b>Puck help</b> (on Normal) catches a pass on your blade, carries the puck while you skate, carries it round with you on a snap turn, and slows a puck you have just nudged so you can catch up with it. It lets go the moment you swing at the puck, so passes and shots are not changed. You feel a soft buzz while the puck is on your blade, a tap for each touch, and a stronger kick for passes and shots.</li>
       <li><b>Get into your ready stance</b> with the blade just above the ice and keep it there for a second: the stick calibrates itself so the blade sits flat. Press <b>Y</b> any time to do it again (it also resets your height).</li>
-      <li>The blade cannot go through the ice: push down and the shaft flattens. The puck is real: it slides, bounces off the boards and glass, rings off the posts and stops in the net.</li>
       <li><b>Left thumbstick</b> skates. Push a little for a slow stride, fully for top speed. In an arc you crossover automatically, and pushing the stick well to the side at speed makes a punch turn (quick, and it costs speed). <b>Left trigger</b> brakes.</li>
       <li><b>Right thumbstick</b> left and right turns you. Up and down sets the stick length (it starts at 58 in). <b>Click it</b> to change curve.</li>
-      <li><b>A</b> (right) steps the top speed. <b>B</b> puts the puck back in front of you. <b>X</b> (left) leaves VR.</li>
-      <li>The scoreboard over centre ice shows your speed, your last hit and best, goals, the frame rate, your stick length, whether you are on one hand or two, and the wrist roll the game sees. If you feel unwell, take the headset off.</li>
-      <li>When you leave VR, the <b>Last VR session</b> card appears at the bottom of this page. It asks how the stick and puck felt and is saved if you reload.</li>
+      <li><b>A</b> (right) steps the top speed. <b>B</b> puts the puck back in front of you. <b>X</b> (left) opens the menu: point at it with either controller and pull the trigger. The right thumbstick left and right changes tab. The game stands still while it is open.</li>
+      <li>The scoreboard over centre ice shows your speed, your last hit and best, goals, the frame rate, your stick length, whether you are keeping the puck, and the wrist roll the game sees. If you feel unwell, take the headset off.</li>
+      <li>When you leave VR, the <b>Last VR session</b> card appears at the bottom of this page. It is saved if you reload.</li>
     </ol>
-  </section>
+  </details>
 
   <section class="stage" aria-label="Preview">
     <h2>Preview</h2>
@@ -250,6 +280,7 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
     <h2>Last VR session</h2>
     <div class="verdict" id="verdict"></div>
     <div class="tw"><table class="lv" id="lvtable"></table></div>
+    <details class="rate"><summary>Rate how it felt (optional)</summary>
     <div class="grid2" style="margin-bottom:12px">
       <fieldset class="f" id="cf-overall"><legend>How did it feel?</legend>
         <label class="chk"><input type="radio" name="cf" value="Fine"> Fine</label>
@@ -307,19 +338,37 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
         <label class="chk"><input type="radio" name="bf" value="Wrong angle"> Wrong angle</label>
         <label class="chk"><input type="radio" name="bf" value="Dies along the wall"> Slows too much along the wall</label>
       </fieldset>
-      <fieldset class="f"><legend>Wrist roll and the blade</legend>
-        <label class="chk"><input type="radio" name="rf" value="Steady and works"> Steady, and a twist works</label>
+      <fieldset class="f"><legend>Blade roll (lower hand)</legend>
+        <label class="chk"><input type="radio" name="rf" value="Lower hand rolls it, works"> Lower hand rolls it, works</label>
         <label class="chk"><input type="radio" name="rf" value="Still rolls on its own"> Still rolls on its own</label>
         <label class="chk"><input type="radio" name="rf" value="Too little"> Too little</label>
         <label class="chk"><input type="radio" name="rf" value="Too touchy"> Too touchy</label>
         <label class="chk"><input type="radio" name="rf" value="Does nothing"> Does nothing</label>
       </fieldset>
-      <fieldset class="f"><legend>Lower hand and the lock</legend>
-        <label class="chk"><input type="radio" name="hf" value="Stays on the shaft, lock helps"> Stays on the shaft, lock helps</label>
-        <label class="chk"><input type="radio" name="hf" value="Fine"> Fine</label>
-        <label class="chk"><input type="radio" name="hf" value="Lock awkward"> Lock is awkward</label>
-        <label class="chk"><input type="radio" name="hf" value="Hand still looks off the stick"> Hand still looks off the stick</label>
+      <fieldset class="f"><legend>Lifting the puck</legend>
+        <label class="chk"><input type="radio" name="lf" value="Easy now"> Easy now</label>
+        <label class="chk"><input type="radio" name="lf" value="Better, still hard"> Better, still hard</label>
+        <label class="chk"><input type="radio" name="lf" value="Lofts too much"> Lofts too much</label>
+        <label class="chk"><input type="radio" name="lf" value="No change"> No change</label>
+      </fieldset>
+      <fieldset class="f"><legend>Keep puck (trigger) and snap turns</legend>
+        <label class="chk"><input type="radio" name="hf" value="Keeps the puck, works"> Keeps the puck, works</label>
+        <label class="chk"><input type="radio" name="hf" value="Fine without it"> Fine without it</label>
+        <label class="chk"><input type="radio" name="hf" value="Still loses the puck"> Still loses the puck</label>
+        <label class="chk"><input type="radio" name="hf" value="Too sticky"> Too sticky</label>
         <label class="chk"><input type="radio" name="hf" value="Did not try"> Did not try</label>
+      </fieldset>
+      <fieldset class="f"><legend>Menu and start screen</legend>
+        <label class="chk"><input type="radio" name="mf" value="Clear and works"> Clear and works</label>
+        <label class="chk"><input type="radio" name="mf" value="Hard to aim or read"> Hard to aim or read</label>
+        <label class="chk"><input type="radio" name="mf" value="Missing something"> Missing something</label>
+        <label class="chk"><input type="radio" name="mf" value="Start screen still cluttered"> Start screen still cluttered</label>
+      </fieldset>
+      <fieldset class="f"><legend>Gloves</legend>
+        <label class="chk"><input type="radio" name="gf" value="Look like hockey gloves"> Look like hockey gloves</label>
+        <label class="chk"><input type="radio" name="gf" value="Better, not there yet"> Better, not there yet</label>
+        <label class="chk"><input type="radio" name="gf" value="Still wrong"> Still wrong</label>
+        <label class="chk"><input type="radio" name="gf" value="Do not care yet"> Do not care yet</label>
       </fieldset>
       <fieldset class="f"><legend>Puck control</legend>
         <label class="chk"><input type="radio" name="uf" value="Easy to control"> Easy to control</label>
@@ -351,6 +400,7 @@ fieldset.f legend{font-weight:600;font-size:15px;padding:0 6px}
         <label class="chk"><input type="checkbox" name="kb" value="stick model still poor"> Stick model still poor</label>
       </fieldset>
     </div>
+    </details>
     <pre class="rep" id="rep"></pre>
     <div class="row" style="margin-top:12px">
       <button class="btn alt" id="copy" type="button">Copy report</button>
@@ -370,7 +420,7 @@ const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
-const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, lockM: 'hold', rollG: 2, bendOn: false, assistP: 2 };
+const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower' };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -381,7 +431,7 @@ function loadSettings() {
       if (ok(j.speed, [0, 1, 2])) o.speed = j.speed; if (ok(j.steer, ['body', 'head'])) o.steer = j.steer; if (ok(j.turn, ['snap30', 'snap45', 'smooth', 'off'])) o.turn = j.turn;
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
-      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.lockM, ['hold', 'latch', 'off'])) o.lockM = j.lockM; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP;
+      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP;
     }
   } catch (e) { /* storage is optional */ }
   return o;
@@ -394,6 +444,7 @@ const probeInfo = { frame: false, policy: 'unknown', xr: false, vr: null, vrErr:
 function chip(id, kind, label, detail) {
   const c = $(id + '-chip'); c.className = 'chip ' + kind; c.textContent = label;
   $(id + '-d').textContent = detail || '';
+  const sm = $('checks-sum'); if (sm) { const kinds = Array.from(document.querySelectorAll('.check .chip')).map(e => e.className); const bad = kinds.some(k => k.includes(' no')), wait = kinds.some(k => k.includes(' wait')); sm.className = 'chip ' + (bad ? 'no' : wait ? 'wait' : 'ok'); sm.textContent = bad ? 'Needs a look' : wait ? 'Checking' : 'All good'; }
 }
 function showErr(t) { const e = $('err'); e.textContent = t; e.hidden = !t; }
 
@@ -611,6 +662,8 @@ const FRAME_H = 1.22, POST_R = 0.03, WALL_TOP = 2.62, BOARD_TOP = 1.12;
 const POWERS = [1.0, 1.35, 1.8], POWER_NAMES = ['Raw', 'Natural', 'Boosted'];
 const ROLLS = [0, 0.6, 1.0, 1.4, 1.9], ROLL_NAMES = ['Off (blade stays flat)', 'Gentle', 'Normal', 'Strong', 'Extra strong'];
 const ASSISTS = [0, 0.5, 1, 1.6], ASSIST_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
+const LIFTS = [0, 0.5, 0.9, 1.4], LIFT_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
+const ROLL_SRC = ['lower', 'top', 'both'], ROLL_SRC_NAMES = ['Lower hand', 'Top hand', 'Both hands'];
 const sstep = t => { t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
 
 // Lie, blade length and blade height come from each curve's shop page. The face profile (mm the face is cut back from the straight
@@ -693,8 +746,9 @@ function qrot(q, x, y, z, o) {
 const STK = { ok: false, cal: false, calReq: false, calN: 0, hand: 1, len: 1.473, bp: null, F: newFrame(), Fp: newFrame(), Ft: newFrame(),
   sx: -0.7, sy: 0.7, sz: 0, hx: 1, hz: 0, w0: [0, 0, -1], wx: 0, wy: 0, wz: -1, onIce: false, depth: 0, sep: 0, nearT: 0, flat: 0,
   s0: [0, 0, 1], mOne: 0, mC: 0, wasOne: false, roll: 0, q0: [0, 0, 0, 1], bendA: 0,
-  mLock: 0, wasLock: false, dLock: 0.5, r0: 0, th: 0, rollG: 0, tLo: 0.6, tTop: 1.39 };
-const _q = { x: 0, y: 0, z: 0, w: 1 }, _qi = { x: 0, y: 0, z: 0, w: 1 }, _v = [0, 0, 0], _r = [0, 0, 0], _cs = [0, 0, 0], _ca = [0, 0, 0], _cw = [0, 0, 0], _rn = [0, 0, 0];
+  mLock: 0, wasLock: false, dLock: 0.5, r0: 0, th: 0, rollG: 0, tLo: 0.6, tTop: 1.39,
+  s1: [0, 0, 1], w1: [0, 0, -1], r0lo: 0, thLo: 0, r0a: 0, wlo: 0 };
+const _q = { x: 0, y: 0, z: 0, w: 1 }, _qi = { x: 0, y: 0, z: 0, w: 1 }, _v = [0, 0, 0], _r = [0, 0, 0], _ql = { x: 0, y: 0, z: 0, w: 1 }, _qli = { x: 0, y: 0, z: 0, w: 1 }, _cs = [0, 0, 0], _ca = [0, 0, 0], _cw = [0, 0, 0], _rn = [0, 0, 0];
 // twist (radians, about the unit axis a) of the rotation from q0 to q, both in the world frame
 function twistAbout(q0, q, ax, ay, az) {
   const bx = -q0[0], by = -q0[1], bz = -q0[2], bw = q0[3];
@@ -714,20 +768,22 @@ function neutralFace(hand, sx, sy, sz, fx, fz, o) {
   idealW(hand, sx, sz, fx, fz, o); const d = o[0] * sx + o[1] * sy + o[2] * sz; o[0] -= d * sx; o[1] -= d * sy; o[2] -= d * sz;
   const m = Math.hypot(o[0], o[1], o[2]) || 1; o[0] /= m; o[1] /= m; o[2] /= m; return o;
 }
-function stickReset(bp, hand, len) { const K = STK; K.bp = bp; K.hand = hand; K.len = len; K.ok = false; K.cal = false; K.calReq = false; K.nearT = 0; K.flat = 0; K.depth = 0; K.onIce = false; K.had = false; K.autoDone = false; K.autoFired = false; K.mOne = 0; K.mC = 0; K.wasOne = false; K.roll = 0; K.mLock = 0; K.wasLock = false; K.r0 = 0; K.th = 0; K.rollG = 0; }
-// A: tx..tz top hand, lx..lz lower hand, qx..qw top controller orientation, fx fz body forward, one 1 = lower hand let go, lock 1 = lower hand held
+function stickReset(bp, hand, len) { const K = STK; K.bp = bp; K.hand = hand; K.len = len; K.ok = false; K.cal = false; K.calReq = false; K.nearT = 0; K.flat = 0; K.depth = 0; K.onIce = false; K.had = false; K.autoDone = false; K.autoFired = false; K.mOne = 0; K.mC = 0; K.wasOne = false; K.roll = 0; K.mLock = 0; K.wasLock = false; K.r0 = 0; K.th = 0; K.rollG = 0; K.r0lo = 0; K.thLo = 0; K.r0a = 0; K.wlo = 0; }
+// A: tx..tz top hand, lx..lz lower hand, qx..qw top controller orientation, lqx..lqw lower controller orientation (rsrc 0 top, 1 lower, 2 both: whose twist rolls the blade), fx fz body forward, one 1 = lower hand let go, lock 1 = lower hand held
 // fixed on the shaft where it is (the stick then follows the top controller), gain blade-roll gain, bend wrist-bend share, adapt 0 = no learning of how you hold
 function stickSolve(A) {
+  const hasLo = A.lqw !== undefined, rs = A.rsrc == null ? (hasLo ? 1 : 0) : A.rsrc;
   const K = STK, bp = K.bp, hand = K.hand, dt = A.dt || 0.011, gain = A.gain == null ? 1 : A.gain, one = A.one ? 1 : 0, lockIn = A.lock && !one ? 1 : 0, bend = A.bend || 0;
   copyFrame(K.Fp, K.F);
   const dx = A.tx - A.lx, dy = A.ty - A.ly, dz = A.tz - A.lz, sep = Math.hypot(dx, dy, dz); K.sep = sep;
   const dMax = Math.max(0.3, K.len - BL.KB - 0.3);
   _q.x = A.qx; _q.y = A.qy; _q.z = A.qz; _q.w = A.qw; _qi.x = -A.qx; _qi.y = -A.qy; _qi.z = -A.qz; _qi.w = A.qw;
+  if (hasLo) { _ql.x = A.lqx; _ql.y = A.lqy; _ql.z = A.lqz; _ql.w = A.lqw; _qli.x = -A.lqx; _qli.y = -A.lqy; _qli.z = -A.lqz; _qli.w = A.lqw; }
   let lx = K.sx, ly = K.sy, lz = K.sz;                                   // the line through both hands
   if (sep > 0.05) { lx = dx / sep; ly = dy / sep; lz = dz / sep; }
   if (!K.ok) {
     if (sep <= 0.05) { lx = -0.7 * A.fx; ly = 0.7; lz = -0.7 * A.fz; }
-    K.sx = lx; K.sy = ly; K.sz = lz; qrot(_qi, lx, ly, lz, K.s0); K.mOne = one; K.wasOne = !!one; K.mLock = lockIn; K.wasLock = !!lockIn; K.dLock = clamp(sep, 0.12, dMax);
+    K.sx = lx; K.sy = ly; K.sz = lz; qrot(_qi, lx, ly, lz, K.s0); if (hasLo) qrot(_qli, lx, ly, lz, K.s1); K.mOne = one; K.wasOne = !!one; K.mLock = lockIn; K.wasLock = !!lockIn; K.dLock = clamp(sep, 0.12, dMax);
   }
   if (one && !K.wasOne) qrot(_qi, K.sx, K.sy, K.sz, K.s0);               // let go: the stick stays exactly where it is, now tied to the top hand
   if (lockIn && !K.wasLock) {                                            // lock: same, and the lower hand stays where it is on the shaft
@@ -742,37 +798,49 @@ function stickSolve(A) {
     qrot(_qi, lx, ly, lz, _cs); const k = 1 - Math.exp(-dt / 0.8);
     K.s0[0] += (_cs[0] - K.s0[0]) * k; K.s0[1] += (_cs[1] - K.s0[1]) * k; K.s0[2] += (_cs[2] - K.s0[2]) * k;
     const n = Math.hypot(K.s0[0], K.s0[1], K.s0[2]) || 1; K.s0[0] /= n; K.s0[1] /= n; K.s0[2] /= n;
+    if (hasLo) {                                                         // and how the lower controller sits on it
+      qrot(_qli, lx, ly, lz, _cs);
+      K.s1[0] += (_cs[0] - K.s1[0]) * k; K.s1[1] += (_cs[1] - K.s1[1]) * k; K.s1[2] += (_cs[2] - K.s1[2]) * k;
+      const n1 = Math.hypot(K.s1[0], K.s1[1], K.s1[2]) || 1; K.s1[0] /= n1; K.s1[1] /= n1; K.s1[2] /= n1;
+    }
   }
   qrot(_q, K.s0[0], K.s0[1], K.s0[2], _cs);                              // the top controller's own shaft direction, in the world
   let sx = lx * (1 - mC) + _cs[0] * mC, sy = ly * (1 - mC) + _cs[1] * mC, sz = lz * (1 - mC) + _cs[2] * mC;
   let l = Math.hypot(sx, sy, sz) || 1; sx /= l; sy /= l; sz /= l;
   const calNow = K.calReq || !K.cal;
   if (calNow) {                                                          // remember which way the face points, in the controller's own frame
-    neutralFace(hand, sx, sy, sz, A.fx, A.fz, _v); qrot(_qi, _v[0], _v[1], _v[2], K.w0);
+    neutralFace(hand, sx, sy, sz, A.fx, A.fz, _v); qrot(_qi, _v[0], _v[1], _v[2], K.w0); if (hasLo) qrot(_qli, _v[0], _v[1], _v[2], K.w1);
     K.cal = true; K.calReq = false; K.calN++; K.wx = _v[0]; K.wy = _v[1]; K.wz = _v[2];
     K.q0[0] = A.qx; K.q0[1] = A.qy; K.q0[2] = A.qz; K.q0[3] = A.qw;
   }
-  // ---- wrist roll. How far the top controller has turned the face away from level, measured about the controller's own shaft axis, so the
-  // lower hand moving about cannot roll the blade. The level it counts from follows how you actually hold the controller (slowly), so a different
-  // grip, or a drifting one, does not leave the blade rolled; only a quick or big twist rolls it. Then a small deadzone and the roll gain.
-  qrot(_q, K.s0[0], K.s0[1], K.s0[2], _ca); qrot(_q, K.w0[0], K.w0[1], K.w0[2], _cw);
-  neutralFace(hand, _ca[0], _ca[1], _ca[2], A.fx, A.fz, _rn);
-  {
+  // ---- wrist roll. How far a controller has turned the face away from level, measured about that controller's own shaft axis, so the other hand
+  // moving about cannot roll the blade. The level it counts from follows how you actually hold the controller (slowly), so a different grip, or a
+  // drifting one, does not leave the blade rolled; only a quick or big twist rolls it. By default the lower hand does the rolling (rsrc 1), and hands
+  // the job to the top hand as the two hands come together. Then a small deadzone and the roll gain.
+  const measure = (qq, sv, wv, prev) => {
+    qrot(qq, sv[0], sv[1], sv[2], _ca); qrot(qq, wv[0], wv[1], wv[2], _cw);
+    neutralFace(hand, _ca[0], _ca[1], _ca[2], A.fx, A.fz, _rn);
     const d = _cw[0] * _ca[0] + _cw[1] * _ca[1] + _cw[2] * _ca[2]; _cw[0] -= d * _ca[0]; _cw[1] -= d * _ca[1]; _cw[2] -= d * _ca[2];
-    const m = Math.hypot(_cw[0], _cw[1], _cw[2]);
-    if (m > 0.25) {
-      _cw[0] /= m; _cw[1] /= m; _cw[2] /= m;
-      const cx = _rn[1] * _cw[2] - _rn[2] * _cw[1], cy = _rn[2] * _cw[0] - _rn[0] * _cw[2], cz = _rn[0] * _cw[1] - _rn[1] * _cw[0];
-      K.th = Math.atan2(cx * _ca[0] + cy * _ca[1] + cz * _ca[2], _rn[0] * _cw[0] + _rn[1] * _cw[1] + _rn[2] * _cw[2]);
-    }
-  }
+    const m = Math.hypot(_cw[0], _cw[1], _cw[2]); if (m <= 0.25) return prev;
+    _cw[0] /= m; _cw[1] /= m; _cw[2] /= m;
+    const cx = _rn[1] * _cw[2] - _rn[2] * _cw[1], cy = _rn[2] * _cw[0] - _rn[0] * _cw[2], cz = _rn[0] * _cw[1] - _rn[1] * _cw[0];
+    return Math.atan2(cx * _ca[0] + cy * _ca[1] + cz * _ca[2], _rn[0] * _cw[0] + _rn[1] * _cw[1] + _rn[2] * _cw[2]);
+  };
+  if (hasLo) K.thLo = measure(_ql, K.s1, K.w1, K.thLo);
+  K.th = measure(_q, K.s0, K.w0, K.th);                                  // leaves _rn as the level face for the top controller's axis
   let th = K.th;
   if (bend) {                                                           // bending the wrist (the controller's nose down or up) also turns the face: down closes it
     const ph = twistAbout(K.q0, _q, _rn[0], _rn[1], _rn[2]), dzb = Math.sign(ph) * Math.max(0, Math.abs(ph) - 0.06); K.bendA = ph; th += bend * dzb;
   }
-  if (calNow) K.r0 = th;
-  let er = Math.atan2(Math.sin(th - K.r0), Math.cos(th - K.r0));
-  if (A.adapt !== 0) K.r0 += er * (1 - Math.exp(-dt / (Math.abs(er) < 0.35 ? 2.5 : 12)));
+  if (calNow) { K.r0 = th; if (hasLo) K.r0lo = K.thLo; }
+  const wrapA = a2 => Math.atan2(Math.sin(a2), Math.cos(a2));
+  const erT = wrapA(th - K.r0), erL = hasLo ? wrapA(K.thLo - K.r0lo) : 0;
+  if (A.adapt !== 0) {
+    K.r0 += erT * (1 - Math.exp(-dt / (Math.abs(erT) < 0.35 ? 2.5 : 12)));
+    if (hasLo) K.r0lo += erL * (1 - Math.exp(-dt / (Math.abs(erL) < 0.35 ? 2.5 : 12)));
+  }
+  const wlo = hasLo ? (rs === 1 ? 1 - mC : rs === 2 ? 0.5 * (1 - mC) : 0) : 0; K.wlo = wlo; K.r0a = wlo > 0.5 ? K.r0lo : K.r0;
+  let er = erT * (1 - wlo) + erL * wlo;
   er -= clamp(er, -0.07, 0.07);
   K.roll = er; K.rollG = clamp(er * gain, -1.6, 1.6);
   const faceFor = (sx, sy, sz, o) => {                                   // the neutral face for this shaft, turned about it by the roll
@@ -801,7 +869,7 @@ function stickSolve(A) {
     sx = K.F.Sx; sy = K.F.Sy; sz = K.F.Sz;
   }
   K.sx = sx; K.sy = sy; K.sz = sz; K.wx = K.F.Wx; K.wy = K.F.Wy; K.wz = K.F.Wz; K.ok = true;
-  if (!K.had) { copyFrame(K.Fp, K.F); K.had = true; }
+  if (!K.had || A.tele) { copyFrame(K.Fp, K.F); K.had = true; if (A.tele) { K.Fp.Ox -= (A.svx || 0) * dt; K.Fp.Oz -= (A.svz || 0) * dt; } }   // tele: the rig was turned, so the jump is not blade speed; the blade moves with the skater
   // where the two gloves sit along the shaft, from the heel: the top one at the top hand, the lower one where your lower hand slides to (or where it is locked)
   const F = K.F, tFree = clamp((A.lx - F.Ox) * F.Sx + (A.ly - F.Oy) * F.Sy + (A.lz - F.Oz) * F.Sz, 0.3, K.len - BL.KB - 0.12), tLock = K.len - BL.KB - K.dLock;
   K.tLo = tFree + (tLock - tFree) * K.mLock; K.tTop = K.len - BL.KB;
@@ -813,9 +881,9 @@ function stickSolve(A) {
 
 // ---- the puck
 const PK = { x: 0, y: PUCK.HH, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, rot: 0, out: 0, inNet: false, goalLatch: false, watch: 0, wPeak: 0, last: 0, tapAt: -9, ctl: 0,
-  cr: 0, rel: -9, touch: -9, touchT: 0, touchOk: -9, wasCr: false, vrm: 0, catchAt: -9, crT: 0, carryV: 0 };
+  cr: 0, rel: -9, touch: -9, touchT: 0, touchOk: -9, wasCr: false, vrm: 0, catchAt: -9, crT: 0, carryV: 0, near: 9, liftAt: -9, lift: 0 };
 // puck help: s is its strength (0 = off), hx hz where you stand, svx svz how you are moving
-const PA = { s: 0, hx: 0, hz: 0, svx: 0, svz: 0 };
+const PA = { s: 0, hx: 0, hz: 0, svx: 0, svz: 0, keep: 0, lift: 0 };
 const EV = [];                       // events from this frame: { k, v, x, y, z }
 const SAMP = (() => { const a = []; for (let r = 0; r < 3; r++) for (let k = 0; k < 10; k++) { const t = k * Math.PI / 5; a.push([PUCK.R * Math.cos(t), (r - 1) * PUCK.HH, PUCK.R * Math.sin(t)]); } a.push([0, 0, 0]); return a; })();
 const _C = { nx: 0, ny: 0, nz: 0, pen: 0, cu: 0, cv: 0, cw: 0 }, _vb = [0, 0, 0], _Fk = newFrame();
@@ -841,7 +909,7 @@ function bladeContact(F, bp, cx, cy, cz, C) {
   }
   return best > 0;
 }
-function resetPuck(x, z) { PK.x = x; PK.z = z; PK.y = PUCK.HH; PK.vx = PK.vy = PK.vz = 0; PK.spin = 0; PK.out = 0; PK.inNet = false; PK.goalLatch = false; PK.watch = 0; PK.tapAt = -9; PK.cr = 0; PK.rel = -9; PK.touch = -9; PK.touchT = 0; PK.wasCr = false; PK.vrm = 0; }
+function resetPuck(x, z) { PK.x = x; PK.z = z; PK.y = PUCK.HH; PK.vx = PK.vy = PK.vz = 0; PK.spin = 0; PK.out = 0; PK.inNet = false; PK.goalLatch = false; PK.watch = 0; PK.tapAt = -9; PK.cr = 0; PK.rel = -9; PK.touch = -9; PK.touchT = 0; PK.wasCr = false; PK.vrm = 0; PK.near = 9; PK.liftAt = -9; }
 function segHit(x0, y0, z0, x1, y1, z1, r, e, k) {
   const dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, l2 = dx * dx + dy * dy + dz * dz;
   const t = l2 > 0 ? clamp(((PK.x - x0) * dx + (PK.y - y0) * dy + (PK.z - z0) * dz) / l2, 0, 1) : 0;
@@ -932,42 +1000,57 @@ function worldCollide(h, px, py, pz) {
     if (PK.inNet) { const sp = Math.hypot(PK.vx, PK.vz), d = 3 * h; if (sp <= d) { PK.vx = PK.vz = 0; } else { PK.vx -= PK.vx / sp * d; PK.vz -= PK.vz / sp * d; } }   // the net holds it
   }
 }
-// Puck help, a little grace for stickhandling. (1) Cradle: a puck close to the middle of the blade's face and not moving much faster than the blade is pulled
-// into the pocket and carried along with it, so a pass settles on your stick and a carried puck stays with you. It lets go as soon as you swing at it (the blade moving
-// more than 3 m/s relative to you), so passes and shots are untouched. (2) After a touch the puck's speed relative to you fades for a moment (gentle touches only),
-// so you can catch up with it. (3) Light contacts bounce less.
+// Puck help, a little grace for stickhandling. (1) Cradle: a puck close to the face of the blade and not moving much faster than the blade is held against the
+// face and carried along with it, so a pass settles on your stick and a carried puck stays with you. It stays wherever along the blade it is (it is not pulled to the
+// middle) and can slide a little along it. It lets go as soon as you swing at it (the blade moving more than 3 m/s relative to you), so passes and shots are untouched.
+// (2) After a touch the puck's speed relative to you fades for a moment (gentle touches only), so you can catch up with it. (3) Light contacts bounce less.
+// Keep (PA.keep, the trigger held): the same cradle with a much wider and stronger grip that only a real swing (over 6.5 m/s) breaks, and it works even with puck help off.
 const _T = [0, 0, 0], _vp = [0, 0, 0];
 function puckHelp(dt, now, haveBlade) {
-  const s = PA.s, bp = STK.bp, age = now - PK.touch;
-  if (age < 1.6 && PK.y < PUCK.HH + 0.03) {
+  const kp = PA.keep ? 1 : 0, s = Math.max(PA.s, kp), bp = STK.bp, age = now - PK.touch;
+  if (PA.s > 0 && age < 1.6 && PK.y < PUCK.HH + 0.03) {
     const rx = PK.vx - PA.svx, rz = PK.vz - PA.svz, r = Math.hypot(rx, rz), dd = Math.hypot(PK.x - PA.hx, PK.z - PA.hz);
-    const w = sstep((7 - r) / 4) * sstep((3.4 - dd) / 1.4) * sstep((1.6 - age) / 0.8), k = 1 - Math.exp(-dt * 1.3 * s * w);
+    const w = sstep((7 - r) / 4) * sstep((3.4 - dd) / 1.4) * sstep((1.6 - age) / 0.8), k = 1 - Math.exp(-dt * 1.3 * PA.s * w);
     PK.vx -= rx * k; PK.vz -= rz * k;
   }
-  let eT = 0, vr = 0;
+  let eT = 0, vr = 0; PK.near = 9;
   if (haveBlade && bp) {
-    const Fn = STK.F, Fp = STK.Fp, uC = bp.Lb * 0.5, i = clamp(Math.round(uC / bp.Lb * bp.n), 0, bp.n), wl = -bp.c[i] + PUCK.R + 0.004 - BL.TB / 2;
-    bpt(Fn, uC, PUCK.HH, wl, _T); pointVel(Fn, Fp, uC, PUCK.HH, wl, dt, _vp);
+    const Fn = STK.F, Fp = STK.Fp, qx = PK.x - Fn.Ox, qy = PK.y - Fn.Oy, qz = PK.z - Fn.Oz;
+    const u = qx * Fn.Ux + qy * Fn.Uy + qz * Fn.Uz, uP = clamp(u, 0.06 * bp.Lb, 0.97 * bp.Lb);         // where along the blade the puck is: kept, not centred
+    const i = clamp(Math.round(uP / bp.Lb * bp.n), 0, bp.n), wl = -bp.c[i] + PUCK.R + 0.004 - BL.TB / 2;
+    bpt(Fn, uP, PUCK.HH, wl, _T); pointVel(Fn, Fp, uP, PUCK.HH, wl, dt, _vp);
     PK.carryV = Math.hypot(_vp[0] - PA.svx, _vp[2] - PA.svz);
-    if (PK.carryV > 3) PK.rel = Math.max(PK.rel, now + 0.4);              // a swing at it: let it go
+    if (PK.carryV > (kp ? 6.5 : 3)) PK.rel = Math.max(PK.rel, now + (kp ? 0.25 : 0.4));              // a swing at it: let it go
     const dxp = _T[0] - PK.x, dyp = _T[1] - PK.y, dzp = _T[2] - PK.z, d3 = Math.hypot(dxp, dyp, dzp);
+    PK.near = d3;
     vr = Math.hypot(PK.vx - _vp[0], PK.vz - _vp[2]);
-    const wP = (PK.x - _T[0]) * Fn.Wx + (PK.y - _T[1]) * Fn.Wy + (PK.z - _T[2]) * Fn.Wz, Rc = 0.16 + 0.10 * s, vcap = 2.5 + 2.0 * s;
-    if (now >= PK.rel && _T[1] < PUCK.HH + 0.07 && PK.y < PUCK.HH + 0.025 && wP > -0.03) eT = sstep((Rc - d3) / (0.5 * Rc)) * sstep((vcap - vr) / (0.5 * vcap));
-    if (now < PK.rel) PK.cr = 0; else PK.cr += (eT - PK.cr) * (1 - Math.exp(-dt / (eT > PK.cr ? 0.07 : 0.04)));   // lets go at once when you swing
+    const wP = (PK.x - _T[0]) * Fn.Wx + (PK.y - _T[1]) * Fn.Wy + (PK.z - _T[2]) * Fn.Wz;
+    const Rc = (0.16 + 0.10 * s) * (kp ? 2 : 1), vcap = (2.5 + 2.0 * s) * (kp ? 3 : 1), inU = sstep((u + 0.03) / 0.03) * sstep((bp.Lb + 0.05 - u) / 0.03);
+    if (now >= PK.rel && _T[1] < PUCK.HH + (kp ? 0.14 : 0.07) && PK.y < PUCK.HH + 0.025 && wP > -0.03) eT = inU * sstep((Rc - d3) / (0.5 * Rc)) * sstep((vcap - vr) / (0.5 * vcap));
+    if (now < PK.rel) PK.cr = 0; else PK.cr += (eT - PK.cr) * (1 - Math.exp(-dt / (eT > PK.cr ? (kp ? 0.025 : 0.07) : 0.04)));   // lets go at once when you swing
     if (PK.cr > 0.02) {
-      const kv = 1 - Math.exp(-dt * (10 + 8 * s) * PK.cr), g = 4 + 3 * s;
-      PK.vx += (_vp[0] + clamp(dxp * g, -2, 2) - PK.vx) * kv; PK.vz += (_vp[2] + clamp(dzp * g, -2, 2) - PK.vz) * kv;
+      const kv = 1 - Math.exp(-dt * (10 + 8 * s) * (kp ? 3.5 : 1) * PK.cr), g = (4 + 3 * s) * (kp ? 2 : 1), gm = kp ? 4 : 2;
+      let ax = _vp[0] + clamp(dxp * g, -gm, gm) - PK.vx, az = _vp[2] + clamp(dzp * g, -gm, gm) - PK.vz;
+      const lh = Math.hypot(Fn.Ux, Fn.Uz) || 1, uxh = Fn.Ux / lh, uzh = Fn.Uz / lh, al = ax * uxh + az * uzh;
+      ax -= al * uxh * 0.15; az -= al * uzh * 0.15;                          // along the blade the grip is softer, so the puck can slide a little (dangles)
+      PK.vx += ax * kv; PK.vz += az * kv;
     }
   } else PK.cr *= 0.7;
   PK.vrm = Math.max(vr, PK.vrm * Math.exp(-dt / 0.25));
   if (PK.cr > 0.5 && !PK.wasCr) { PK.wasCr = true; if (now - PK.catchAt > 0.6) { PK.catchAt = now; EV.push({ k: 'catch', v: PK.vrm, x: PK.x, y: PK.y, z: PK.z }); } } else if (PK.cr < 0.15) PK.wasCr = false;
   if (PK.cr > 0.4) PK.crT += dt;
 }
+// Turning the rig (snap or smooth turn) carries the blade round with you; a puck that is on the blade has to come too.
+const puckFollows = now => PK.cr > 0.25 || (PK.near < 0.3 && now >= PK.rel && PK.y < PUCK.HH + 0.03);
+function turnPuck(delta, hx, hz, svx, svz) {
+  const c = Math.cos(delta), sn = Math.sin(delta), px = PK.x - hx, pz = PK.z - hz;
+  PK.x = hx + px * c + pz * sn; PK.z = hz - px * sn + pz * c;
+  const rx = PK.vx - svx, rz = PK.vz - svz; PK.vx = svx + rx * c + rz * sn; PK.vz = svz - rx * sn + rz * c;
+}
 // advance the puck by dt against the blade pose Fn (previous pose Fp). power: stick whip multiplier for fast swings.
 function puckAdvance(dt, haveBlade, power, now) {
   const bp = STK.bp, Fn = STK.F, Fp = STK.Fp;
-  if (PA.s > 0) puckHelp(dt, now, haveBlade && !!bp); else { PK.cr = 0; PK.wasCr = false; }
+  if (PA.s > 0 || PA.keep) puckHelp(dt, now, haveBlade && !!bp); else { PK.cr = 0; PK.wasCr = false; PK.near = 9; }
   let nSub = 1;
   const sp0 = Math.hypot(PK.vx, PK.vy, PK.vz);
   let near = false;
@@ -997,16 +1080,23 @@ function puckAdvance(dt, haveBlade, power, now) {
         pointVel(Fn, Fp, _C.cu, _C.cv, _C.cw, dt, _vb);
         const rx = PK.vx - _vb[0], ry = PK.vy - _vb[1], rz = PK.vz - _vb[2], vn = rx * nx + ry * ny + rz * nz;
         if (vn < 0) {
-          const e = 0.35 * clamp((-vn - 1.2) / 4.3, 0, 1) * (PA.s > 0 ? 1 - (1 - Math.max(0.3, 1 - 0.4 * PA.s)) * (1 - sstep((-vn - 4) / 6)) : 1), bn = _vb[0] * nx + _vb[1] * ny + _vb[2] * nz;
-          const dvn = -(1 + e) * vn, extra = power > 1 ? (power - 1) * Math.max(0, bn - 2.5) : 0, imp = dvn + extra;
+          const glued = PA.keep && PK.cr > 0.4 && -vn < 6, e = glued ? 0 : 0.35 * clamp((-vn - 1.2) / 4.3, 0, 1) * (PA.s > 0 ? 1 - (1 - Math.max(0.3, 1 - 0.4 * PA.s)) * (1 - sstep((-vn - 4) / 6)) : 1), bn = _vb[0] * nx + _vb[1] * ny + _vb[2] * nz;
+          const dvn = -(1 + e) * vn, extra = power > 1 && !glued ? (power - 1) * Math.max(0, bn - 2.5) : 0, imp = dvn + extra;
           PK.vx += nx * imp; PK.vy += ny * imp; PK.vz += nz * imp;
           const tx = rx - vn * nx, ty = ry - vn * ny, tz = rz - vn * nz, ts = Math.hypot(tx, ty, tz);
           if (ts > 1e-6) { const j = Math.min(ts, 0.4 * imp); PK.vx -= tx / ts * j; PK.vy -= ty / ts * j; PK.vz -= tz / ts * j; PK.spin += clamp((nx * tz - nz * tx) * 4, -40, 40) * 0.2; }
+          if (PA.lift > 0 && imp > 2.5 && PK.y < PUCK.HH + 0.03 && now - PK.liftAt > 0.05) {          // lift help: an open face, or hands lifting, gets the puck off the ice
+            PK.liftAt = now;
+            const hs = Math.hypot(PK.vx, PK.vz), open = sstep((_Fk.Wy - 0.11) / 0.17), up = clamp(_vb[1], 0, 5), hard = sstep((imp - 2.5) / 3.5);
+            let dv = PA.lift * hard * (0.13 * Math.min(hs, 14) * open + 0.25 * up); const cap = 0.4 * hs + 0.5;
+            if (PK.vy + dv > cap) dv = Math.max(0, cap - PK.vy);
+            PK.vy += dv; PK.lift = dv; if (dv > 0.5) EV.push({ k: 'lift', v: dv, x: PK.x, y: PK.y, z: PK.z });
+          }
           if ((imp > 0.8 || (imp > 0.3 && PK.cr < 0.3)) && now - PK.tapAt > 0.07) { PK.tapAt = now; EV.push({ k: 'tap', v: imp, x: PK.x, y: PK.y, z: PK.z }); }
           if (imp > 3) { PK.watch = 0.1; PK.wPeak = 0; }
           PK.ctl += h; PK.touch = now;
           if (imp < 6 && PK.cr < 0.3 && PK.touchT <= 0 && now - PK.touchOk > 0.5) { PK.touchT = 0.15; PK.touchOk = now; }
-          if (PA.s > 0 && imp > 2.5 && (_vb[0] - PA.svx) * nx + _vb[1] * ny + (_vb[2] - PA.svz) * nz > 3) PK.rel = Math.max(PK.rel, now + 0.4);
+          if ((PA.s > 0 || PA.keep) && imp > 2.5 && (_vb[0] - PA.svx) * nx + _vb[1] * ny + (_vb[2] - PA.svz) * nz > (PA.keep ? 6 : 3)) PK.rel = Math.max(PK.rel, now + (PA.keep ? 0.25 : 0.4));
         }
       }
     }
@@ -1054,13 +1144,34 @@ addPart(mGold, 0.33, 0.337, BL.SHW + 0.005, BL.SHD + 0.005, true);
 addPart(mShaft, 0, 0.16, BL.SHW + 0.008, BL.SHD + 0.014, false);                  // hosel
 addPart(mGold, 0.16, 0.172, BL.SHW + 0.011, BL.SHD + 0.017, false);
 addPart(mGold, 0.19, 0.196, BL.SHW + 0.011, BL.SHD + 0.017, false);
-// Two gloves that sit on the shaft: the top one at the top hand, the lower one wherever your lower hand slides to (gold when it is locked). They replace the
-// small blue balls that used to sit at the controllers, so the lower hand can never look as if it has come off the stick.
-const gloveTopM = new THREE.Mesh(new THREE.SphereGeometry(0.043, 14, 10), new THREE.MeshStandardMaterial({ color: 0x5aa9ee, roughness: 0.5 }));
-const gloveLoM = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.06, 4, 12), new THREE.MeshStandardMaterial({ color: 0x5aa9ee, roughness: 0.5 }));
-for (const g of [gloveTopM, gloveLoM]) { g.matrixAutoUpdate = false; g.frustumCulled = false; g.visible = false; g.castShadow = true; scene.add(g); }
+// Two hockey gloves on the shaft: the top one at the top hand, the lower one wherever your lower hand slides to. Dark purple shell, black backhand plate,
+// gold cuff trim, a thumb along the shaft toward the blade and a cuff that points back at your shoulder. They replace the small blue balls that sit at the
+// controllers. Each glove is built for one hand (the backhand plate and thumb sit on opposite sides for left and right).
+const mGlShell = new THREE.MeshStandardMaterial({ color: 0x3a1670, roughness: 0.72, metalness: 0.04 });
+const mGlBlack = new THREE.MeshStandardMaterial({ color: 0x14101c, roughness: 0.8, metalness: 0.0 });
+const mGlPalm = new THREE.MeshStandardMaterial({ color: 0x2a2233, roughness: 0.95, metalness: 0.0 });
+const mGloveGeo = {
+  fist: new THREE.CapsuleGeometry(0.041, 0.022, 4, 16), thumb: new THREE.CapsuleGeometry(0.0155, 0.03, 4, 10), cuff: new THREE.CylinderGeometry(0.058, 0.043, 0.095, 24),
+  plate: new THREE.CapsuleGeometry(0.013, 0.056, 4, 10), stripe: new THREE.BoxGeometry(0.07, 0.011, 0.0112), rim: new THREE.TorusGeometry(0.0585, 0.0045, 6, 28)
+};
+function makeGlove(side) {                   // side +1 right hand, -1 left hand; the glove's x runs along the shaft, y toward the forearm, z across
+  const g = new THREE.Group(), gold = new THREE.MeshStandardMaterial({ color: GOLD, roughness: 0.3, metalness: 0.7, emissive: 0x2e1c00 });
+  const add = (geo, mat, x, y, z, rx, ry, rz, sx, sy, sz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, rz || 0); if (sx) m.scale.set(sx, sy, sz); m.castShadow = true; g.add(m); return m; };
+  add(mGloveGeo.fist, mGlShell, 0, 0.012, 0, 0, 0, Math.PI / 2, 1, 1, 1.07);                                // the fingers wrapped round the shaft
+  for (const x of [-0.027, -0.009, 0.009, 0.027]) {                                                           // the finger breaks
+    const r = Math.sqrt(0.041 * 0.041 - Math.pow(Math.max(0, Math.abs(x) - 0.011), 2)) + 0.0009, m = add(new THREE.TorusGeometry(r, 0.0016, 5, 20), mGlBlack, x, 0.012, 0, 0, Math.PI / 2, 0, 1.07, 1, 1); m.castShadow = false;
+  }
+  add(mGloveGeo.cuff, [mGlShell, mGlBlack, mGlShell], 0, 0.083, 0, 0, 0, 0, 1.18, 1, 0.74);                   // the cuff flaring out toward the forearm, a dark opening
+  add(mGloveGeo.rim, gold, 0, 0.1305, 0, Math.PI / 2, 0, 0, 1.18, 0.74, 1);                                    // gold trim on the cuff
+  add(mGloveGeo.plate, mGlBlack, 0, 0.03, side * 0.047, 0, 0, Math.PI / 2, 1, 1, 0.34);                      // backhand plate
+  add(mGloveGeo.stripe, gold, 0, 0.05, side * 0.0475, 0, 0, 0, 1, 1, 1);
+  add(mGloveGeo.thumb, mGlShell, -0.047, 0.012, -side * 0.03, 0, 0.35 * side, Math.PI / 2, 1, 1, 1);        // thumb pointing down the shaft toward the blade
+  add(mGloveGeo.plate, mGlPalm, 0, -0.012, -side * 0.043, 0, 0, Math.PI / 2, 1, 1, 0.3);                      // the palm side, a dark pad
+  g.userData.gold = gold; g.matrixAutoUpdate = false; g.frustumCulled = false; g.visible = false; scene.add(g); return g;
+}
+const gloveL = makeGlove(-1), gloveR = makeGlove(1);
 let bladeM = null, curveCur = null, stickOn = false;
-const showStick = v => { for (const p of PARTS) p.m.visible = v; if (bladeM) bladeM.visible = v; gloveTopM.visible = gloveLoM.visible = v; };
+const showStick = v => { for (const p of PARTS) p.m.visible = v; if (bladeM) bladeM.visible = v; gloveL.visible = gloveR.visible = v; };
 function buildBladeGeo(bp) {
   const n = bp.n, TB = BL.TB, pos = [], col = [], GL = 0.84;
   const cF = new THREE.Color(0x5a2bb0), cB = new THREE.Color(0x2b1054), cG = new THREE.Color(GOLD), cE = new THREE.Color(0x3d1778);
@@ -1094,6 +1205,13 @@ for (let i = 0; i < 2; i++) {
   grip.addEventListener('disconnected', () => { for (const h of ['left', 'right']) if (hands[h] && hands[h].grip === grip) hands[h] = null; });
   rig.add(grip);
 }
+const rays = { left: null, right: null };
+for (let i = 0; i < 2; i++) {
+  const c = renderer.xr.getController(i);
+  c.addEventListener('connected', e => { const h = e.data && e.data.handedness; if (h === 'left' || h === 'right') rays[h] = c; });
+  c.addEventListener('disconnected', () => { for (const h of ['left', 'right']) if (rays[h] === c) rays[h] = null; });
+  rig.add(c);
+}
 const buzz = (h, a, ms) => {
   try {
     const s = hands[h] && hands[h].src, gp = s && s.gamepad; if (!gp) return;
@@ -1111,7 +1229,7 @@ function newRun() {
     frames: [[], [], []], secs: [0, 0, 0], last: 0, skip: 90, hz: 0, asked: st.wantHz, t0: performance.now(),
     ctl: { left: false, right: false }, profiles: [], notes: [], hs: [], calDone: false,
     sk: { dist: 0, mov: 0, top: 0, brakes: 0, brakeT: 0, bumps: 0, hard: 0, snaps: 0, speedT: [0, 0, 0], vigMax: 0, yOff: 0, crossT: 0, punches: 0 },
-    pk: { contacts: 0, hits: 0, goals: 0, posts: 0, boards: 0, outs: 0, best: 0, last: 0, scrapeT: 0, cal: 0, stickT: 0, shots: 0, onT: 0, errSum: 0, lockT: 0, lockN: 0, rollMin: 0, rollMax: 0, rollT: 0, r0Min: 0, r0Max: 0, catches: 0, tN: 0, tSum: 0, tRel: 0, tMax: 0 }
+    pk: { contacts: 0, hits: 0, goals: 0, posts: 0, boards: 0, outs: 0, best: 0, last: 0, scrapeT: 0, cal: 0, stickT: 0, shots: 0, onT: 0, errSum: 0, keepT: 0, keepN: 0, lifts: 0, apex: 0, rollMin: 0, rollMax: 0, rollT: 0, r0Min: 0, r0Max: 0, catches: 0, tN: 0, tSum: 0, tRel: 0, tMax: 0 }
   };
 }
 const run = newRun();
@@ -1340,7 +1458,7 @@ const prevBtn = { left: [], right: [] };
 const headQ = new THREE.Quaternion();
 const BODY = { yaw: 0, ok: false };
 let punching = false, boardT = 0, needPuck = false, snapArmed = true, calibReq = false, strideT = 0, braking = false, lastYaw = 0;
-let locked = false, lenT = 0, lenDirty = false, carryBuzz = 0;
+let keepOn = false, snapTele = false, recalT = 0, lenT = 0, lenDirty = false, carryBuzz = 0;
 function headYaw() {
   const f = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion);
   if (f.x * f.x + f.z * f.z > 0.04) lastYaw = Math.atan2(f.z, f.x);               // looking straight up or down: keep the last heading
@@ -1350,6 +1468,8 @@ function rotateRig(delta, hw) {
   const px = rig.position.x - hw.x, pz = rig.position.z - hw.z, c = Math.cos(delta), s = Math.sin(delta);
   rig.position.x = hw.x + px * c + pz * s; rig.position.z = hw.z - px * s + pz * c;
   rig.rotation.y += delta; BODY.yaw -= delta; lastYaw -= delta;
+  if (puckFollows(pClock)) turnPuck(delta, hw.x, hw.z, S.vx, S.vz);                // a puck on the blade comes round with it
+  snapTele = true;                                                                  // the blade jumped with the rig: not blade speed
 }
 function calibrate(headY, forced) {
   if (st.height === 'standing') { st.yOff = 0; if (forced) toast('Stick and height set (standing)'); return; }
@@ -1359,11 +1479,11 @@ function calibrate(headY, forced) {
   run.sk.yOff = st.yOff;
   if (forced) toast('Stick and height set: eyes at ' + (headY + st.yOff).toFixed(2) + ' m'); else if (st.yOff > 0.02) toast('Height set: eyes at ' + (headY + st.yOff).toFixed(2) + ' m');
 }
-function setLock(v) {
-  if (v === locked) return;
-  locked = v; if (v) run.pk.lockN++;
-  if (st.lockM === 'latch') toast(v ? 'Lower hand locked' : 'Lower hand free');
-  buzz(handLo, 0.3, 25); buzz(handTop, 0.2, 25); if (audio) audio.click(v);
+function setKeep(v) {
+  if (v === keepOn) return;
+  keepOn = v; if (v) run.pk.keepN++;
+  if (st.keepM === 'toggle') toast(v ? 'Keeping the puck' : 'Puck released');
+  buzz(handLo, 0.25, 22); buzz(handTop, 0.15, 22); if (audio) audio.click(v);
 }
 function cycleSpeed() {
   st.speed = (st.speed + 1) % 3; saveSettings(); const e = $('speed'); if (e) e.value = String(st.speed);
@@ -1378,7 +1498,7 @@ function pollInput(dt, hw, hy) {
     const ax = gp.axes.length >= 4 ? [gp.axes[2], gp.axes[3]] : [gp.axes[0] || 0, gp.axes[1] || 0];
     const pb = prevBtn[h], edge = i => !!(gp.buttons[i] && gp.buttons[i].pressed) && !pb[i];
     if (h === 'left') {
-      if (edge(4)) { s.end(); return; }
+      if (edge(4)) openMenu();
       if (edge(5)) { calibReq = true; STK.calReq = true; run.pk.cal++; }
       sx = ax[0]; sy = ax[1];
       const tr = gp.buttons[0]; brake = tr ? (tr.value || (tr.pressed ? 1 : 0)) : 0;
@@ -1386,10 +1506,10 @@ function pollInput(dt, hw, hy) {
       if (edge(4)) cycleSpeed();
       if (edge(5)) placePuck();
       if (edge(3)) nextCurve();
-      const lt = gp.buttons[0], lv = lt ? (lt.value || (lt.pressed ? 1 : 0)) : 0;                    // the right trigger locks the lower hand
-      if (st.lockM === 'hold') { const want = locked ? lv > 0.35 : lv > 0.6; if (want !== locked) setLock(want); }
-      else if (st.lockM === 'latch') { if (edge(0)) setLock(!locked); }
-      else if (locked) setLock(false);
+      const lt = gp.buttons[0], lv = lt ? (lt.value || (lt.pressed ? 1 : 0)) : 0;                    // the right trigger keeps the puck on the blade
+      if (st.keepM === 'hold') { const want = keepOn ? lv > 0.3 : lv > 0.55; if (want !== keepOn) setKeep(want); }
+      else if (st.keepM === 'toggle') { if (edge(0)) setKeep(!keepOn); }
+      else if (keepOn) setKeep(false);
       tx = ax[0];
       if (Math.abs(ax[1]) > 0.25) {
         st.len = clamp(st.len - Math.sign(ax[1]) * ((Math.abs(ax[1]) - 0.25) / 0.75) * 0.2 * dt, 1.27, 1.73); st.lenIn = Math.round(st.len / 0.0254 * 10) / 10; lenDirty = true;
@@ -1429,25 +1549,36 @@ function pollInput(dt, hw, hy) {
   skInfo.brake = brake;
 }
 const QT = new THREE.Quaternion(), PV = new THREE.Vector3(), SV = new THREE.Vector3();
+const RSRC = { top: 0, lower: 1, both: 2 };
 const STA = { tx: 0, ty: 0, tz: 0, lx: 0, ly: 0, lz: 0, qx: 0, qy: 0, qz: 0, qw: 1, fx: 1, fz: 0, dt: 0.011 };
 let bladeSp = 0, handLo = 'right', handTop = 'left', pClock = 0, lastHitToast = -9, scrapeBuzz = 0;
 function updateStick(dt) {
   handLo = st.shot === 'right' ? 'right' : 'left'; handTop = handLo === 'right' ? 'left' : 'right';
   const lo = hands[handLo], tp = hands[handTop];
   if (!lo || !tp) { stickOn = false; showStick(false); for (const k of ['left', 'right']) { const g0 = hands[k] && hands[k].grip.children[0]; if (g0) g0.visible = true; } return; }
-  if (st.lockM === 'off') locked = false;
+  if (st.keepM === 'off') keepOn = false;
   tp.grip.matrixWorld.decompose(PV, QT, SV); STA.tx = PV.x; STA.ty = PV.y; STA.tz = PV.z; STA.qx = QT.x; STA.qy = QT.y; STA.qz = QT.z; STA.qw = QT.w;
-  lo.grip.matrixWorld.decompose(PV, QT, SV); STA.lx = PV.x; STA.ly = PV.y; STA.lz = PV.z;
+  lo.grip.matrixWorld.decompose(PV, QT, SV); STA.lx = PV.x; STA.ly = PV.y; STA.lz = PV.z; STA.lqx = QT.x; STA.lqy = QT.y; STA.lqz = QT.z; STA.lqw = QT.w;
   STA.fx = HF.x; STA.fz = HF.z; STA.dt = dt; STK.hand = st.shot === 'right' ? 1 : -1; STK.len = st.len;
-  STA.one = 0; STA.lock = locked ? 1 : 0; STA.gain = ROLLS[st.rollG]; STA.bend = st.bendOn ? 0.8 : 0;
+  STA.one = 0; STA.lock = 0; STA.gain = ROLLS[st.rollG]; STA.bend = st.bendOn ? 0.8 : 0; STA.rsrc = RSRC[st.rollSrc]; STA.tele = snapTele; snapTele = false; STA.svx = S.vx; STA.svz = S.vz;
   stickSolve(STA);
   if (STK.autoFired) { STK.autoFired = false; run.pk.cal++; toast('Stick set. Y sets it again'); }
   applyStickMeshes(); stickOn = true;
   const F = STK.F, Fp = STK.Fp;
   bladeSp = Math.hypot(F.Ox - Fp.Ox, F.Oy - Fp.Oy, F.Oz - Fp.Oz) / Math.max(dt, 1e-3);
   for (const hnd of [lo, tp]) { const g0 = hnd.grip.children[0]; if (g0) g0.visible = false; }                 // the gloves on the shaft stand in for the controller balls
-  const kp = run.pk; if (locked) kp.lockT += dt;
-  if (STK.cal && STK.ok) { const rd = STK.rollG * 57.2958, r0 = STK.r0 * 57.2958; if (rd < kp.rollMin) kp.rollMin = rd; if (rd > kp.rollMax) kp.rollMax = rd; if (Math.abs(rd) > 15) kp.rollT += dt; if (r0 < kp.r0Min) kp.r0Min = r0; if (r0 > kp.r0Max) kp.r0Max = r0; }
+  const kp = run.pk; if (keepOn) kp.keepT += dt;
+  if (STK.cal && STK.ok) { const rd = STK.rollG * 57.2958, r0 = STK.r0a * 57.2958; if (rd < kp.rollMin) kp.rollMin = rd; if (rd > kp.rollMax) kp.rollMax = rd; if (Math.abs(rd) > 15) kp.rollT += dt; if (r0 < kp.r0Min) kp.r0Min = r0; if (r0 > kp.r0Max) kp.r0Max = r0; }
+}
+const HEADW = new THREE.Vector3();
+// a glove sits on the shaft t metres from the heel; its cuff points toward that shoulder, made square to the shaft
+function placeGlove(g, t, hand) {
+  const F = STK.F, px = F.Ox + F.Sx * t, py = F.Oy + F.Sy * t, pz = F.Oz + F.Sz * t, side = hand === 'right' ? 1 : -1;
+  let vx = HEADW.x - HF.z * 0.26 * side - HF.x * 0.04 - px, vy = HEADW.y - 0.58 - py, vz = HEADW.z + HF.x * 0.26 * side - HF.z * 0.04 - pz;
+  const d = vx * F.Sx + vy * F.Sy + vz * F.Sz; vx -= d * F.Sx; vy -= d * F.Sy; vz -= d * F.Sz;
+  let l = Math.hypot(vx, vy, vz); if (l < 1e-4) { vx = F.Ex; vy = F.Ey; vz = F.Ez; l = 1; } vx /= l; vy /= l; vz /= l;
+  const zx = F.Sy * vz - F.Sz * vy, zy = F.Sz * vx - F.Sx * vz, zz = F.Sx * vy - F.Sy * vx;
+  g.matrix.set(F.Sx, vx, zx, px, F.Sy, vy, zy, py, F.Sz, vz, zz, pz, 0, 0, 0, 1); g.matrixWorldNeedsUpdate = true; g.visible = true;
 }
 function applyStickMeshes() {
   const F = STK.F, len = STK.len;
@@ -1458,17 +1589,19 @@ function applyStickMeshes() {
     p.m.matrix.set(F.Ex * p.w, F.Sx * L, zx * p.d, F.Ox + F.Sx * c, F.Ey * p.w, F.Sy * L, zy * p.d, F.Oy + F.Sy * c, F.Ez * p.w, F.Sz * L, zz * p.d, F.Oz + F.Sz * c, 0, 0, 0, 1);
     p.m.matrixWorldNeedsUpdate = true; p.m.visible = true;
   }
-  for (const [m, t] of [[gloveTopM, STK.tTop], [gloveLoM, STK.tLo]]) { m.matrix.set(F.Ex, F.Sx, zx, F.Ox + F.Sx * t, F.Ey, F.Sy, zy, F.Oy + F.Sy * t, F.Ez, F.Sz, zz, F.Oz + F.Sz * t, 0, 0, 0, 1); m.matrixWorldNeedsUpdate = true; m.visible = true; }
-  gloveLoM.material.color.setHex(locked ? GOLD : 0x5aa9ee);
+  placeGlove(handTop === 'left' ? gloveL : gloveR, STK.tTop, handTop); placeGlove(handLo === 'left' ? gloveL : gloveR, STK.tLo, handLo);
+  (handLo === 'left' ? gloveL : gloveR).userData.gold.emissive.setHex(keepOn ? 0xa06a00 : 0x2e1c00);
+  (handLo === 'left' ? gloveR : gloveL).userData.gold.emissive.setHex(0x2e1c00);
   const tb = BL.TB / 2;
   if (bladeM) { bladeM.matrix.set(F.Ux, F.Px, F.Wx, F.Ox + F.Wx * tb, F.Uy, F.Py, F.Wy, F.Oy + F.Wy * tb, F.Uz, F.Pz, F.Wz, F.Oz + F.Wz * tb, 0, 0, 0, 1); bladeM.matrixWorldNeedsUpdate = true; bladeM.visible = true; }
 }
 function puckFrame(dt) {
   pClock += dt;
   if (PK.out > 1.2) { placePuck(); EV.length = 0; run.pk.outs++; toast('Puck out of play'); }
-  PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz;
+  PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || 0;
   puckAdvance(dt, stickOn, POWERS[st.power], pClock);
-  puck.position.set(PK.x, PK.y, PK.z); puck.rotation.y = PK.rot;
+  puck.position.set(PK.x, PK.y, PK.z); puck.rotation.y = PK.rot; puck.material.emissive.setHex(keepOn && stickOn ? 0x4a3000 : 0x000000);
+  const ah = PK.y - PUCK.HH; if (ah > run.pk.apex) run.pk.apex = ah;
   const k = 1 / (1 + Math.max(0, PK.y - PUCK.HH) * 1.6);
   puckShadow.position.set(PK.x, 0.006, PK.z); puckShadow.scale.set(k, k, 1); puckShadow.material.opacity = 0.32 * k;
 }
@@ -1488,6 +1621,8 @@ function pkEffects(dt) {
       if (audio) audio.hit(v, e);
     } else if (e.k === 'catch') {
       kp.catches++; hap(0, handLo, clamp(0.28 + e.v / 30, 0.28, 0.6), 35); hap(0, handTop, 0.25, 30); if (audio) audio.catchPuck(e.v, e);
+    } else if (e.k === 'lift') {
+      kp.lifts++;
     } else if (e.k === 'touchv') {
       kp.tN++; kp.tSum += e.v; kp.tRel += e.r; kp.tMax = Math.max(kp.tMax, e.r);
     } else if (e.k === 'launch') {
@@ -1532,7 +1667,7 @@ function boardText() {
     l2: 'Last hit ' + Math.round(kp.last) + ' km/h     Best ' + Math.round(kp.best),
     l3: 'Goals ' + kp.goals + '     Hits ' + kp.hits + '     Posts ' + kp.posts,
     l4: 'FPS ' + (fps || '--') + '  (' + NAMES[st.level] + ')     Slow frames ' + slow + '%',
-    l5: cv.name + '  lie ' + cv.lie + '   ' + (Math.round(st.lenIn * 2) / 2) + ' in   ' + (locked ? 'LOCKED' : 'TWO HANDS') + '   roll ' + Math.round(STK.rollG * 57.2958) + '°'
+    l5: cv.name + '  lie ' + cv.lie + '   ' + (Math.round(st.lenIn * 2) / 2) + ' in   ' + (keepOn ? 'KEEPING PUCK' : 'puck free') + '   roll ' + Math.round(STK.rollG * 57.2958) + '°'
   });
 }
 function effects(dt) {
@@ -1555,19 +1690,169 @@ function effects(dt) {
   pkEffects(dt);
   updateVig(dt, skInfo); updateToast(dt);
 }
+// ---------------------------------------------------------------- pause menu
+// X opens a panel in front of you. Point at it with either controller and pull the trigger. The game stands still while it is open.
+const MW = 1024, MH = 720, PNW = 1.3, PNH = PNW * MH / MW;
+const menuCv = document.createElement('canvas'); menuCv.width = MW; menuCv.height = MH;
+const mg = menuCv.getContext('2d');
+const menuTex = new THREE.CanvasTexture(menuCv); if ('colorSpace' in menuTex) menuTex.colorSpace = THREE.SRGBColorSpace; menuTex.anisotropy = 4;
+const menuM = new THREE.Mesh(new THREE.PlaneGeometry(PNW, PNH), new THREE.MeshBasicMaterial({ map: menuTex, fog: false, toneMapped: false }));
+menuM.visible = false; menuM.frustumCulled = false; menuM.renderOrder = 900; scene.add(menuM);
+const laserGeo = new THREE.CylinderGeometry(0.0025, 0.0025, 1, 6); laserGeo.rotateX(-Math.PI / 2); laserGeo.translate(0, 0, -0.5);
+const lasers = {}, dots = {};
+for (const h of ['left', 'right']) {
+  const l = new THREE.Mesh(laserGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false })); l.visible = false; l.frustumCulled = false; l.renderOrder = 901; lasers[h] = l;
+  const d = new THREE.Mesh(new THREE.SphereGeometry(0.011, 10, 8), new THREE.MeshBasicMaterial({ color: 0xe0a928, fog: false, depthTest: false })); d.visible = false; d.renderOrder = 902; d.frustumCulled = false; scene.add(d); dots[h] = d;
+}
+const MENU = { open: false, tab: 0, dirty: true, hov: { left: -1, right: -1 }, hits: [], leave: 0, tabArm: true };
+const TABS = ['Stick', 'Skating', 'Game'];
+const cyc = (n, i, d) => (i + d + n) % n;
+function setSetting(key, val) {
+  st[key] = val;
+  if (key === 'curve') { setCurve(val); drawCurve(); }
+  else if (key === 'lenIn') st.len = st.lenIn * 0.0254;
+  else if (key === 'shot') stickReset(STK.bp, val === 'right' ? 1 : -1, st.len);
+  else if (key === 'level') applyLevel(val);
+  else if (key === 'height') calibReq = true;
+  else if (key === 'sound') { if (val) { if (!audio) { try { audio = makeAudio(); if (audio) audio.resume(); } catch (e) { audio = null; } } } else closeAudio(); }
+  saveSettings(); syncUI(); MENU.dirty = true;
+}
+const KEEP_NAMES = { hold: 'Hold the trigger', toggle: 'Press on, press off', off: 'Off' };
+function menuRows(tab) {
+  if (tab === 0) return [
+    { l: 'Stick curve', v: () => { const c = curveCur || curveById(st.curve); return c.name + '  ' + c.code; }, s: d => setSetting('curve', CURVES[cyc(CURVES.length, CURVES.findIndex(c => c.id === st.curve), d)].id) },
+    { l: 'Stick length', v: () => Math.round(st.lenIn) + ' in', s: d => setSetting('lenIn', clamp(Math.round(st.lenIn) + d, 50, 68)) },
+    { l: 'Blade roll amount', v: () => ROLL_NAMES[st.rollG], s: d => setSetting('rollG', cyc(ROLL_NAMES.length, st.rollG, d)) },
+    { l: 'Blade roll comes from', v: () => ROLL_SRC_NAMES[ROLL_SRC.indexOf(st.rollSrc)], s: d => setSetting('rollSrc', ROLL_SRC[cyc(3, ROLL_SRC.indexOf(st.rollSrc), d)]) },
+    { l: 'Puck help', v: () => ASSIST_NAMES[st.assistP], s: d => setSetting('assistP', cyc(4, st.assistP, d)) },
+    { l: 'Shot lift', v: () => LIFT_NAMES[st.liftP], s: d => setSetting('liftP', cyc(4, st.liftP, d)) },
+    { l: 'Shot power', v: () => POWER_NAMES[st.power], s: d => setSetting('power', cyc(3, st.power, d)) },
+    { l: 'Keep puck (right trigger)', v: () => KEEP_NAMES[st.keepM], s: d => setSetting('keepM', ['hold', 'toggle', 'off'][cyc(3, ['hold', 'toggle', 'off'].indexOf(st.keepM), d)]) }
+  ];
+  if (tab === 1) return [
+    { l: 'Top speed', v: () => SPEED_NAMES[st.speed] + '  ' + Math.round(kmh(SPEEDS[st.speed])) + ' km/h', s: d => setSetting('speed', cyc(3, st.speed, d)) },
+    { l: 'Steer by', v: () => st.steer === 'body' ? 'Your body' : 'Your head', s: () => setSetting('steer', st.steer === 'body' ? 'head' : 'body') },
+    { l: 'Turning', v: () => ({ snap30: 'Snap 30°', snap45: 'Snap 45°', smooth: 'Smooth', off: 'Off' })[st.turn], s: d => setSetting('turn', ['snap30', 'snap45', 'smooth', 'off'][cyc(4, ['snap30', 'snap45', 'smooth', 'off'].indexOf(st.turn), d)]) },
+    { l: 'Comfort vignette', v: () => ['Off', 'Light', 'Medium', 'Strong'][st.vig], s: d => setSetting('vig', cyc(4, st.vig, d)) },
+    { l: 'Your height', v: () => ({ auto: 'Auto', standing: 'Standing', seated: 'Seated' })[st.height], s: d => setSetting('height', ['auto', 'standing', 'seated'][cyc(3, ['auto', 'standing', 'seated'].indexOf(st.height), d)]) },
+    { l: 'Crossovers and punch turns', v: () => st.assist ? 'On' : 'Off', s: () => setSetting('assist', !st.assist) }
+  ];
+  return [
+    { l: 'Sound', v: () => st.sound ? 'On' : 'Off', s: () => setSetting('sound', !st.sound) },
+    { l: 'Scene detail', v: () => NAMES[st.level], s: d => setSetting('level', cyc(3, st.level, d)) },
+    { l: 'Which way you shoot', v: () => st.shot === 'right' ? 'Right' : 'Left', s: () => setSetting('shot', st.shot === 'right' ? 'left' : 'right') },
+    { l: 'Wrist bend also rolls the blade', v: () => st.bendOn ? 'On' : 'Off', s: () => setSetting('bendOn', !st.bendOn) }
+  ];
+}
+function rrect(x, y, w, h, r) { mg.beginPath(); mg.moveTo(x + r, y); mg.arcTo(x + w, y, x + w, y + h, r); mg.arcTo(x + w, y + h, x, y + h, r); mg.arcTo(x, y + h, x, y, r); mg.arcTo(x, y, x + w, y, r); mg.closePath(); }
+function fitText(t, x, y, maxW, px, weight) { let f = px; mg.font = weight + ' ' + f + 'px system-ui, sans-serif'; while (f > 18 && mg.measureText(t).width > maxW) { f -= 1; mg.font = weight + ' ' + f + 'px system-ui, sans-serif'; } mg.fillText(t, x, y); }
+function drawMenu() {
+  const hits = MENU.hits = [], hov = i => MENU.hov.left === i || MENU.hov.right === i;
+  const widget = (x, y, w, h, fill, act, r) => { const i = hits.length; hits.push({ x, y, w, h, act }); rrect(x, y, w, h, r || 12); mg.fillStyle = fill; mg.fill(); if (hov(i)) { mg.lineWidth = 4; mg.strokeStyle = '#e0a928'; mg.stroke(); } return i; };
+  mg.clearRect(0, 0, MW, MH);
+  mg.fillStyle = '#150e22'; rrect(0, 0, MW, MH, 30); mg.fill();
+  mg.lineWidth = 6; mg.strokeStyle = '#e0a928'; rrect(5, 5, MW - 10, MH - 10, 27); mg.stroke();
+  mg.textBaseline = 'middle'; mg.textAlign = 'left'; mg.fillStyle = '#e0a928'; mg.font = '700 34px system-ui, sans-serif'; mg.fillText('RAVENS VR', 38, 44);
+  mg.fillStyle = '#b9a8d8'; mg.textAlign = 'right'; mg.font = '500 22px system-ui, sans-serif'; mg.fillText('Paused   ·   point and pull the trigger   ·   X resumes', MW - 38, 44);
+  TABS.forEach((n, i) => {
+    widget(38 + i * 316, 78, 300, 54, i === MENU.tab ? '#5a2bb0' : '#2a1a44', () => { MENU.tab = i; });
+    mg.textAlign = 'center'; mg.fillStyle = i === MENU.tab ? '#ffffff' : '#c9bde3'; mg.font = '700 27px system-ui, sans-serif'; mg.fillText(n, 38 + i * 316 + 150, 78 + 28);
+    if (i === MENU.tab) { mg.fillStyle = '#e0a928'; mg.fillRect(38 + i * 316 + 30, 78 + 49, 240, 4); }
+  });
+  menuRows(MENU.tab).forEach((r, i) => {
+    const y = 152 + i * 58;
+    rrect(38, y, MW - 76, 52, 12); mg.fillStyle = i % 2 ? '#1c1230' : '#20153a'; mg.fill();
+    mg.textAlign = 'left'; mg.fillStyle = '#e4dcf2'; fitText(r.l, 58, y + 27, 440, 27, '600');
+    widget(520, y + 4, 60, 44, '#3d1778', () => r.s(-1), 10); widget(916, y + 4, 60, 44, '#3d1778', () => r.s(1), 10);
+    mg.textAlign = 'center'; mg.fillStyle = '#e0a928'; mg.font = '700 32px system-ui, sans-serif'; mg.fillText('‹', 550, y + 25); mg.fillText('›', 946, y + 25);
+    widget(584, y + 4, 328, 44, '#2f1c52', () => r.s(1), 10);
+    mg.textAlign = 'center'; mg.fillStyle = '#ffffff'; fitText(r.v(), 748 - 0, y + 27, 312, 27, '600');
+  });
+  const bts = [['Resume', '#5a2bb0', () => closeMenu()], ['Set stick and height', '#3d1778', () => { closeMenu(); recalT = 1.4; toast('Get into your ready stance'); }], ['Puck back', '#3d1778', () => { placePuck(); }],
+    [MENU.leave > 0 ? 'Press again to leave' : 'Leave VR', '#7a1f2b', () => { if (MENU.leave > 0) { const ss = renderer.xr.getSession(); if (ss) ss.end(); } else MENU.leave = 3; }]];
+  bts.forEach((b, i) => { widget(38 + i * 238, 636, 226, 64, b[1], b[2], 14); mg.textAlign = 'center'; mg.fillStyle = '#ffffff'; fitText(b[0], 38 + i * 238 + 113, 636 + 33, 206, 25, '700'); });
+  menuTex.needsUpdate = true; MENU.dirty = false;
+}
+const _ro = new THREE.Vector3(), _rd = new THREE.Vector3(), _pn = new THREE.Vector3(), _t3 = new THREE.Vector3(), _hp = new THREE.Vector3(), _lp = new THREE.Vector3();
+function openMenu() {
+  if (MENU.open) return;
+  MENU.open = true; MENU.dirty = true; MENU.leave = 0; MENU.hov.left = MENU.hov.right = -1; setKeep(false);
+  const f = HF, hp = HEADW, y = Math.max(1.0, hp.y - 0.08);
+  menuM.position.set(hp.x + f.x * 1.1, y, hp.z + f.z * 1.1); menuM.lookAt(hp.x, y, hp.z); menuM.visible = true; menuM.updateMatrixWorld(true);
+  S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
+  stickOn = false; showStick(false); for (const k of ['left', 'right']) { const g0 = hands[k] && hands[k].grip.children[0]; if (g0) g0.visible = true; }
+  if (audio) { audio.carry(0); audio.scrape(0); audio.update(skInfo, SPEEDS[st.speed], 0, st.level); }
+  buzz('left', 0.2, 20); buzz('right', 0.2, 20); if (audio) audio.click(true);
+}
+function closeMenu() {
+  if (!MENU.open) return;
+  MENU.open = false; menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
+  run.skip = Math.max(run.skip, 20); run.last = 0; saveSettings(); if (audio) audio.click(false);
+}
+function menuFrame(dt) {
+  const s = renderer.xr.getSession(); if (!s) return;
+  const hov = { left: -1, right: -1 };
+  for (const h of ['left', 'right']) {
+    const ray = rays[h], dot = dots[h], las = lasers[h];
+    if (!ray) { las.visible = false; dot.visible = false; continue; }
+    if (las.parent !== ray) ray.add(las);
+    ray.updateWorldMatrix(true, false); _ro.setFromMatrixPosition(ray.matrixWorld); _rd.set(0, 0, -1).transformDirection(ray.matrixWorld);
+    _pn.set(0, 0, 1).transformDirection(menuM.matrixWorld);
+    const den = _pn.dot(_rd); let dist = 3, onPanel = false, hit = -1;
+    if (den < -1e-4) {
+      const tt = _pn.dot(_t3.copy(menuM.position).sub(_ro)) / den;
+      if (tt > 0.05 && tt < 8) {
+        _hp.copy(_rd).multiplyScalar(tt).add(_ro); _lp.copy(_hp); menuM.worldToLocal(_lp);
+        const cx = (_lp.x / PNW + 0.5) * MW, cy = (0.5 - _lp.y / PNH) * MH;
+        if (cx >= 0 && cx <= MW && cy >= 0 && cy <= MH) {
+          onPanel = true; dist = tt; dot.position.copy(_hp);
+          for (let i = 0; i < MENU.hits.length; i++) { const r = MENU.hits[i]; if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) { hit = i; break; } }
+        }
+      }
+    }
+    dot.visible = onPanel; las.visible = true; las.scale.z = dist; las.material.color.setHex(hit >= 0 ? 0xe0a928 : 0xffffff); hov[h] = hit;
+  }
+  for (const h of ['left', 'right']) if (hov[h] !== MENU.hov[h]) { MENU.dirty = true; if (hov[h] >= 0) buzz(h, 0.1, 8); }
+  MENU.hov = hov;
+  let closing = false;
+  for (const src of s.inputSources) {
+    const gp = src.gamepad, h = src.handedness; if (!gp || (h !== 'left' && h !== 'right')) continue;
+    const pb = prevBtn[h], edge = i => !!(gp.buttons[i] && gp.buttons[i].pressed) && !pb[i];
+    if (h === 'left' && edge(4)) closing = true;
+    if (h === 'left' && edge(5)) { closing = true; recalT = 1.4; toast('Get into your ready stance'); }
+    if (h === 'right' && edge(5)) placePuck();
+    if (edge(0) && hov[h] >= 0 && MENU.hits[hov[h]]) { const r = MENU.hits[hov[h]]; r.act(); MENU.dirty = true; buzz(h, 0.3, 25); if (audio && MENU.open) audio.click(true); }
+    if (h === 'right') {
+      const ax = gp.axes.length >= 4 ? gp.axes[2] : (gp.axes[0] || 0);
+      if (Math.abs(ax) < 0.35) MENU.tabArm = true; else if (MENU.tabArm && Math.abs(ax) > 0.75) { MENU.tabArm = false; MENU.tab = cyc(3, MENU.tab, ax > 0 ? 1 : -1); MENU.dirty = true; }
+    }
+    for (let i = 0; i < gp.buttons.length; i++) pb[i] = !!gp.buttons[i].pressed;
+  }
+  if (MENU.leave > 0) { MENU.leave -= dt; if (MENU.leave <= 0) { MENU.leave = 0; MENU.dirty = true; } }
+  if (closing) closeMenu();
+  else if (MENU.dirty) drawMenu();
+  updateToast(dt);
+}
 const HF = new THREE.Vector3();
 function vrFrame(t, frame, dt) {
-  if (run.last) {
+  if (MENU.open) run.last = 0;
+  else if (run.last) {
     const d = t - run.last;
     if (run.skip > 0) run.skip--; else if (d > 0 && d < 500) { run.frames[st.level].push(d); run.secs[st.level] += d / 1000; }
   }
-  run.last = t;
+  if (!MENU.open) run.last = t;
   const ref = renderer.xr.getReferenceSpace(), vp = ref && frame.getViewerPose(ref);
   let hw = null, hy = 0;
   if (vp) {
     const o = vp.transform.orientation, p = vp.transform.position; headQ.set(o.x, o.y, o.z, o.w);
     rig.updateMatrixWorld(true); hw = rig.localToWorld(new THREE.Vector3(p.x, p.y, p.z)); hy = p.y;
   }
+  if (hw) HEADW.copy(hw);
+  if (MENU.open) {                                                             // paused: the game stands still, you point at the menu
+    rig.updateMatrixWorld(true); const f0 = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion); HF.set(f0.x, 0, f0.z); if (HF.lengthSq() < 0.04) HF.set(Math.cos(lastYaw), 0, Math.sin(lastYaw)); HF.normalize();
+    menuFrame(dt); return;
+  }
+  if (recalT > 0) { recalT -= dt; if (recalT <= 0) { calibReq = true; STK.calReq = true; run.pk.cal++; } }
   pollInput(dt, hw, hy);
   rig.updateMatrixWorld(true);
   const f = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion); HF.set(f.x, 0, f.z);
@@ -1627,8 +1912,8 @@ async function enterVR() {
     S.x = -10; S.z = 0; S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
     BODY.ok = false; st.yOff = 0; snapArmed = true; calibReq = false; braking = false; vigU = 0; lastYaw = -Math.PI / 2;
     H.ok = false; needPuck = true; if (audio) audio.resume();
-    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; locked = false; lenT = 0; lenDirty = false;
-    toast('Ready stance, blade near the ice. Y sets the stick');
+    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; snapTele = false; recalT = 0; MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
+    toast('Ready stance, blade near the ice. X opens the menu');
     try {
       const sup = session.supportedFrameRates ? Array.from(session.supportedFrameRates) : [];
       run.supported = sup;
@@ -1641,7 +1926,7 @@ async function enterVR() {
 }
 function onEnd() {
   st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
-  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false);
+  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; MENU.open = false; menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
   const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, pk: { ...run.pk }, frames: run.frames.map(a => a.slice()) };
   buildResult(ended);
 }
@@ -1651,7 +1936,7 @@ function renderTable(rows) {
   const tb = $('lvtable'); tb.innerHTML = '';
   rows.forEach((r, i) => { const tr = document.createElement('tr'); r.forEach((c, j) => { const td = document.createElement(i === 0 ? 'th' : 'td'); td.textContent = c; if (r.length === 2 && j === 1) td.colSpan = 5; tr.appendChild(td); }); tb.appendChild(tr); });
 }
-const RADIOS = ['cf', 'sf', 'af', 'pf', 'bf', 'rf', 'hf', 'kf', 'uf', 'zf', 'xf'], CHECKS = ['cb', 'sb', 'kb'];
+const RADIOS = ['cf', 'sf', 'af', 'pf', 'bf', 'rf', 'hf', 'kf', 'uf', 'zf', 'xf', 'lf', 'mf', 'gf'], CHECKS = ['cb', 'sb', 'kb'];
 const ALLIN = RADIOS.concat(CHECKS).map(n => 'input[name="' + n + '"]').join(',');
 const picked = () => { const o = {}; for (const n of RADIOS) o[n] = (document.querySelector('input[name="' + n + '"]:checked') || {}).value || ''; for (const n of CHECKS) o[n] = Array.from(document.querySelectorAll('input[name="' + n + '"]:checked')).map(x => x.value); return o; };
 function comfortLine() {
@@ -1670,9 +1955,9 @@ function stickLine() {
 function feelLine() {
   const p = picked(), bits = [];
   if (p.af) bits.push('Accuracy: ' + p.af); if (p.pf) bits.push('Shot power: ' + p.pf); if (p.bf) bits.push('Boards: ' + p.bf);
-  if (p.rf) bits.push('Wrist roll: ' + p.rf); if (p.hf) bits.push('Lower hand and lock: ' + p.hf); if (p.uf) bits.push('Puck control: ' + p.uf); if (p.zf) bits.push('Sounds: ' + p.zf); if (p.xf) bits.push('Buzz: ' + p.xf); if (p.kf) bits.push('Stick length: ' + p.kf);
+  if (p.rf) bits.push('Blade roll: ' + p.rf); if (p.lf) bits.push('Lifting the puck: ' + p.lf); if (p.hf) bits.push('Keep puck and snap turns: ' + p.hf); if (p.mf) bits.push('Menu and start screen: ' + p.mf); if (p.gf) bits.push('Gloves: ' + p.gf); if (p.uf) bits.push('Puck control: ' + p.uf); if (p.zf) bits.push('Sounds: ' + p.zf); if (p.xf) bits.push('Buzz: ' + p.xf); if (p.kf) bits.push('Stick length: ' + p.kf);
   if (p.kb.length) bits.push('Also: ' + p.kb.join(', '));
-  return bits.length ? bits.join('. ') : 'Accuracy, power, boards, roll, lock, puck control, sound, buzz: not rated yet';
+  return bits.length ? bits.join('. ') : 'Accuracy, power, boards, roll, lift, keep puck, menu, gloves, puck control, sound, buzz: not rated yet';
 }
 function refreshRep() { $('rep').textContent = baseLines.concat([comfortLine(), stickLine(), feelLine()]).join('\n'); saveResult(); }
 function loadResult() {
@@ -1690,7 +1975,7 @@ function fmt(n, d) { return n == null || Number.isNaN(n) ? '--' : n.toFixed(d ==
 function buildResult(r) {
   $('result').hidden = false;
   document.querySelectorAll(ALLIN).forEach(x => { x.checked = false; });
-  const lines = ['Ravens VR Phase 3 report (round 3)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+  const lines = ['Ravens VR Phase 3 report (round 4)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     'Page: ' + (probeInfo.frame ? 'inside a frame (VR permission ' + probeInfo.policy + ')' : 'its own page'),
     'Browser: ' + (probeInfo.device || probeInfo.ua.slice(0, 80)), 'VR supported: ' + (probeInfo.vr === null ? 'unknown' : probeInfo.vr ? 'yes' : 'no')];
   const rows = [['Scene', 'Seconds', 'Average', 'Low 1%', 'Worst', 'Slow']];
@@ -1704,12 +1989,13 @@ function buildResult(r) {
   const cv = curveCur || curveById(st.curve), pk = r.pk || run.pk;
   lines.push('Settings: steer ' + st.steer + ', turn ' + st.turn + ', vignette ' + ['off', 'light', 'medium', 'strong'][st.vig] + ', height ' + st.height + (k.yOff > 0.02 ? ' (raised ' + Math.round(k.yOff * 100) + ' cm)' : '') + ', sound ' + (st.sound ? 'on' : 'off'));
   lines.push('Stick: ' + curveLabel(cv) + ', length ' + st.lenIn.toFixed(1) + ' in (' + st.len.toFixed(2) + ' m), shoots ' + st.shot + ', shot power ' + POWER_NAMES[st.power] + ', skating assist ' + (st.assist ? 'on' : 'off') + ', stick set ' + pk.cal + ' times, held ' + fmt(pk.stickT) + ' s');
-  lines.push('Grip: lock setting ' + st.lockM + ', locked for ' + fmt(pk.lockT) + ' s over ' + pk.lockN + ' locks. Wrist roll ' + ROLL_NAMES[st.rollG] + ' (' + ROLLS[st.rollG] + 'x, ' + (st.bendOn ? 'twist and bend' : 'twist only') + '); roll applied ' + fmt(pk.rollMin) + ' to +' + fmt(pk.rollMax) + ' degrees, beyond 15 degrees for ' + fmt(pk.rollT, 1) + ' s; the neutral it learned from your grip moved between ' + fmt(pk.r0Min) + ' and +' + fmt(pk.r0Max) + ' degrees');
+  lines.push('Grip: keep-puck trigger ' + KEEP_NAMES[st.keepM] + ', kept for ' + fmt(pk.keepT) + ' s over ' + pk.keepN + ' times. Blade roll from ' + ROLL_SRC_NAMES[ROLL_SRC.indexOf(st.rollSrc)].toLowerCase() + ', ' + ROLL_NAMES[st.rollG] + ' (' + ROLLS[st.rollG] + 'x, ' + (st.bendOn ? 'twist and bend' : 'twist only') + '); roll applied ' + fmt(pk.rollMin) + ' to +' + fmt(pk.rollMax) + ' degrees, beyond 15 degrees for ' + fmt(pk.rollT, 1) + ' s; the neutral it learned from your grip moved between ' + fmt(pk.r0Min) + ' and +' + fmt(pk.r0Max) + ' degrees');
   lines.push('Time at each top speed: ' + SPEED_NAMES.map((n, i) => n + ' ' + fmt(k.speedT[i]) + ' s').join(', '));
   lines.push('Skating: ' + fmt(k.dist) + ' m, top ' + fmt(kmh(k.top)) + ' km/h, average while moving ' + fmt(kmh(mv)) + ' km/h',
     'Braking: ' + k.brakes + ' stops, ' + fmt(k.brakeT, 1) + ' s on the trigger. Boards and nets: ' + k.bumps + ' hits, hardest ' + fmt(kmh(k.hard)) + ' km/h. Snap turns: ' + k.snaps + '. Vignette peak ' + fmt(k.vigMax * 100) + '%',
     'Assist: crossover time ' + fmt(k.crossT, 1) + ' s, punch turns ' + k.punches);
   lines.push('Puck: ' + pk.contacts + ' touches, ' + pk.hits + ' hits over 22 km/h, hardest ' + fmt(pk.best) + ' km/h, ' + pk.goals + ' goals, ' + pk.posts + ' post or bar hits, ' + pk.boards + ' off the boards, ' + pk.outs + ' out of play, ice scrape ' + fmt(pk.scrapeT, 1) + ' s');
+  lines.push('Shot lift: ' + LIFT_NAMES[st.liftP] + ', ' + pk.lifts + ' lifted shots, highest the puck got ' + fmt(pk.apex, 2) + ' m');
   lines.push('Puck help: ' + ASSIST_NAMES[st.assistP] + ', puck carried on the blade ' + fmt(PK.crT, 1) + ' s, ' + pk.catches + ' catches' + (pk.tN ? '; after ' + pk.tN + ' light touches the puck was moving at ' + fmt(kmh(pk.tSum / pk.tN)) + ' km/h on average, ' + fmt(kmh(pk.tRel / pk.tN)) + ' km/h relative to you (worst ' + fmt(kmh(pk.tMax)) + ')' : ''));
   lines.push('Shots at a net (over 36 km/h, heading for the goal line): ' + pk.shots + ', on target ' + pk.onT + (pk.shots ? ' (' + fmt(100 * pk.onT / pk.shots) + '%), average miss from the centre of the net ' + fmt(100 * pk.errSum / pk.shots) + ' cm' : ''));
   const holds = [];
@@ -1752,7 +2038,7 @@ function syncUI() {
   $('curve').value = st.curve; $('power').value = String(st.power); $('assist').value = st.assist ? 'on' : 'off';
   $('shot').value = st.shot; $('hz').value = String(st.wantHz); $('speed').value = String(st.speed); $('steer').value = st.steer;
   $('turn').value = st.turn; $('vig').value = String(st.vig); $('height').value = st.height; $('sound').value = st.sound ? 'on' : 'off';
-  $('len').value = String(Math.round(st.lenIn)); $('lockm').value = st.lockM; $('roll').value = String(st.rollG); $('bend').value = st.bendOn ? 'on' : 'off'; $('pa').value = String(st.assistP);
+  $('len').value = String(Math.round(st.lenIn)); $('keepm').value = st.keepM; $('lift').value = String(st.liftP); $('rsrc').value = st.rollSrc; $('roll').value = String(st.rollG); $('bend').value = st.bendOn ? 'on' : 'off'; $('pa').value = String(st.assistP);
 }
 function drawCurve() {
   const cv = curveCur || curveById(st.curve), bp = makeProfile(cv), cvs = $('curve-cv'), g = cvs.getContext('2d'), W = cvs.width, Hh = cvs.height;
@@ -1765,8 +2051,7 @@ function drawCurve() {
   g.closePath(); g.fill(); g.globalAlpha = 1;
   g.strokeStyle = mu; g.setLineDash([5, 5]); g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + cv.len * sc, y0); g.stroke(); g.setLineDash([]);
   g.fillStyle = fg; g.font = '600 20px sans-serif'; g.fillText('heel', x0 - 4, y0 - 24); g.textAlign = 'right'; g.fillText('toe', x0 + cv.len * sc + 4, y0 - 24); g.textAlign = 'left';
-  g.fillStyle = mu; g.font = '18px sans-serif'; g.fillText('Top view, face side up. The dashed line is the straight heel-to-toe line. Depth is exaggerated 3x.', x0 - 40, Hh - 14);
-  $('curve-info').textContent = cv.name + (cv.code !== cv.name ? ' ' + cv.code : '') + ': lie ' + cv.lie + ', blade ' + Math.round(cv.len * 1000) / 10 + ' cm, ' + (cv.hh / 10).toFixed(1) + ' cm tall at the heel, deepest cut ' + (bp.mc * 1000).toFixed(0) + ' mm, face opened ' + cv.loft + '°. ' + cv.note + '. Lie, length and height come from the shop page; the shape is my approximation' + (cv.approx ? ' (this one has no page of its own)' : '') + '.';
+    $('curve-info').textContent = cv.name + (cv.code !== cv.name ? ' ' + cv.code : '') + ': lie ' + cv.lie + ', blade ' + Math.round(cv.len * 1000) / 10 + ' cm, ' + (cv.hh / 10).toFixed(1) + ' cm tall at the heel, deepest cut ' + (bp.mc * 1000).toFixed(0) + ' mm, face opened ' + cv.loft + '°. ' + cv.note + '. Lie, length and height come from the shop page; the shape is my approximation' + (cv.approx ? ' (this one has no page of its own)' : '') + '. Drawing: top view, face up, depth exaggerated 3 times.';
 }
 function nextCurve() {
   const i = CURVES.findIndex(c => c.id === st.curve); setCurve(CURVES[(i + 1) % CURVES.length].id); saveSettings();
@@ -1785,8 +2070,8 @@ document.querySelectorAll('#lvl button').forEach(b => b.addEventListener('click'
 const bind = (id, key, conv) => $(id).addEventListener('change', e => { st[key] = conv ? conv(e.target.value) : e.target.value; saveSettings(); });
 bind('shot', 'shot'); bind('hz', 'wantHz', Number); bind('speed', 'speed', Number); bind('steer', 'steer'); bind('turn', 'turn'); bind('vig', 'vig', Number);
 bind('height', 'height'); bind('sound', 'sound', v => v === 'on'); bind('power', 'power', Number); bind('assist', 'assist', v => v === 'on');
-bind('len', 'lenIn', Number); $('len').addEventListener('change', () => { st.len = st.lenIn * 0.0254; }); bind('lockm', 'lockM'); bind('roll', 'rollG', Number); bind('bend', 'bendOn', v => v === 'on'); bind('pa', 'assistP', Number);
-$('curve').addEventListener('change', e => { setCurve(e.target.value); saveSettings(); drawCurve(); });
+bind('len', 'lenIn', Number); $('len').addEventListener('change', () => { st.len = st.lenIn * 0.0254; }); bind('keepm', 'keepM'); bind('lift', 'liftP', Number); bind('rsrc', 'rollSrc'); bind('roll', 'rollG', Number); bind('bend', 'bendOn', v => v === 'on'); bind('pa', 'assistP', Number);
+$('curve').addEventListener('change', e => { setCurve(e.target.value); saveSettings(); drawCurve(); MENU.dirty = true; });
 matchMedia('(prefers-color-scheme: dark)').addEventListener && matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawCurve());
 document.querySelectorAll(ALLIN).forEach(x => x.addEventListener('change', refreshRep));
 $('copy').addEventListener('click', async () => {
@@ -1795,7 +2080,7 @@ $('copy').addEventListener('click', async () => {
   catch (e) { try { const r = document.createRange(); r.selectNodeContents($('rep')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); out.textContent = 'Selected. Copy it with your keyboard.'; } catch (e2) { out.textContent = 'Select the text above and copy it.'; } }
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
-if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, setLock, gloveTopM, gloveLoM, hapQ, STA, get locked() { return locked; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
+if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
 })();
 </script>
 
