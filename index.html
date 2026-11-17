@@ -88,7 +88,7 @@ details.rate[open]>summary{margin-bottom:10px}
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Phase 3 · round 7</p>
+    <p class="eyebrow">Ravens VR · Phase 3 · round 8</p>
     <h1>Stick and puck</h1>
     <p class="lede">Round 6 of the stick and puck test. Shots now come off the stick the way a real wrist shot does: the puck rides the blade through your sweep and leaves at the angle of the face and the lift of your follow-through. Soft pushes stay close to you, all twenty curves are traced from the shop pictures you sent, and the stick and blade are rebuilt. Press Enter VR and spend about ten minutes stickhandling, pushing the puck ahead while you skate, and shooting.</p>
   </header>
@@ -228,6 +228,29 @@ details.rate[open]>summary{margin-bottom:10px}
           <option value="btn" selected>A button (right controller)</option>
           <option value="grip">Hold the lower hand's grip button</option>
           <option value="off">Off (always two hands)</option>
+        </select>
+      </label>
+      <label class="f">Aim help (turns a shot or pass slightly toward a net or your teammate)
+        <select id="aim">
+          <option value="0">Off</option>
+          <option value="1" selected>Light</option>
+          <option value="2">Normal</option>
+        </select>
+      </label>
+      <label class="f">Puck buzz (controller rumble for the puck)
+        <select id="hap">
+          <option value="0">Off</option>
+          <option value="1">Light</option>
+          <option value="2" selected>Normal</option>
+          <option value="3">Strong</option>
+        </select>
+      </label>
+      <label class="f">On the ice with you
+        <select id="others">
+          <option value="both" selected>A pass partner and a goalie</option>
+          <option value="mate">A pass partner</option>
+          <option value="goalie">A goalie</option>
+          <option value="none">Nobody</option>
         </select>
       </label>
       <label class="f">Shot power
@@ -464,7 +487,7 @@ const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
-const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'btn' };
+const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'btn', aimP: 1, hapP: 2, others: 'both' };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -475,7 +498,7 @@ function loadSettings() {
       if (ok(j.speed, [0, 1, 2])) o.speed = j.speed; if (ok(j.steer, ['body', 'head'])) o.steer = j.steer; if (ok(j.turn, ['snap30', 'snap45', 'smooth', 'off'])) o.turn = j.turn;
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
-      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['btn', 'grip', 'off'])) o.oneM = j.oneM;
+      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['btn', 'grip', 'off'])) o.oneM = j.oneM; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others;
     }
   } catch (e) { /* storage is optional */ }
   return o;
@@ -706,6 +729,9 @@ const FRAME_H = 1.22, POST_R = 0.03, WALL_TOP = 2.62, BOARD_TOP = 1.12;
 const POWERS = [1.0, 1.35, 1.8], POWER_NAMES = ['Raw', 'Natural', 'Boosted'];
 const ROLLS = [0, 0.6, 1.0, 1.4, 1.9], ROLL_NAMES = ['Off (blade stays flat)', 'Gentle', 'Normal', 'Strong', 'Extra strong'];
 const ASSISTS = [0, 0.5, 1, 1.6], ASSIST_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
+const AIMS = [0, 0.35, 0.6], AIM_NAMES = ['Off', 'Light', 'Normal'];                         // how far a shot or pass is turned toward a net or a teammate's stick
+const HAPS = [0, 0.6, 1.3, 2.0], HAP_NAMES = ['Off', 'Light', 'Normal', 'Strong'];            // puck buzz in the controllers
+const OTHERS = ['both', 'mate', 'goalie', 'none'], OTHER_NAMES = { both: 'Pass partner and goalie', mate: 'Pass partner', goalie: 'Goalie', none: 'Nobody' };
 const LIFTS = [[8, 2.2], [14, 3.5], [22, 4.8], [30, 6.0]], LIFT_NAMES = ['Lowest', 'Low', 'Normal', 'High'];      // the steepest a puck can leave the blade (degrees) and the fastest it can rise (m/s)      // how much the face angle is exaggerated when the puck leaves it
 // blade to ice: below the first height (m, of the blade's lowest point above the ice) the blade rests on the ice; it lets go gradually up to the second
 const ICES = [[0, 0], [0.10, 0.45], [0.26, 0.80], [0.45, 1.10]], ICE_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
@@ -958,7 +984,9 @@ function stickSolve(A) {
 const PK = { x: 0, y: PUCK.HH, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, rot: 0, out: 0, inNet: false, goalLatch: false, watch: 0, wPeak: 0, last: 0, tapAt: -9, ctl: 0,
   cr: 0, rel: -9, touch: -9, touchT: 0, touchOk: -9, wasCr: false, vrm: 0, catchAt: -9, crT: 0, carryV: 0, near: 9, liftAt: -9, lift: 0, liftSum: 0, sh: 0, shPk: 0, shT: 0, shUp: 0, shVx: 0, shVz: 0, soft: false, shots: 0 };
 // puck help: s is its strength (0 = off), hx hz where you stand, svx svz how you are moving
-const PA = { s: 0, hx: 0, hz: 0, svx: 0, svz: 0, keep: 0, lift: null, fx: 1, fz: 0 };
+const PA = { s: 0, hx: 0, hz: 0, svx: 0, svz: 0, keep: 0, lift: null, fx: 1, fz: 0, aim: 0.35 };
+const AIM_T = [];                    // extra aim targets the game adds (a teammate's stick), [x, z] each; the nets are always targets
+const OBST = [];                     // solid things on the ice the puck bounces off (a goalie): { x, z, ax, az, hw, hd, h, vx, vz, e, kind, hits }
 const EV = [];                       // events from this frame: { k, v, x, y, z }
 const SAMP = (() => { const a = []; for (let r = 0; r < 3; r++) for (let k = 0; k < 10; k++) { const t = k * Math.PI / 5; a.push([PUCK.R * Math.cos(t), (r - 1) * PUCK.HH, PUCK.R * Math.sin(t)]); } a.push([0, 0, 0]); return a; })();
 const _C = { nx: 0, ny: 0, nz: 0, pen: 0, cu: 0, cv: 0, cw: 0 }, _vb = [0, 0, 0], _Fk = newFrame();
@@ -1087,6 +1115,47 @@ function launchAngle(Wy, u, rel) {
   const bp = STK.bp, toe = bp && bp.toeL ? bp.toeL * Math.pow(clamp(u / bp.Lb, 0, 1), 2) : 0;
   return clamp(Math.asin(clamp(Wy, -1, 1)) + toe, 0, liftCap()[0]) * sstep((rel - 2.5) / 4);
 }
+// Where the puck leaves the blade, the curve decides its direction: it goes out along the face there (a hooked toe turns it), keeping only part of the
+// sliding along the face. Speed and direction come from the sweep's peak (smoothed).
+function curveRelease(F, bp, u) {
+  const n = bp.n, i = clamp(Math.round(u / bp.Lb * n), 1, n - 1), s = 0.7 * (bp.c[i + 1] - bp.c[i - 1]) / (2 * bp.Lb / n);
+  const lu = Math.hypot(F.Ux, F.Uz) || 1, ux = F.Ux / lu, uz = F.Uz / lu, lw = Math.hypot(F.Wx, F.Wz) || 1, wx = F.Wx / lw, wz = F.Wz / lw;
+  let nx = wx + s * ux, nz = wz + s * uz; const ln = Math.hypot(nx, nz); nx /= ln; nz /= ln;
+  const tx = -nz, tz = nx, rx = PK.shVx - PA.svx, rz = PK.shVz - PA.svz, vn = Math.max(0, rx * nx + rz * nz), vt = rx * tx + rz * tz;
+  PK.vx = PA.svx + nx * vn + tx * vt * 0.35; PK.vz = PA.svz + nz * vn + tz * vt * 0.35; PK.relU = u / bp.Lb;
+}
+// Aim help: a shot or pass heading within 12 degrees of a net or a teammate's stick is turned part of the way toward it (the Aim help setting).
+function aimHelp() {
+  if (!(PA.aim > 0)) return;
+  const rx = PK.vx - PA.svx, rz = PK.vz - PA.svz, r = Math.hypot(rx, rz); if (r < 5) return;
+  let best = null, bErr = 0.21;
+  const tgt = [[GX, 0], [-GX, 0]].concat(AIM_T);
+  for (const t of tgt) {
+    const dx = t[0] - PK.x, dz = t[1] - PK.z, d = Math.hypot(dx, dz); if (d < 2 || d > 28) continue;
+    let e = Math.atan2(dz, dx) - Math.atan2(rz, rx); e = Math.atan2(Math.sin(e), Math.cos(e));
+    if (Math.abs(e) < Math.abs(bErr)) { bErr = e; best = t; }
+  }
+  if (!best) return;
+  const a = bErr * PA.aim, c = Math.cos(a), sn = Math.sin(a), vx = rx * c - rz * sn, vz = rx * sn + rz * c;
+  PK.vx = PA.svx + vx; PK.vz = PA.svz + vz; PK.aimed = best;
+}
+// The puck against solid boxes on the ice (a goalie): pushed out the shortest way and bounced off with the box's own restitution.
+function obstCollide() {
+  for (const o of OBST) {
+    if (!o.on || !(Math.abs(o.x) < 1e4)) continue;
+    const dx = PK.x - o.x, dz = PK.z - o.z, lx = dx * o.ax + dz * o.az, lz = -dx * o.az + dz * o.ax;
+    if (PK.y - PUCK.HH > o.h || PK.y + PUCK.HH < (o.y0 || 0) || Math.abs(lx) > o.hd + PUCK.R || Math.abs(lz) > o.hw + PUCK.R) continue;
+    const px = o.hd + PUCK.R - Math.abs(lx), pz = o.hw + PUCK.R - Math.abs(lz);
+    let nx, nz, pen; if (px < pz) { const sg = Math.sign(lx) || 1; nx = o.ax * sg; nz = o.az * sg; pen = px; } else { const sg = Math.sign(lz) || 1; nx = -o.az * sg; nz = o.ax * sg; pen = pz; }
+    PK.x += nx * pen; PK.z += nz * pen;
+    const rvx = PK.vx - (o.vx || 0), rvz = PK.vz - (o.vz || 0), vn = rvx * nx + rvz * nz;
+    if (vn < 0) {
+      const sp = Math.hypot(PK.vx, PK.vy, PK.vz);
+      PK.vx -= (1 + o.e) * vn * nx; PK.vz -= (1 + o.e) * vn * nz; PK.vx *= 0.8; PK.vz *= 0.8; PK.vy = Math.min(PK.vy, 0) * 0.3;
+      if (-vn > 1.5) { o.hits = (o.hits || 0) + 1; EV.push({ k: 'block', v: sp, kind: o.kind, x: PK.x, y: PK.y, z: PK.z }); }
+    }
+  }
+}
 const liftCap = () => { const L = PA.lift || LIFTS[2]; return [L[0] * Math.PI / 180, L[1]]; };
 // No shot leaves steeper than the Shot lift setting allows, however open the face or however hard the hit.
 function capRise(rel) { const c = liftCap(), m = Math.min(c[1], Math.max(0.6, rel * Math.tan(c[0]))); if (PK.vy > m) PK.vy = m; }
@@ -1107,7 +1176,7 @@ function puckHelp(dt, now, haveBlade) {
   let eT = 0, vr = 0; PK.near = 9;
   if (haveBlade && bp) {
     const Fn = STK.F, Fp = STK.Fp, qx = PK.x - Fn.Ox, qy = PK.y - Fn.Oy, qz = PK.z - Fn.Oz;
-    const u = qx * Fn.Ux + qy * Fn.Uy + qz * Fn.Uz, uP = clamp(u, 0.06 * bp.Lb, 0.97 * bp.Lb);         // where along the blade the puck is: kept, not centred
+    const u = qx * Fn.Ux + qy * Fn.Uy + qz * Fn.Uz, uP = clamp(u, 0.06 * bp.Lb, 0.97 * bp.Lb); PK.uv = PK.lastU != null && dt > 0 ? (u - PK.lastU) / dt : 0; PK.lastU = u;         // where along the blade the puck is: kept, not centred
     const i = clamp(Math.round(uP / bp.Lb * bp.n), 0, bp.n), wl = -bp.c[i] + PUCK.R + 0.004 - BL.TB / 2;
     bpt(Fn, uP, PUCK.HH, wl, _T); pointVel(Fn, Fp, uP, PUCK.HH, wl, dt, _vp);
     PK.carryV = Math.hypot(_vp[0] - PA.svx, _vp[2] - PA.svz);
@@ -1120,21 +1189,26 @@ function puckHelp(dt, now, haveBlade) {
     // blade was rising. Sideways stickhandling is untouched (the cradle holds it, and a hard pull away lets go as before).
     const rvx = _vp[0] - PA.svx, rvz = _vp[2] - PA.svz, cv = Math.max(PK.carryV, 1e-6), lwh = Math.hypot(Fn.Wx, Fn.Wz) || 1;
     const into = (rvx * Fn.Wx + rvz * Fn.Wz) / lwh / cv, fwd = (rvx * PA.fx + rvz * PA.fz) / cv; PK.into = into; PK.fwd = fwd; PK.d3 = d3; PK.wP = wP;
-    if (!PK.sh && (PK.cr > 0.3 || now - PK.touch < 0.06) && now >= PK.rel && PK.carryV > 0.9 && into > 0.3 && fwd > 0.25 && d3 < 0.14 && wP > -0.1) { PK.sh = 1; PK.shPk = 0; PK.shT = 0; PK.shUp = 0; PK.shWy = -1; }
+    if (!PK.sh && (PK.cr > 0.3 || now - PK.touch < 0.06) && now >= PK.rel && PK.carryV > 0.9 && into > 0.3 && fwd > 0.25 && d3 < 0.14 && wP > -0.1) { PK.sh = 1; PK.shPk = 0; PK.shT = 0; PK.shUp = 0; PK.shWy = -1; PK.smx = _vp[0]; PK.smz = _vp[2]; }
     if (PK.sh) {
       PK.shT += dt; PK.cr = 1;
-      if (PK.carryV > PK.shPk && PK.carryV < 35) { PK.shPk = PK.carryV; PK.shVx = _vp[0]; PK.shVz = _vp[2]; }     // (a jump in tracking or a snap turn is not a swing)
+      const ka = 1 - Math.exp(-dt / 0.025); PK.smx += (_vp[0] - PK.smx) * ka; PK.smz += (_vp[2] - PK.smz) * ka;   // smoothed, so one shaky frame does not aim the shot
+      if (PK.carryV > PK.shPk && PK.carryV < 35) { PK.shPk = PK.carryV; const ex = PK.smx - PA.svx, ez = PK.smz - PA.svz, el = Math.hypot(ex, ez) || 1, rr = Math.hypot(_vp[0] - PA.svx, _vp[2] - PA.svz); PK.shVx = PA.svx + ex / el * rr; PK.shVz = PA.svz + ez / el * rr; PK.shU = u; }   // speed from the blade, direction smoothed     // (a jump in tracking or a snap turn is not a swing)
       if (PK.carryV > 0.7 * PK.shPk) { PK.shUp = Math.max(PK.shUp, _vp[1] + STK.dvy); PK.shWy = Math.max(PK.shWy, Fn.Wy); }          // the face and the rise around the peak of the sweep set the angle, not the follow-through after
       const lifted = _T[1] > PUCK.HH + 0.035;
-      if (PK.carryV < 0.5 * PK.shPk || PK.carryV > 35 || lifted || PK.shT > 0.5 || into < 0.05 || d3 > 0.18) {
-        const rx = PK.shVx - PA.svx, rz = PK.shVz - PA.svz, rel = Math.hypot(rx, rz), th = launchAngle(PK.shWy, uP, rel);
-        PK.vx = PK.shVx; PK.vz = PK.shVz; capSpeed(); const rel2 = Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz); PK.vy = rel2 * Math.tan(th) + 0.25 * clamp(PK.shUp, 0, 5) * sstep((rel2 - 2) / 3); capRise(rel2);
+      const offEnd = u > 0.995 * bp.Lb || u < 0.005;                          // rolled off the toe (or the heel)
+      if (PK.carryV < 0.5 * PK.shPk || PK.carryV > 35 || lifted || offEnd || PK.shT > 0.5 || into < 0.05 || d3 > 0.18) {
+        const uR = clamp(offEnd ? u : Math.max(u, PK.shU || u), 0, bp.Lb), rel = Math.hypot(PK.shVx - PA.svx, PK.shVz - PA.svz), th = launchAngle(PK.shWy, uR, rel);
+        curveRelease(Fn, bp, uR); aimHelp(); capSpeed(); const rel2 = Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz); PK.vy = rel2 * Math.tan(th) + 0.25 * clamp(PK.shUp, 0, 5) * sstep((rel2 - 2) / 3); capRise(rel2);
         if (PK.vy > 0.05) PK.y = PUCK.HH + 0.002;
         PK.sh = 0; PK.cr = 0; PK.rel = now + 0.35; PK.touch = now; PK.soft = rel < 4.5; PK.lift = PK.vy; PK.liftSum = PK.vy; PK.liftAt = now; PK.shots++;
-        if (rel > 3) { PK.watch = 0.1; PK.wPeak = 0; EV.push({ k: 'tap', v: rel * 0.6, x: PK.x, y: PK.y, z: PK.z }); }
+        if (rel > 3) { PK.watch = 0.1; PK.wPeak = 0; EV.push({ k: 'tap', v: rel * 0.6, u: PK.relU, aimed: !!PK.aimed, x: PK.x, y: PK.y, z: PK.z }); } PK.aimed = null;
         if (PK.vy > 0.8) EV.push({ k: 'lift', v: PK.vy, x: PK.x, y: PK.y, z: PK.z });
-      } else {                                                                 // ride: the puck stays where it is on the face and goes where the blade goes
-        PK.vx = _vp[0] + clamp(dxp * 12, -3, 3); PK.vz = _vp[2] + clamp(dzp * 12, -3, 3); if (PK.vy > 0) PK.vy = 0;
+      } else {                                                                 // ride: the puck stays on the face and goes where the blade goes, sliding along it
+        const lu = Math.hypot(Fn.Ux, Fn.Uz) || 1, uxh = Fn.Ux / lu, uzh = Fn.Uz / lu, lw = Math.hypot(Fn.Wx, Fn.Wz) || 1, wxh = Fn.Wx / lw, wzh = Fn.Wz / lw;
+        const vu = (_vp[0] - PA.svx) * uxh + (_vp[2] - PA.svz) * uzh, pw = clamp((dxp * wxh + dzp * wzh) * 12, -3, 3);   // a heel-first sweep rolls the puck toward the toe
+        let sl = -vu * 0.3; if ((sl > 0 && u > 0.88 * bp.Lb) || (sl < 0 && u < 0.12 * bp.Lb)) sl = 0;          // it rolls toward the toe but stays on the blade until the shot goes
+        PK.vx = _vp[0] + sl * uxh + wxh * pw; PK.vz = _vp[2] + sl * uzh + wzh * pw; if (PK.vy > 0) PK.vy = 0;
       }
     } else if (PK.carryV > (kp ? 6.5 : 3.5) && into < 0.3) PK.rel = Math.max(PK.rel, now + (kp ? 0.25 : 0.4));   // a hard pull away from the puck: let it go
     const Rc = (0.16 + 0.10 * s) * (kp ? 2 : 1), vcap = (2.5 + 2.0 * s) * (kp ? 3 : 1), inU = sstep((u + 0.03) / 0.03) * sstep((bp.Lb + 0.05 - u) / 0.03);
@@ -1207,12 +1281,13 @@ function puckAdvance(dt, haveBlade, power, now) {
           }
           if ((imp > 0.8 || (imp > 0.3 && PK.cr < 0.3)) && now - PK.tapAt > 0.07) { PK.tapAt = now; EV.push({ k: 'tap', v: imp, x: PK.x, y: PK.y, z: PK.z }); }
           if (imp > 3) { PK.watch = 0.1; PK.wPeak = 0; }
-          PK.ctl += h; PK.touch = now; PK.soft = imp < 4.5; capSpeed(); capRise(Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz));
+          PK.ctl += h; PK.touch = now; PK.soft = imp < 4.5; capSpeed(); if (imp > 4 && now - (PK.aimAt || -9) > 0.3) { aimHelp(); PK.aimAt = now; } capRise(Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz));
           if (imp < 6 && PK.cr < 0.3 && PK.touchT <= 0 && now - PK.touchOk > 0.5) { PK.touchT = 0.15; PK.touchOk = now; }
           if (!PK.sh && (PA.s > 0 || PA.keep) && imp > 2.5 && (_vb[0] - PA.svx) * nx + _vb[1] * ny + (_vb[2] - PA.svz) * nz > (PA.keep ? 6 : 3) * (1 - 0.4 * sstep((_Fk.Wy - 0.16) / 0.2))) PK.rel = Math.max(PK.rel, now + (PA.keep ? 0.25 : 0.4));
         }
       }
     }
+    if (OBST.length) obstCollide();
     worldCollide(h, px, py, pz);
   }
   PK.rot += PK.spin * dt;
@@ -1385,7 +1460,7 @@ function newRun() {
     frames: [[], [], []], secs: [0, 0, 0], last: 0, skip: 90, hz: 0, asked: st.wantHz, t0: performance.now(),
     ctl: { left: false, right: false }, profiles: [], notes: [], hs: [], calDone: false,
     sk: { dist: 0, mov: 0, top: 0, brakes: 0, brakeT: 0, bumps: 0, hard: 0, snaps: 0, speedT: [0, 0, 0], vigMax: 0, yOff: 0, crossT: 0, punches: 0 },
-    pk: { contacts: 0, hits: 0, goals: 0, posts: 0, boards: 0, outs: 0, best: 0, last: 0, scrapeT: 0, cal: 0, stickT: 0, shots: 0, onT: 0, errSum: 0, keepT: 0, keepN: 0, lifts: 0, apex: 0, rollMin: 0, rollMax: 0, rollT: 0, r0Min: 0, r0Max: 0, catches: 0, tN: 0, tSum: 0, tRel: 0, tMax: 0, oneT: 0, oneN: 0, iceT: 0, extSum: 0, extMax: 0, extMin: 0, lieMax: 0 }
+    pk: { contacts: 0, hits: 0, goals: 0, posts: 0, boards: 0, outs: 0, best: 0, last: 0, scrapeT: 0, cal: 0, stickT: 0, shots: 0, onT: 0, errSum: 0, keepT: 0, keepN: 0, lifts: 0, apex: 0, rollMin: 0, rollMax: 0, rollT: 0, r0Min: 0, r0Max: 0, catches: 0, tN: 0, tSum: 0, tRel: 0, tMax: 0, mateGot: 0, matePass: 0, saves: 0, gHits: 0, aimed: 0, relU: 0, relN: 0, oneT: 0, oneN: 0, iceT: 0, extSum: 0, extMax: 0, extMin: 0, lieMax: 0 }
   };
 }
 const run = newRun();
@@ -1795,24 +1870,150 @@ function applyStickMeshes() {
   const tb = BL.TB / 2;
   if (bladeM) { bladeM.matrix.set(F.Ux, F.Px, F.Wx, F.Ox + F.Wx * tb, F.Uy, F.Py, F.Wy, F.Oy + F.Wy * tb, F.Uz, F.Pz, F.Wz, F.Oz + F.Wz * tb, 0, 0, 0, 1); bladeM.matrixWorldNeedsUpdate = true; bladeM.visible = true; }
 }
+// ---------------------------------------------------------------- others on the ice: a pass partner and a goalie (first step toward Phase 4)
+function numTex(num, bg, fg) {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, 128, 128); g.fillStyle = fg; g.fillRect(0, 96, 128, 10); g.fillRect(0, 112, 128, 4);
+  g.font = '800 64px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(num, 64, 52);
+  const t = new THREE.CanvasTexture(c); if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const PL = { jersey: 0x4a1d8c, dark: 0x111114 };
+function boxM(w, h, d, mat, x, y, z, parent) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; }
+// A skater: built facing +z, pivoting at the skates. Legs and arms swing with the stride; the stick is held on his left (he shoots left).
+function makeSkater(num, jerseyHex, trimHex) {
+  const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+  const jm = new THREE.MeshStandardMaterial({ color: jerseyHex, roughness: 0.85 }), dm = new THREE.MeshStandardMaterial({ color: PL.dark, roughness: 0.7 });
+  const tm = new THREE.MeshStandardMaterial({ color: trimHex, roughness: 0.6 }), num1 = new THREE.MeshStandardMaterial({ map: numTex(num, '#' + jerseyHex.toString(16).padStart(6, '0'), '#' + trimHex.toString(16).padStart(6, '0')), roughness: 0.85 });
+  const legs = [];
+  for (const sx of [-1, 1]) {
+    const leg = new THREE.Group(); leg.position.set(sx * 0.1, 0.72, 0); body.add(leg);
+    boxM(0.13, 0.5, 0.15, jm, 0, -0.27, 0, leg); boxM(0.135, 0.06, 0.155, tm, 0, -0.18, 0, leg);   // sock with a stripe
+    boxM(0.1, 0.1, 0.3, dm, 0, -0.62, 0.04, leg); boxM(0.012, 0.03, 0.3, new THREE.MeshStandardMaterial({ color: 0xc8ccd2, metalness: 0.8, roughness: 0.3 }), 0, -0.69, 0.04, leg);
+    legs.push(leg);
+  }
+  boxM(0.38, 0.26, 0.27, dm, 0, 0.8, 0, body);                                        // pants
+  const torso = new THREE.Group(); torso.position.set(0, 0.92, 0); body.add(torso);
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.52, 0.3), [jm, jm, jm, jm, num1, num1]); chest.position.set(0, 0.27, 0); chest.castShadow = true; torso.add(chest);
+  boxM(0.6, 0.12, 0.32, jm, 0, 0.5, 0, torso);                                        // shoulders
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 16, 12), dm); head.position.set(0, 0.7, 0.01); torso.add(head);
+  boxM(0.17, 0.05, 0.03, new THREE.MeshStandardMaterial({ color: 0x9fb4c8, transparent: true, opacity: 0.55 }), 0, 0.69, 0.11, torso);   // visor
+  const arms = [];
+  for (const sx of [-1, 1]) { const a = new THREE.Group(); a.position.set(sx * 0.28, 0.46, 0); torso.add(a); boxM(0.1, 0.44, 0.11, jm, 0, -0.2, 0.06, a); boxM(0.12, 0.12, 0.14, dm, 0, -0.44, 0.1, a); a.rotation.x = -0.7; arms.push(a); }
+  const stick = new THREE.Group(); body.add(stick);                                  // shaft from the hands down to a blade on the ice at his left
+  const shaft = boxM(0.022, 0.03, 1.32, mShaft, 0, 0, 0, stick), blade = boxM(0.3, 0.06, 0.012, mTape, 0, 0, 0, stick);
+  g.userData = { body, torso, legs, arms, stick, shaft, blade, phase: 0 };
+  scene.add(g); return g;
+}
+const _Z1 = new THREE.Vector3(0, 0, 1), _dir1 = new THREE.Vector3();
+function poseSkater(g, x, z, fx, fz, speed, dt, bx, bz) {
+  const u = g.userData; g.position.set(x, 0, z); g.rotation.y = Math.atan2(fx, fz);
+  u.phase += dt * (2.2 + speed * 0.9) * (speed > 0.4 ? 1 : 0);
+  const sw = Math.sin(u.phase) * clamp(speed / 5, 0, 1) * 0.45;
+  u.legs[0].rotation.x = sw; u.legs[1].rotation.x = -sw; u.legs[0].position.y = u.legs[1].position.y = 0.72 - 0.08 * clamp(speed / 6, 0, 1);
+  u.torso.rotation.x = 0.25 + 0.2 * clamp(speed / 6, 0, 1); u.body.position.y = -0.04 * clamp(speed / 6, 0, 1) + 0.01 * Math.sin(u.phase * 2);
+  // stick: from the hands (in front of his chest) to the blade point on the ice, in his own frame
+  const c = Math.cos(-g.rotation.y), sn = Math.sin(-g.rotation.y), dx = bx - x, dz = bz - z, lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+  const hx = 0.12, hy = 0.95, hz = 0.32, vx = lx - hx, vy = 0.03 - hy, vz = lz - hz, L = Math.hypot(vx, vy, vz);
+  u.shaft.scale.z = L / 1.32; u.shaft.position.set(hx + vx / 2, hy + vy / 2, hz + vz / 2); u.shaft.quaternion.setFromUnitVectors(_Z1, _dir1.set(vx / L, vy / L, vz / L));
+  u.blade.position.set(lx + 0.12, 0.035, lz); u.blade.rotation.set(0, 0, 0);
+}
+const MATE = { on: false, g: null, x: 6, z: -6, vx: 0, vz: 0, fx: -1, fz: 0, st: 'free', t: 0, cool: 0, bx: 0, bz: 0 };
+const GOAL = { on: false, g: null, x: GX - 0.45, z: 0, vx: 0, vz: 0, ax: -1, az: 0, hold: 0, boxes: [] };
+function mateBlade() { return [MATE.x + MATE.fx * 0.9 + MATE.fz * 0.38, MATE.z + MATE.fz * 0.9 - MATE.fx * 0.38]; }
+function othersInit() {
+  const w = st.others;
+  MATE.on = st.inVR && (w === 'both' || w === 'mate'); GOAL.on = st.inVR && (w === 'both' || w === 'goalie');
+  if (MATE.on && !MATE.g) MATE.g = makeSkater('17', PL.jersey, GOLD);
+  if (GOAL.on && !GOAL.g) {
+    const g = new THREE.Group(), red = new THREE.MeshStandardMaterial({ color: 0xa3202a, roughness: 0.8 }), wh = new THREE.MeshStandardMaterial({ color: 0xeeeeea, roughness: 0.7 }), dk = new THREE.MeshStandardMaterial({ color: PL.dark, roughness: 0.7 });
+    boxM(0.84, 0.46, 0.2, wh, 0, 0.23, 0, g);                                         // pads
+    boxM(0.86, 0.04, 0.21, red, 0, 0.3, 0, g); boxM(0.86, 0.04, 0.21, red, 0, 0.12, 0, g);
+    boxM(0.6, 0.5, 0.36, red, 0, 0.74, -0.02, g);                                    // body
+    boxM(0.68, 0.14, 0.38, red, 0, 1.0, -0.02, g);
+    const hm = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), wh); hm.position.set(0, 1.18, 0); g.add(hm);
+    boxM(0.26, 0.3, 0.12, wh, 0.42, 0.78, 0.06, g);                                  // glove
+    boxM(0.2, 0.3, 0.06, wh, -0.4, 0.66, 0.08, g);                                   // blocker
+    boxM(0.4, 0.09, 0.012, dk, -0.12, 0.05, 0.22, g); boxM(0.03, 0.03, 0.75, dk, -0.33, 0.4, 0.05, g);   // stick paddle on the ice
+    g.traverse(m => { if (m.isMesh) m.castShadow = true; }); scene.add(g); GOAL.g = g;
+    GOAL.boxes = [{ kind: 'goalie', part: 'pads', off: 0, y0: 0, h: 0.46, hw: 0.43, hd: 0.13, e: 0.25 }, { kind: 'goalie', part: 'body', off: 0, y0: 0.4, h: 1.08, hw: 0.31, hd: 0.2, e: 0.12 },
+      { kind: 'goalie', part: 'glove', off: 0.42, y0: 0.55, h: 1.0, hw: 0.15, hd: 0.12, e: 0.04 }, { kind: 'goalie', part: 'blocker', off: -0.4, y0: 0.45, h: 0.86, hw: 0.11, hd: 0.08, e: 0.3 },
+      { kind: 'goalie', part: 'stick', off: -0.12, y0: 0, h: 0.1, hw: 0.21, hd: 0.06, e: 0.3 }];
+  }
+  if (MATE.g) MATE.g.visible = MATE.on; if (GOAL.g) GOAL.g.visible = GOAL.on;
+  OBST.length = 0; if (GOAL.on) for (const b of GOAL.boxes) { b.on = true; OBST.push(b); }
+  AIM_T.length = 0; if (MATE.on) AIM_T.push([MATE.x, MATE.z]);
+  if (MATE.on && H.ok) { MATE.x = clamp(H.x + H.fx * 6 + H.fz * 7, -26, 26); MATE.z = clamp(H.z + H.fz * 6 - H.fx * 7, -10, 10); MATE.vx = MATE.vz = 0; MATE.st = 'free'; MATE.cool = 0; }
+  GOAL.x = GX - 0.45; GOAL.z = 0; GOAL.vx = GOAL.vz = 0; GOAL.ax = -1; GOAL.az = 0; GOAL.hold = 0;
+  for (const b of GOAL.boxes) { b.x = GOAL.x - GOAL.az * b.off; b.z = GOAL.z + GOAL.ax * b.off; b.ax = GOAL.ax; b.az = GOAL.az; b.vx = 0; b.vz = 0; }
+}
+function othersFrame(dt) {
+  if (MATE.on) mateFrame(dt);
+  if (GOAL.on) goalFrame(dt);
+}
+function mateFrame(dt) {
+  const M = MATE, kp = run.pk; M.cool -= dt; M.t += dt;
+  let tx, tz;
+  const loose = M.st === 'free' && !PK.sh && PK.cr < 0.3 && PK.y < PUCK.HH + 0.05, dPk = Math.hypot(PK.x - M.x, PK.z - M.z), dYou = Math.hypot(PK.x - H.x, PK.z - H.z);
+  if (M.st === 'hold') { tx = M.x; tz = M.z; }
+  else if (loose && dPk < 7 && Math.hypot(PK.vx, PK.vz) < 2.5 && dYou > 2.5 && M.cool <= 0) { tx = PK.x - M.fx * 0.9; tz = PK.z - M.fz * 0.9; }   // go and get a loose puck
+  else { tx = clamp(H.x + H.fx * 6 + H.fz * 7, -26, 26); tz = clamp(H.z + H.fz * 6 - H.fx * 7, -10.5, 10.5); }   // a pass option: ahead and to your left
+  const dx = tx - M.x, dz = tz - M.z, d = Math.hypot(dx, dz), want = Math.min(6.2, d * 1.6), wx = d > 0.01 ? dx / d * want : 0, wz = d > 0.01 ? dz / d * want : 0;
+  const ax = clamp(wx - M.vx, -5 * dt, 5 * dt), az = clamp(wz - M.vz, -5 * dt, 5 * dt); M.vx += ax; M.vz += az; M.x += M.vx * dt; M.z += M.vz * dt;
+  const sp = Math.hypot(M.vx, M.vz); let lx = PK.x - M.x, lz = PK.z - M.z;
+  if (M.st === 'hold') { lx = H.x - M.x; lz = H.z - M.z; }
+  if (sp > 1.5 && M.st !== 'hold') { lx = lx * 0.3 + M.vx / sp * 0.7 * Math.hypot(lx, lz); lz = lz * 0.3 + M.vz / sp * 0.7 * Math.hypot(PK.x - M.x, PK.z - M.z); }
+  const ll = Math.hypot(lx, lz) || 1, k = 1 - Math.exp(-dt * 5); M.fx += (lx / ll - M.fx) * k; M.fz += (lz / ll - M.fz) * k; const fl = Math.hypot(M.fx, M.fz) || 1; M.fx /= fl; M.fz /= fl;
+  const [bx, bz] = mateBlade(); M.bx = bx; M.bz = bz; AIM_T[0] = [bx, bz];
+  // taking a pass: the puck comes to his blade
+  if (M.st === 'free' && M.cool <= 0 && !PK.sh && PK.cr < 0.3 && PK.y < PUCK.HH + 0.06 && Math.hypot(PK.x - bx, PK.z - bz) < 0.6 && Math.hypot(PK.vx - M.vx, PK.vz - M.vz) < 24) {
+    M.st = 'hold'; M.t = 0; kp.mateGot++; EV.push({ k: 'mpass', v: Math.hypot(PK.vx - M.vx, PK.vz - M.vz) * 0.5, x: bx, y: PUCK.HH, z: bz });
+  }
+  if (M.st === 'hold') {
+    PK.x = bx; PK.z = bz; PK.y = PUCK.HH; PK.vx = M.vx; PK.vz = M.vz; PK.vy = 0; PK.cr = 0;
+    if (M.t > 0.9 && H.ok) {                                         // pass it back to your blade, leading you if you are skating
+      let px = H.x + H.fx * 0.9, pz = H.z + H.fz * 0.9;
+      if (stickOn && STK.ok) { const F = STK.F, o = [0, 0, 0]; bpt(F, STK.bp.Lb * 0.5, PUCK.HH, -STK.bp.c[Math.round(STK.bp.n / 2)] + PUCK.R + 0.02, o); px = o[0]; pz = o[2]; }
+      const spd = 10.5; let t = Math.hypot(px - bx, pz - bz) / spd; px += S.vx * t; pz += S.vz * t; t = Math.hypot(px - bx, pz - bz) / spd;
+      const err = (Math.random() - 0.5) * 0.04, ang = Math.atan2(pz - bz, px - bx) + err;
+      PK.vx = Math.cos(ang) * spd; PK.vz = Math.sin(ang) * spd; PK.touch = pClock; PK.soft = false; PK.rel = pClock + 0.05;
+      M.st = 'free'; M.cool = 0.9; kp.matePass++; EV.push({ k: 'mpass', v: spd, x: bx, y: PUCK.HH, z: bz });
+    }
+  }
+  poseSkater(M.g, M.x, M.z, M.fx, M.fz, sp, dt, bx, bz);
+}
+function goalFrame(dt) {
+  const G = GOAL, nx = GX, d = Math.hypot(PK.x - nx, PK.z), kp = run.pk;
+  // stand on an arc in front of the net, between the puck and the middle of the goal, and slide there at a goalie's speed
+  let ux = (PK.x - nx) / (d || 1), uz = PK.z / (d || 1); if (ux > -0.35) { ux = -0.35; uz = Math.sign(uz || 1) * Math.sqrt(1 - ux * ux); }
+  const tx = Math.min(nx - 0.3, nx + ux * 0.62), tz = clamp(uz * 0.62, -0.62, 0.62);
+  const vx = clamp((tx - G.x) * 6, -3.2, 3.2), vz = clamp((tz - G.z) * 6, -3.2, 3.2); G.vx += (vx - G.vx) * (1 - Math.exp(-dt / 0.1)); G.vz += (vz - G.vz) * (1 - Math.exp(-dt / 0.1));
+  G.x += G.vx * dt; G.z += G.vz * dt;
+  const k = 1 - Math.exp(-dt * 8); G.ax += (ux - G.ax) * k; G.az += (uz - G.az) * k; const al = Math.hypot(G.ax, G.az) || 1; G.ax /= al; G.az /= al;
+  for (const b of G.boxes) { b.x = G.x + (-G.az) * b.off; b.z = G.z + G.ax * b.off; b.ax = G.ax; b.az = G.az; b.vx = G.vx; b.vz = G.vz; }
+  // a slow puck at his feet: he covers it, then it comes back to you
+  if (G.hold > 0) { G.hold -= dt; PK.x = G.x + G.ax * 0.3; PK.z = G.z + G.az * 0.3; PK.vx = PK.vz = PK.vy = 0; if (G.hold <= 0) { placePuck(); toast('Goalie froze it. Puck back to you'); } }
+  else if (Math.hypot(PK.x - G.x, PK.z - G.z) < 0.55 && Math.hypot(PK.vx, PK.vz) < 2 && PK.y < PUCK.HH + 0.05 && PK.cr < 0.3 && !PK.sh) { G.hold = 1.2; }
+  G.g.position.set(G.x, 0, G.z); G.g.rotation.y = Math.atan2(G.ax, G.az);
+}
 function puckFrame(dt) {
   pClock += dt;
   if (PK.out > 1.2) { placePuck(); EV.length = 0; run.pk.outs++; toast('Puck out of play'); }
-  PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz;
+  PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz; PA.aim = AIMS[st.aimP] || 0;
   puckAdvance(dt, stickOn, POWERS[st.power], pClock);
+  othersFrame(dt);
   puck.position.set(PK.x, PK.y, PK.z); puck.rotation.y = PK.rot; puck.material.emissive.setHex(keepOn && stickOn ? 0x4a3000 : 0x000000);
   const ah = PK.y - PUCK.HH; if (ah > run.pk.apex) run.pk.apex = ah;
   const k = 1 / (1 + Math.max(0, PK.y - PUCK.HH) * 1.6);
   puckShadow.position.set(PK.x, 0.006, PK.z); puckShadow.scale.set(k, k, 1); puckShadow.material.opacity = 0.32 * k;
 }
 const hapQ = [];                                                   // buzzes to play a moment later: [due time, hand, strength, ms]
-function hap(delay, h, a, ms) { if (delay <= 0) buzz(h, a, ms); else hapQ.push([pClock + delay, h, a, ms]); }
+function hap(delay, h, a, ms) { a = Math.min(1, a * (HAPS[st.hapP] || 0)); if (a <= 0.01) return; if (delay <= 0) buzz(h, a, ms); else hapQ.push([pClock + delay, h, a, ms]); }   // puck buzzes, scaled by the Puck buzz setting
 function pkEffects(dt) {
   const kp = run.pk;
   for (let i = hapQ.length - 1; i >= 0; i--) if (pClock >= hapQ[i][0]) { buzz(hapQ[i][1], hapQ[i][2], hapQ[i][3]); hapQ.splice(i, 1); }
   for (const e of EV) {
     if (e.k === 'tap') {
-      kp.contacts++; st.hits++;
+      kp.contacts++; st.hits++; if (e.u != null) { kp.relU += e.u; kp.relN++; } if (e.aimed) kp.aimed++;
       const v = e.v;                                                  // touch, stickhandling tap, pass, shot: each has its own sound and kick
       if (v < 1.5) { hap(0, handLo, 0.16 + 0.08 * v, 16); hap(0, handTop, 0.1 + 0.05 * v, 14); }
       else if (v < 6) { hap(0, handLo, clamp(0.28 + v / 20, 0.28, 0.55), 24); hap(0, handTop, clamp(0.2 + v / 30, 0.2, 0.4), 20); }
@@ -1823,6 +2024,11 @@ function pkEffects(dt) {
       kp.catches++; hap(0, handLo, clamp(0.28 + e.v / 30, 0.28, 0.6), 35); hap(0, handTop, 0.25, 30); if (audio) audio.catchPuck(e.v, e);
     } else if (e.k === 'lift') {
       kp.lifts++;
+    } else if (e.k === 'block') {
+      if (e.kind === 'goalie') { kp.gHits++; if (e.v > 6) { kp.saves++; if (pClock - lastHitToast > 0.8) { lastHitToast = pClock; toast('Save!  ' + Math.round(e.v * 3.6) + ' km/h'); } } }
+      if (audio) audio.hit(Math.min(e.v, 12) * 0.7, e);
+    } else if (e.k === 'mpass') {
+      if (audio) audio.hit(e.v * 0.6, e);
     } else if (e.k === 'touchv') {
       kp.tN++; kp.tSum += e.v; kp.tRel += e.r; kp.tMax = Math.max(kp.tMax, e.r);
     } else if (e.k === 'launch') {
@@ -1851,8 +2057,14 @@ function pkEffects(dt) {
     kp.scrapeT += dt; scrapeBuzz -= dt; if (scrapeBuzz <= 0) { scrapeBuzz = 0.09; buzz(handLo, 0.07, 14); }
   }
   if (stickOn) kp.stickT += dt;
-  const carrying = stickOn && PK.cr > 0.4;                           // the puck is sitting on the blade
-  if (carrying) { carryBuzz -= dt; if (carryBuzz <= 0) { carryBuzz = 0.07; const m = clamp(PK.carryV / 3, 0, 1); buzz(handLo, 0.12 + 0.12 * m, 20); buzz(handTop, 0.08 + 0.08 * m, 18); } } else carryBuzz = 0;
+  const carrying = stickOn && (PK.cr > 0.4 || PK.sh);                // the puck is sitting on the blade (or riding it in a shot)
+  if (carrying) {                                                    // a steady buzz while you have it, stronger as it rolls along the blade and as a shot loads
+    carryBuzz -= dt;
+    if (carryBuzz <= 0) {
+      carryBuzz = 0.045; const m = clamp(PK.carryV / 3, 0, 1), roll = clamp(Math.abs(PK.uv || 0) / 1.2, 0, 1), sh = PK.sh ? clamp(PK.carryV / 8, 0, 1) : 0;
+      hap(0, handLo, 0.13 + 0.13 * m + 0.22 * roll + 0.4 * sh, 32); hap(0, handTop, 0.08 + 0.08 * m + 0.12 * roll + 0.28 * sh, 30);
+    }
+  } else carryBuzz = 0;
   if (audio) audio.carry(carrying ? clamp(0.25 + PK.carryV / 3.5, 0.25, 1) * PK.cr : 0);
   if (audio) audio.scrape(scr ? clamp(bladeSp / 8, 0.1, 1) * clamp(0.3 + STK.depth / 0.03, 0.3, 1) : 0);
 }
@@ -1913,6 +2125,7 @@ function setSetting(key, val) {
   else if (key === 'lenIn') st.len = st.lenIn * 0.0254;
   else if (key === 'shot') stickReset(STK.bp, val === 'right' ? 1 : -1, st.len);
   else if (key === 'level') applyLevel(val);
+  else if (key === 'others') othersInit();
   else if (key === 'oneM') { if (val === 'off') { handsOne = false; grabPend = 0; } }
   else if (key === 'height') calibReq = true;
   else if (key === 'sound') { if (val) { if (!audio) { try { audio = makeAudio(); if (audio) audio.resume(); } catch (e) { audio = null; } } } else closeAudio(); }
@@ -1934,7 +2147,9 @@ function menuRows(tab) {
     { l: 'Shot lift', v: () => LIFT_NAMES[st.liftP], s: d => setSetting('liftP', cyc(4, st.liftP, d)) },
     { l: 'Shot power', v: () => POWER_NAMES[st.power], s: d => setSetting('power', cyc(3, st.power, d)) },
     { l: 'Keep puck (right trigger)', v: () => KEEP_NAMES[st.keepM], s: d => setSetting('keepM', ['hold', 'toggle', 'off'][cyc(3, ['hold', 'toggle', 'off'].indexOf(st.keepM), d)]) },
-    { l: 'Blade to ice', v: () => ICE_NAMES[st.iceP], s: d => setSetting('iceP', cyc(4, st.iceP, d)) }
+    { l: 'Blade to ice', v: () => ICE_NAMES[st.iceP], s: d => setSetting('iceP', cyc(4, st.iceP, d)) },
+    { l: 'Aim help', v: () => AIM_NAMES[st.aimP], s: d => setSetting('aimP', cyc(3, st.aimP, d)) },
+    { l: 'Puck buzz', v: () => HAP_NAMES[st.hapP], s: d => setSetting('hapP', cyc(4, st.hapP, d)) }
   ];
   if (tab === 2) return [
     { l: 'Top speed', v: () => SPEED_NAMES[st.speed] + '  ' + Math.round(kmh(SPEEDS[st.speed])) + ' km/h', s: d => setSetting('speed', cyc(3, st.speed, d)) },
@@ -1947,7 +2162,8 @@ function menuRows(tab) {
   return [
     { l: 'Sound', v: () => st.sound ? 'On' : 'Off', s: () => setSetting('sound', !st.sound) },
     { l: 'Scene detail', v: () => NAMES[st.level], s: d => setSetting('level', cyc(3, st.level, d)) },
-    { l: 'Which way you shoot', v: () => st.shot === 'right' ? 'Right' : 'Left', s: () => setSetting('shot', st.shot === 'right' ? 'left' : 'right') }
+    { l: 'Which way you shoot', v: () => st.shot === 'right' ? 'Right' : 'Left', s: () => setSetting('shot', st.shot === 'right' ? 'left' : 'right') },
+    { l: 'On the ice with you', v: () => OTHER_NAMES[st.others], s: d => setSetting('others', OTHERS[cyc(4, OTHERS.indexOf(st.others), d)]) }
   ];
 }
 function rrect(x, y, w, h, r) { mg.beginPath(); mg.moveTo(x + r, y); mg.arcTo(x + w, y, x + w, y + h, r); mg.arcTo(x + w, y + h, x, y + h, r); mg.arcTo(x, y + h, x, y, r); mg.arcTo(x, y, x + w, y, r); mg.closePath(); }
@@ -2118,7 +2334,7 @@ async function enterVR() {
     S.x = -10; S.z = 0; S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
     BODY.ok = false; st.yOff = 0; snapArmed = true; calibReq = false; braking = false; vigU = 0; lastYaw = -Math.PI / 2;
     H.ok = false; needPuck = true; if (audio) audio.resume();
-    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; handsOne = false; grabPend = 0; snapTele = false; recalT = 0; MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
+    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; handsOne = false; grabPend = 0; snapTele = false; recalT = 0; H.ok = false; othersInit(); MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
     toast('Ready stance, blade near the ice. X opens the menu');
     try {
       const sup = session.supportedFrameRates ? Array.from(session.supportedFrameRates) : [];
@@ -2132,7 +2348,7 @@ async function enterVR() {
 }
 function onEnd() {
   st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
-  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; handsOne = false; grabPend = 0; MENU.open = false; menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
+  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; handsOne = false; grabPend = 0; MENU.open = false; st.inVR = false; othersInit(); menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
   const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, pk: { ...run.pk }, frames: run.frames.map(a => a.slice()) };
   buildResult(ended);
 }
@@ -2181,7 +2397,7 @@ function fmt(n, d) { return n == null || Number.isNaN(n) ? '--' : n.toFixed(d ==
 function buildResult(r) {
   $('result').hidden = false;
   document.querySelectorAll(ALLIN).forEach(x => { x.checked = false; });
-  const lines = ['Ravens VR Phase 3 report (round 7)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+  const lines = ['Ravens VR Phase 3 report (round 8)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     'Page: ' + (probeInfo.frame ? 'inside a frame (VR permission ' + probeInfo.policy + ')' : 'its own page'),
     'Browser: ' + (probeInfo.device || probeInfo.ua.slice(0, 80)), 'VR supported: ' + (probeInfo.vr === null ? 'unknown' : probeInfo.vr ? 'yes' : 'no')];
   const rows = [['Scene', 'Seconds', 'Average', 'Low 1%', 'Worst', 'Slow']];
@@ -2203,6 +2419,8 @@ function buildResult(r) {
   lines.push('Puck: ' + pk.contacts + ' touches, ' + pk.hits + ' hits over 22 km/h, hardest ' + fmt(pk.best) + ' km/h, ' + pk.goals + ' goals, ' + pk.posts + ' post or bar hits, ' + pk.boards + ' off the boards, ' + pk.outs + ' out of play, ice scrape ' + fmt(pk.scrapeT, 1) + ' s');
   lines.push('Shot lift: ' + LIFT_NAMES[st.liftP] + ', ' + PK.shots + ' pushes and shots off a carried puck, ' + pk.lifts + ' lifted shots, highest the puck got ' + fmt(pk.apex, 2) + ' m');
   lines.push('Blade to ice: ' + ICE_NAMES[st.iceP] + ', blade on the ice ' + fmt(pk.iceT) + ' s of ' + fmt(pk.stickT) + ' s held; stick stretch ' + fmt(pk.extMin * 100) + ' to +' + fmt(pk.extMax * 100) + ' cm (average ' + fmt(pk.stickT > 1 ? pk.extSum / pk.stickT * 100 : 0, 1) + ' cm), biggest lie change ' + fmt(pk.lieMax) + ' degrees');
+  lines.push('Curve in the shot: ' + (pk.relN ? 'pucks left the blade on average ' + Math.round(100 * pk.relU / pk.relN) + '% of the way from heel to toe' : 'no carried shots') + '; aim help ' + AIM_NAMES[st.aimP] + ' turned ' + pk.aimed + ' shots or passes; puck buzz ' + HAP_NAMES[st.hapP]);
+  lines.push('On the ice with you: ' + OTHER_NAMES[st.others] + '. Pass partner took ' + pk.mateGot + ' passes and passed back ' + pk.matePass + ' times; the goalie stopped ' + pk.saves + ' shots (' + pk.gHits + ' pucks hit him)');
   lines.push('Hands: lower-hand switch ' + ONEM_NAMES[st.oneM] + ', one hand ' + pk.oneN + ' times for ' + fmt(pk.oneT) + ' s');
   lines.push('Puck help: ' + ASSIST_NAMES[st.assistP] + ', puck carried on the blade ' + fmt(PK.crT, 1) + ' s, ' + pk.catches + ' catches' + (pk.tN ? '; after ' + pk.tN + ' light touches the puck was moving at ' + fmt(kmh(pk.tSum / pk.tN)) + ' km/h on average, ' + fmt(kmh(pk.tRel / pk.tN)) + ' km/h relative to you (worst ' + fmt(kmh(pk.tMax)) + ')' : ''));
   lines.push('Shots at a net (over 36 km/h, heading for the goal line): ' + pk.shots + ', on target ' + pk.onT + (pk.shots ? ' (' + fmt(100 * pk.onT / pk.shots) + '%), average miss from the centre of the net ' + fmt(100 * pk.errSum / pk.shots) + ' cm' : ''));
@@ -2246,7 +2464,7 @@ function syncUI() {
   $('curve').value = st.curve; $('power').value = String(st.power); $('assist').value = st.assist ? 'on' : 'off';
   $('shot').value = st.shot; $('hz').value = String(st.wantHz); $('speed').value = String(st.speed); $('steer').value = st.steer;
   $('turn').value = st.turn; $('vig').value = String(st.vig); $('height').value = st.height; $('sound').value = st.sound ? 'on' : 'off';
-  $('len').value = String(Math.round(st.lenIn)); $('keepm').value = st.keepM; $('lift').value = String(st.liftP); $('rsrc').value = st.rollSrc; $('roll').value = String(st.rollG); $('bend').value = st.bendOn ? 'on' : 'off'; $('pa').value = String(st.assistP); $('ice').value = String(st.iceP); $('onem').value = st.oneM;
+  $('len').value = String(Math.round(st.lenIn)); $('keepm').value = st.keepM; $('lift').value = String(st.liftP); $('rsrc').value = st.rollSrc; $('roll').value = String(st.rollG); $('bend').value = st.bendOn ? 'on' : 'off'; $('pa').value = String(st.assistP); $('ice').value = String(st.iceP); $('onem').value = st.oneM; $('aim').value = String(st.aimP); $('hap').value = String(st.hapP); $('others').value = st.others;
 }
 function drawCurve() {
   const cv = curveCur || curveById(st.curve), bp = makeProfile(cv), cvs = $('curve-cv'), g = cvs.getContext('2d'), W = cvs.width, Hh = cvs.height;
@@ -2278,7 +2496,7 @@ document.querySelectorAll('#lvl button').forEach(b => b.addEventListener('click'
 const bind = (id, key, conv) => $(id).addEventListener('change', e => { st[key] = conv ? conv(e.target.value) : e.target.value; saveSettings(); });
 bind('shot', 'shot'); bind('hz', 'wantHz', Number); bind('speed', 'speed', Number); bind('steer', 'steer'); bind('turn', 'turn'); bind('vig', 'vig', Number);
 bind('height', 'height'); bind('sound', 'sound', v => v === 'on'); bind('power', 'power', Number); bind('assist', 'assist', v => v === 'on');
-bind('len', 'lenIn', Number); $('len').addEventListener('change', () => { st.len = st.lenIn * 0.0254; }); bind('keepm', 'keepM'); bind('lift', 'liftP', Number); bind('rsrc', 'rollSrc'); bind('roll', 'rollG', Number); bind('bend', 'bendOn', v => v === 'on'); bind('pa', 'assistP', Number); bind('ice', 'iceP', Number); bind('onem', 'oneM'); $('onem').addEventListener('change', () => { if (st.oneM === 'off') { handsOne = false; grabPend = 0; } });
+bind('len', 'lenIn', Number); $('len').addEventListener('change', () => { st.len = st.lenIn * 0.0254; }); bind('keepm', 'keepM'); bind('lift', 'liftP', Number); bind('rsrc', 'rollSrc'); bind('roll', 'rollG', Number); bind('bend', 'bendOn', v => v === 'on'); bind('pa', 'assistP', Number); bind('ice', 'iceP', Number); bind('onem', 'oneM'); bind('aim', 'aimP', Number); bind('hap', 'hapP', Number); bind('others', 'others'); $('onem').addEventListener('change', () => { if (st.oneM === 'off') { handsOne = false; grabPend = 0; } });
 $('curve').addEventListener('change', e => { setCurve(e.target.value); saveSettings(); drawCurve(); MENU.dirty = true; });
 matchMedia('(prefers-color-scheme: dark)').addEventListener && matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawCurve());
 document.querySelectorAll(ALLIN).forEach(x => x.addEventListener('change', refreshRep));
@@ -2288,7 +2506,7 @@ $('copy').addEventListener('click', async () => {
   catch (e) { try { const r = document.createRange(); r.selectNodeContents($('rep')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); out.textContent = 'Selected. Copy it with your keyboard.'; } catch (e2) { out.textContent = 'Select the text above and copy it.'; } }
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
-if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
+if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, othersInit, poseSkater, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
 })();
 </script>
 
