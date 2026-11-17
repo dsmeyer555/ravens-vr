@@ -88,7 +88,7 @@ details.rate[open]>summary{margin-bottom:10px}
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Phase 3 · round 8</p>
+    <p class="eyebrow">Ravens VR · Phase 3 · round 9</p>
     <h1>Stick and puck</h1>
     <p class="lede">Round 6 of the stick and puck test. Shots now come off the stick the way a real wrist shot does: the puck rides the blade through your sweep and leaves at the angle of the face and the lift of your follow-through. Soft pushes stay close to you, all twenty curves are traced from the shop pictures you sent, and the stick and blade are rebuilt. Press Enter VR and spend about ten minutes stickhandling, pushing the puck ahead while you skate, and shooting.</p>
   </header>
@@ -1115,14 +1115,15 @@ function launchAngle(Wy, u, rel) {
   const bp = STK.bp, toe = bp && bp.toeL ? bp.toeL * Math.pow(clamp(u / bp.Lb, 0, 1), 2) : 0;
   return clamp(Math.asin(clamp(Wy, -1, 1)) + toe, 0, liftCap()[0]) * sstep((rel - 2.5) / 4);
 }
-// Where the puck leaves the blade, the curve decides its direction: it goes out along the face there (a hooked toe turns it), keeping only part of the
-// sliding along the face. Speed and direction come from the sweep's peak (smoothed).
+// The puck leaves the blade at the blade's own velocity (the sweep's peak, direction smoothed), plus however fast it was rolling along the face, in the
+// direction the face runs where it leaves. On a flat blade that is straight along the blade; off a hooked toe it is turned forward, so a curve that cups
+// and rolls the puck to the toe sends it a little across (toward the toe side) and a flat paddle sends it straight where you swept.
 function curveRelease(F, bp, u) {
-  const n = bp.n, i = clamp(Math.round(u / bp.Lb * n), 1, n - 1), s = 0.7 * (bp.c[i + 1] - bp.c[i - 1]) / (2 * bp.Lb / n);
+  const n = bp.n, i = clamp(Math.round(u / bp.Lb * n), 1, n - 1), cp = (bp.c[i + 1] - bp.c[i - 1]) / (2 * bp.Lb / n);
   const lu = Math.hypot(F.Ux, F.Uz) || 1, ux = F.Ux / lu, uz = F.Uz / lu, lw = Math.hypot(F.Wx, F.Wz) || 1, wx = F.Wx / lw, wz = F.Wz / lw;
-  let nx = wx + s * ux, nz = wz + s * uz; const ln = Math.hypot(nx, nz); nx /= ln; nz /= ln;
-  const tx = -nz, tz = nx, rx = PK.shVx - PA.svx, rz = PK.shVz - PA.svz, vn = Math.max(0, rx * nx + rz * nz), vt = rx * tx + rz * tz;
-  PK.vx = PA.svx + nx * vn + tx * vt * 0.35; PK.vz = PA.svz + nz * vn + tz * vt * 0.35; PK.relU = u / bp.Lb;
+  let tx = ux - cp * wx, tz = uz - cp * wz; const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
+  const slide = clamp(PK.uvM || 0, 0, 4) * 0.6, uf = u / bp.Lb, whip = 1 + 0.12 * sstep((uf - 0.55) / 0.35) * clamp((bp.dep || 0) / 0.03, 0, 1.2);   // a deep toe curve whips a puck rolled out to the toe
+  PK.vx = PA.svx + (PK.shVx - PA.svx) * whip + tx * slide; PK.vz = PA.svz + (PK.shVz - PA.svz) * whip + tz * slide; PK.relU = uf;
 }
 // Aim help: a shot or pass heading within 12 degrees of a net or a teammate's stick is turned part of the way toward it (the Aim help setting).
 function aimHelp() {
@@ -1189,10 +1190,10 @@ function puckHelp(dt, now, haveBlade) {
     // blade was rising. Sideways stickhandling is untouched (the cradle holds it, and a hard pull away lets go as before).
     const rvx = _vp[0] - PA.svx, rvz = _vp[2] - PA.svz, cv = Math.max(PK.carryV, 1e-6), lwh = Math.hypot(Fn.Wx, Fn.Wz) || 1;
     const into = (rvx * Fn.Wx + rvz * Fn.Wz) / lwh / cv, fwd = (rvx * PA.fx + rvz * PA.fz) / cv; PK.into = into; PK.fwd = fwd; PK.d3 = d3; PK.wP = wP;
-    if (!PK.sh && (PK.cr > 0.3 || now - PK.touch < 0.06) && now >= PK.rel && PK.carryV > 0.9 && into > 0.3 && fwd > 0.25 && d3 < 0.14 && wP > -0.1) { PK.sh = 1; PK.shPk = 0; PK.shT = 0; PK.shUp = 0; PK.shWy = -1; PK.smx = _vp[0]; PK.smz = _vp[2]; }
+    if (!PK.sh && (PK.cr > 0.3 || now - PK.touch < 0.06) && now >= PK.rel && PK.carryV > 0.9 && into > 0.3 && fwd > 0.25 && d3 < 0.14 && wP > -0.1) { PK.sh = 1; PK.shPk = 0; PK.shT = 0; PK.shUp = 0; PK.shWy = -1; PK.smx = _vp[0]; PK.smz = _vp[2]; PK.uvE = 0; PK.uvM = 0; }
     if (PK.sh) {
       PK.shT += dt; PK.cr = 1;
-      const ka = 1 - Math.exp(-dt / 0.025); PK.smx += (_vp[0] - PK.smx) * ka; PK.smz += (_vp[2] - PK.smz) * ka;   // smoothed, so one shaky frame does not aim the shot
+      const ka = 1 - Math.exp(-dt / 0.015); PK.smx += (_vp[0] - PK.smx) * ka; PK.smz += (_vp[2] - PK.smz) * ka; PK.uvE = (PK.uvE || 0) + ((PK.uv || 0) - (PK.uvE || 0)) * (1 - Math.exp(-dt / 0.04)); PK.uvM = Math.max(PK.uvM || 0, PK.uvE);   // smoothed, so one shaky frame does not aim the shot
       if (PK.carryV > PK.shPk && PK.carryV < 35) { PK.shPk = PK.carryV; const ex = PK.smx - PA.svx, ez = PK.smz - PA.svz, el = Math.hypot(ex, ez) || 1, rr = Math.hypot(_vp[0] - PA.svx, _vp[2] - PA.svz); PK.shVx = PA.svx + ex / el * rr; PK.shVz = PA.svz + ez / el * rr; PK.shU = u; }   // speed from the blade, direction smoothed     // (a jump in tracking or a snap turn is not a swing)
       if (PK.carryV > 0.7 * PK.shPk) { PK.shUp = Math.max(PK.shUp, _vp[1] + STK.dvy); PK.shWy = Math.max(PK.shWy, Fn.Wy); }          // the face and the rise around the peak of the sweep set the angle, not the follow-through after
       const lifted = _T[1] > PUCK.HH + 0.035;
@@ -1207,7 +1208,7 @@ function puckHelp(dt, now, haveBlade) {
       } else {                                                                 // ride: the puck stays on the face and goes where the blade goes, sliding along it
         const lu = Math.hypot(Fn.Ux, Fn.Uz) || 1, uxh = Fn.Ux / lu, uzh = Fn.Uz / lu, lw = Math.hypot(Fn.Wx, Fn.Wz) || 1, wxh = Fn.Wx / lw, wzh = Fn.Wz / lw;
         const vu = (_vp[0] - PA.svx) * uxh + (_vp[2] - PA.svz) * uzh, pw = clamp((dxp * wxh + dzp * wzh) * 12, -3, 3);   // a heel-first sweep rolls the puck toward the toe
-        let sl = -vu * 0.3; if ((sl > 0 && u > 0.88 * bp.Lb) || (sl < 0 && u < 0.12 * bp.Lb)) sl = 0;          // it rolls toward the toe but stays on the blade until the shot goes
+        let sl = -vu * 0.4; if ((sl > 0 && u > 0.88 * bp.Lb) || (sl < 0 && u < 0.12 * bp.Lb)) sl = 0;          // it rolls toward the toe but stays on the blade until the shot goes
         PK.vx = _vp[0] + sl * uxh + wxh * pw; PK.vz = _vp[2] + sl * uzh + wzh * pw; if (PK.vy > 0) PK.vy = 0;
       }
     } else if (PK.carryV > (kp ? 6.5 : 3.5) && into < 0.3) PK.rel = Math.max(PK.rel, now + (kp ? 0.25 : 0.4));   // a hard pull away from the puck: let it go
@@ -1956,29 +1957,37 @@ function mateFrame(dt) {
   const loose = M.st === 'free' && !PK.sh && PK.cr < 0.3 && PK.y < PUCK.HH + 0.05, dPk = Math.hypot(PK.x - M.x, PK.z - M.z), dYou = Math.hypot(PK.x - H.x, PK.z - H.z);
   if (M.st === 'hold') { tx = M.x; tz = M.z; }
   else if (loose && dPk < 7 && Math.hypot(PK.vx, PK.vz) < 2.5 && dYou > 2.5 && M.cool <= 0) { tx = PK.x - M.fx * 0.9; tz = PK.z - M.fz * 0.9; }   // go and get a loose puck
-  else { tx = clamp(H.x + H.fx * 6 + H.fz * 7, -26, 26); tz = clamp(H.z + H.fz * 6 - H.fx * 7, -10.5, 10.5); }   // a pass option: ahead and to your left
-  const dx = tx - M.x, dz = tz - M.z, d = Math.hypot(dx, dz), want = Math.min(6.2, d * 1.6), wx = d > 0.01 ? dx / d * want : 0, wz = d > 0.01 ? dz / d * want : 0;
-  const ax = clamp(wx - M.vx, -5 * dt, 5 * dt), az = clamp(wz - M.vz, -5 * dt, 5 * dt); M.vx += ax; M.vz += az; M.x += M.vx * dt; M.z += M.vz * dt;
+  else {                                                            // a pass option: ahead and to your left of the way you are skating (not where you look)
+    const sp2 = Math.hypot(S.vx, S.vz), kd = 1 - Math.exp(-dt / 0.8);
+    const dx0 = sp2 > 1.5 ? S.vx / sp2 : H.fx, dz0 = sp2 > 1.5 ? S.vz / sp2 : H.fz;
+    M.dx = (M.dx == null ? dx0 : M.dx + (dx0 - M.dx) * kd); M.dz = (M.dz == null ? dz0 : M.dz + (dz0 - M.dz) * kd); const dl = Math.hypot(M.dx, M.dz) || 1;
+    const fx = M.dx / dl, fz = M.dz / dl, lead = 5 + sp2 * 0.6;
+    tx = clamp(H.x + fx * lead + fz * 7, -26, 26); tz = clamp(H.z + fz * lead - fx * 7, -10.5, 10.5);
+  }
+  const dx = tx - M.x, dz = tz - M.z, d = Math.hypot(dx, dz), want = Math.min(7, d * 1.2), wx = d > 0.01 ? dx / d * want : 0, wz = d > 0.01 ? dz / d * want : 0;
+  const ax = clamp(wx - M.vx, -4 * dt, 4 * dt), az = clamp(wz - M.vz, -4 * dt, 4 * dt); M.vx += ax; M.vz += az; M.x += M.vx * dt; M.z += M.vz * dt;
   const sp = Math.hypot(M.vx, M.vz); let lx = PK.x - M.x, lz = PK.z - M.z;
   if (M.st === 'hold') { lx = H.x - M.x; lz = H.z - M.z; }
   if (sp > 1.5 && M.st !== 'hold') { lx = lx * 0.3 + M.vx / sp * 0.7 * Math.hypot(lx, lz); lz = lz * 0.3 + M.vz / sp * 0.7 * Math.hypot(PK.x - M.x, PK.z - M.z); }
   const ll = Math.hypot(lx, lz) || 1, k = 1 - Math.exp(-dt * 5); M.fx += (lx / ll - M.fx) * k; M.fz += (lz / ll - M.fz) * k; const fl = Math.hypot(M.fx, M.fz) || 1; M.fx /= fl; M.fz /= fl;
   const [bx, bz] = mateBlade(); M.bx = bx; M.bz = bz; AIM_T[0] = [bx, bz];
   // taking a pass: the puck comes to his blade
-  if (M.st === 'free' && M.cool <= 0 && !PK.sh && PK.cr < 0.3 && PK.y < PUCK.HH + 0.06 && Math.hypot(PK.x - bx, PK.z - bz) < 0.6 && Math.hypot(PK.vx - M.vx, PK.vz - M.vz) < 24) {
+  if (M.st === 'free' && M.cool <= 0 && !PK.sh && PK.cr < 0.3 && PK.y < PUCK.HH + 0.06 && Math.hypot(PK.x - bx, PK.z - bz) < 0.8 && Math.hypot(PK.vx - M.vx, PK.vz - M.vz) < 24) {
     M.st = 'hold'; M.t = 0; kp.mateGot++; EV.push({ k: 'mpass', v: Math.hypot(PK.vx - M.vx, PK.vz - M.vz) * 0.5, x: bx, y: PUCK.HH, z: bz });
   }
   if (M.st === 'hold') {
     PK.x = bx; PK.z = bz; PK.y = PUCK.HH; PK.vx = M.vx; PK.vz = M.vz; PK.vy = 0; PK.cr = 0;
-    if (M.t > 0.9 && H.ok) {                                         // pass it back to your blade, leading you if you are skating
+    if (M.t > 0.7 && H.ok) {                                         // pass it back to your blade, leading you if you are skating
       let px = H.x + H.fx * 0.9, pz = H.z + H.fz * 0.9;
       if (stickOn && STK.ok) { const F = STK.F, o = [0, 0, 0]; bpt(F, STK.bp.Lb * 0.5, PUCK.HH, -STK.bp.c[Math.round(STK.bp.n / 2)] + PUCK.R + 0.02, o); px = o[0]; pz = o[2]; }
-      const spd = 10.5; let t = Math.hypot(px - bx, pz - bz) / spd; px += S.vx * t; pz += S.vz * t; t = Math.hypot(px - bx, pz - bz) / spd;
+      const spd = clamp(5 + Math.hypot(px - bx, pz - bz) * 0.6, 7, 12); let t = Math.hypot(px - bx, pz - bz) / spd; px += S.vx * t; pz += S.vz * t; t = Math.hypot(px - bx, pz - bz) / spd;
       const err = (Math.random() - 0.5) * 0.04, ang = Math.atan2(pz - bz, px - bx) + err;
       PK.vx = Math.cos(ang) * spd; PK.vz = Math.sin(ang) * spd; PK.touch = pClock; PK.soft = false; PK.rel = pClock + 0.05;
       M.st = 'free'; M.cool = 0.9; kp.matePass++; EV.push({ k: 'mpass', v: spd, x: bx, y: PUCK.HH, z: bz });
     }
   }
+  M.call = (M.call || 0) - dt;
+  if (M.st === 'free' && stickOn && PK.cr > 0.5 && M.call <= 0 && Math.hypot(M.x - H.x, M.z - H.z) > 4) { M.call = 2.5; if (audio) audio.hit(1.2, { x: bx, y: 0.02, z: bz }); }   // a stick tap on the ice: he wants it
   poseSkater(M.g, M.x, M.z, M.fx, M.fz, sp, dt, bx, bz);
 }
 function goalFrame(dt) {
@@ -2397,7 +2406,7 @@ function fmt(n, d) { return n == null || Number.isNaN(n) ? '--' : n.toFixed(d ==
 function buildResult(r) {
   $('result').hidden = false;
   document.querySelectorAll(ALLIN).forEach(x => { x.checked = false; });
-  const lines = ['Ravens VR Phase 3 report (round 8)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+  const lines = ['Ravens VR Phase 3 report (round 9)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     'Page: ' + (probeInfo.frame ? 'inside a frame (VR permission ' + probeInfo.policy + ')' : 'its own page'),
     'Browser: ' + (probeInfo.device || probeInfo.ua.slice(0, 80)), 'VR supported: ' + (probeInfo.vr === null ? 'unknown' : probeInfo.vr ? 'yes' : 'no')];
   const rows = [['Scene', 'Seconds', 'Average', 'Low 1%', 'Worst', 'Slow']];
