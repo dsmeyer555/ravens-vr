@@ -88,9 +88,9 @@ details.rate[open]>summary{margin-bottom:10px}
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Phase 3 · round 5</p>
+    <p class="eyebrow">Ravens VR · Phase 3 · round 6</p>
     <h1>Stick and puck</h1>
-    <p class="lede">Round 5 of the stick and puck test. The blade now rests on the ice by itself, shots lift much more easily (and the puck help lets go sooner when you open the blade), and you can take your lower hand off the stick with the A button and put it back. Press Enter VR and spend about ten minutes stickhandling, passing and shooting.</p>
+    <p class="lede">Round 6 of the stick and puck test. Shots now come off the stick the way a real wrist shot does: the puck rides the blade through your sweep and leaves at the angle of the face and the lift of your follow-through. Soft pushes stay close to you, all twenty curves are traced from the shop pictures you sent, and the stick and blade are rebuilt. Press Enter VR and spend about ten minutes stickhandling, pushing the puck ahead while you skate, and shooting.</p>
   </header>
 
   <details class="card" aria-label="Checks">
@@ -128,7 +128,7 @@ details.rate[open]>summary{margin-bottom:10px}
         <select id="curve"></select>
       </label>
     </div>
-    <div class="curvebox"><canvas id="curve-cv" width="720" height="190" aria-label="Top view of the blade, heel on the left, toe on the right"></canvas><p class="note" id="curve-info"></p></div>
+    <div class="curvebox"><canvas id="curve-cv" width="720" height="206" aria-label="Top view of the blade, heel on the left, toe on the right"></canvas><p class="note" id="curve-info"></p></div>
     <p class="note" style="margin-top:10px">Everything else is in the menu inside the headset: press <b>X</b>. The same settings are here under More settings. They are saved on this device.</p>
   </section>
 
@@ -207,9 +207,9 @@ details.rate[open]>summary{margin-bottom:10px}
           <option value="3">Strong</option>
         </select>
       </label>
-      <label class="f">Shot lift (opening the blade lifts the puck)
+      <label class="f">Shot lift (how much the face angle counts)
         <select id="lift">
-          <option value="0">Off (pure physics)</option>
+          <option value="0">Real only (just the face angle)</option>
           <option value="1">Light</option>
           <option value="2" selected>Normal</option>
           <option value="3">Strong</option>
@@ -267,7 +267,8 @@ details.rate[open]>summary{margin-bottom:10px}
       <li><b>Both hands hold the stick.</b> Your top hand (left, for a right shot) is on the butt end and your lower hand slides along the shaft. Your gloves stay on the shaft: the lower one slides up and down as your hand does, and moving your hand sideways steers the stick, like a real two-hand grip.</li>
       <li><b>One hand.</b> Press <b>A</b> (right controller) to take your lower hand off the stick: the glove stays with your hand and the stick follows your top hand alone, for a one-handed reach. Press <b>A</b> again to take hold: your lower hand has to be on the shaft, and if it is not yet the game waits a few seconds and grabs the moment it gets there. The menu can switch this to the lower hand's grip button instead (squeeze for two hands, let go for one).</li>
       <li><b>The blade stays on the ice.</b> With your hands low the blade rests flat on the ice, and if your hands sit a little high the stick stretches a few centimetres so the blade still touches. Lift your hands on purpose (a saucer pass, a shot, a lift) and it comes off the ice at once. <b>Blade to ice</b> in the menu sets how much help you get.</li>
-      <li><b>Open the blade with your lower wrist.</b> Twist the lower controller about the stick (your right wrist for a right shot) and the blade rolls: the gold edge is the top of the face. An open blade lifts the puck when you shoot (a hard sweep with an open blade, or a flick of the hands up, now sends it well off the ice), and <b>Shot lift</b> in the menu sets how much help you get. The game learns how you normally hold the controllers, so a different grip does not leave the blade rolled; only a real twist does.</li>
+      <li><b>Shoot like you would on the ice.</b> With the puck on your blade, sweep the stick forward through it: the puck stays on the blade for the whole sweep and leaves as the sweep peaks. It goes up if you open the blade (turn your lower wrist so the face points up) and follow through high; keep the face closed and finish low and it stays low. A hard, fast sweep goes further and higher than a slow one. <b>Shot lift</b> in the menu sets how much the face angle counts: Real only is the plain angle.</li>
+      <li><b>Pushing the puck ahead.</b> A gentle push forward sends the puck a metre or two ahead and it stops running away from you, so you can skate onto it.</li>
       <li><b>Keep the puck.</b> Hold the <b>right trigger</b> and the puck stays on your blade where it is, through snap turns, quick stickhandling and skating. It glows gold while you keep it. A real swing at it (a shot or a hard pass) or letting go of the trigger releases it. With the trigger down, a puck within a few centimetres of the blade is pulled in as well.</li>
       <li><b>Puck help</b> (on Normal) catches a pass on your blade, carries the puck while you skate, carries it round with you on a snap turn, and slows a puck you have just nudged so you can catch up with it. It lets go the moment you swing at the puck, so passes and shots are not changed. You feel a soft buzz while the puck is on your blade, a tap for each touch, and a stronger kick for passes and shots.</li>
       <li><b>Get into your ready stance</b> with the blade just above the ice and keep it there for a second: the stick calibrates itself so the blade sits flat. Press <b>Y</b> any time to do it again (it also resets your height).</li>
@@ -363,10 +364,22 @@ details.rate[open]>summary{margin-bottom:10px}
         <label class="chk"><input type="radio" name="rf" value="Does nothing"> Does nothing</label>
       </fieldset>
       <fieldset class="f"><legend>Lifting the puck</legend>
-        <label class="chk"><input type="radio" name="lf" value="Easy now"> Easy now</label>
-        <label class="chk"><input type="radio" name="lf" value="Better, still hard"> Better, still hard</label>
-        <label class="chk"><input type="radio" name="lf" value="Lofts too much"> Lofts too much</label>
-        <label class="chk"><input type="radio" name="lf" value="No change"> No change</label>
+        <label class="chk"><input type="radio" name="lf" value="Feels like a real wrist shot"> Feels like a real wrist shot</label>
+        <label class="chk"><input type="radio" name="lf" value="Easy to lift, not quite real"> Easy to lift, not quite real</label>
+        <label class="chk"><input type="radio" name="lf" value="Still hard to get high"> Still hard to get high</label>
+        <label class="chk"><input type="radio" name="lf" value="Goes up too easily"> Goes up too easily</label>
+        <label class="chk"><input type="radio" name="lf" value="Puck leaves the blade too early or late"> Puck leaves the blade too early or too late</label>
+      </fieldset>
+      <fieldset class="f"><legend>Pushing the puck ahead</legend>
+        <label class="chk"><input type="radio" name="pp" value="Stays with me, good"> Stays with me, good</label>
+        <label class="chk"><input type="radio" name="pp" value="Still gets away"> Still gets away</label>
+        <label class="chk"><input type="radio" name="pp" value="Too sticky, does not go"> Too sticky, it does not go</label>
+      </fieldset>
+      <fieldset class="f"><legend>Curves and stick look</legend>
+        <label class="chk"><input type="radio" name="cu" value="Curves and stick look right"> Curves and stick look right</label>
+        <label class="chk"><input type="radio" name="cu" value="Curves right, stick still off"> Curves right, the stick still looks off</label>
+        <label class="chk"><input type="radio" name="cu" value="Curves still wrong"> Curves still wrong</label>
+        <label class="chk"><input type="radio" name="cu" value="Curve backwards"> The curve bends the wrong way</label>
       </fieldset>
       <fieldset class="f"><legend>Blade on the ice</legend>
         <label class="chk"><input type="radio" name="ic" value="Always there, good"> Always there, good</label>
@@ -688,30 +701,41 @@ function drawBoard(l) {
 // your wrist opens or closes the blade. The puck is a disc that stays flat; it has gravity, bounces, ice friction, spin for show,
 // and collides with the blade, the boards and glass, the goal frame and the net.
 const GRAV = 9.81, PUCK = { R: 0.0381, HH: 0.0127 };
-const BL = { TB: 0.02, KB: 0.08, SHW: 0.03, SHD: 0.024 };       // blade thickness, knob beyond the top hand, shaft width and depth
+const BL = { TB: 0.013, KB: 0.08, SHW: 0.03, SHD: 0.024 };       // blade thickness, knob beyond the top hand, shaft width and depth
 const FRAME_H = 1.22, POST_R = 0.03, WALL_TOP = 2.62, BOARD_TOP = 1.12;
 const POWERS = [1.0, 1.35, 1.8], POWER_NAMES = ['Raw', 'Natural', 'Boosted'];
 const ROLLS = [0, 0.6, 1.0, 1.4, 1.9], ROLL_NAMES = ['Off (blade stays flat)', 'Gentle', 'Normal', 'Strong', 'Extra strong'];
 const ASSISTS = [0, 0.5, 1, 1.6], ASSIST_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
-const LIFTS = [0, 1.2, 2.4, 3.6], LIFT_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
+const LIFTS = [1.0, 1.3, 1.6, 2.0], LIFT_NAMES = ['Real only', 'Light', 'Normal', 'Strong'];      // how much the face angle is exaggerated when the puck leaves it
 // blade to ice: below the first height (m, of the blade's lowest point above the ice) the blade rests on the ice; it lets go gradually up to the second
 const ICES = [[0, 0], [0.10, 0.45], [0.26, 0.80], [0.45, 1.10]], ICE_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
 const ROLL_SRC = ['lower', 'top', 'both'], ROLL_SRC_NAMES = ['Lower hand', 'Top hand', 'Both hands'];
 const sstep = t => { t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
 
-// Lie, blade length and blade height come from each curve's shop page. The face profile (mm the face is cut back from the straight
-// line, at fractions of the blade length from the heel) and the loft are my own approximations of the shop's descriptions.
+// Lie and blade length come from each curve's shop page. The face profile (mm the face is cut back from the line of the heel, at fractions of the blade
+// length from the heel) is traced from the shop's 3D curve images (left curves mirrored), one scale for all of them. hh / th are the blade height at the heel
+// and toe (mm), loft the face's built-in tilt, toeL extra opening toward the toe of an open curve (degrees), toe the toe shape and rock the rocker (mm).
 const CURVES = [
-  { id: 'jagr', name: 'Jagr', code: 'PRO68', lie: 6, len: 0.30, hh: 69, th: 54, loft: 7, pts: [[0, 0], [.15, 2], [.3, 9], [.45, 16], [.6, 20], [.75, 20], [.9, 15], [1, 9]], note: 'Big open toe curve, square toe' },
-  { id: 'p92', name: 'P92M', code: 'P92M', lie: 6, len: 0.30, hh: 76, th: 56, loft: 9, pts: [[0, 0], [.2, 3], [.35, 10], [.5, 16], [.65, 17], [.8, 14], [1, 8]], note: 'Deep mid curve, high blade' },
-  { id: 'p28', name: 'P28M', code: 'P28M', lie: 6, len: 0.30, hh: 76, th: 56, loft: 8, pts: [[0, 0], [.2, 4], [.4, 11], [.55, 14], [.7, 13], [.85, 9], [1, 5]], note: 'Mid curve, high blade' },
-  { id: 'p88', name: 'P88', code: 'P88', lie: 5.5, len: 0.30, hh: 72, th: 55, loft: 4, approx: true, pts: [[0, 0], [.3, 1], [.5, 5], [.7, 10], [.85, 13], [1, 15]], note: 'Flat heel, gradual curve, no toe hook (approximate)' },
-  { id: 'malkin', name: 'Malkin', code: 'PRO71', lie: 6, len: 0.29, hh: 72, th: 55, loft: 5, pts: [[0, 0], [.3, 1], [.5, 5], [.7, 10], [.8, 12], [.9, 9], [1, 3]], note: 'P88 with a hook over the last quarter' },
-  { id: 'kovalchuk', name: 'Kovalchuk', code: 'PRO17', lie: 4.5, len: 0.30, hh: 72, th: 55, loft: 3, pts: [[0, 0], [.3, 1], [.5, 4], [.7, 8], [.85, 8], [1, 2]], note: 'Flat heel, toe hook, less rocker than P28' },
-  { id: 'mcdavid', name: 'McDavid', code: 'PRO97', lie: 4, len: 0.29, hh: 76, th: 56, loft: 8, pts: [[0, 0], [.2, 3], [.35, 10], [.5, 17], [.65, 19], [.8, 16], [1, 10]], note: 'Deep P92-style curve, tall blade' },
-  { id: 'crosby', name: 'Crosby', code: 'PRO87', lie: 4, len: 0.285, hh: 68, th: 52, loft: 5, pts: [[0, 0], [.25, 3], [.45, 10], [.6, 13], [.8, 11], [1, 6]], note: 'Mid curve, short compact blade' },
-  { id: 'datsyuk', name: 'Datsyuk', code: 'PRO13', lie: 4, len: 0.32, hh: 76, th: 58, loft: 2, pts: [[0, 0], [.75, 2], [.9, 6], [1, 8]], note: 'Long flat paddle, flat for 75%, little loft at the toe' },
-  { id: 'zegras', name: 'Zegras', code: 'PRO9246', lie: 6, len: 0.30, hh: 76, th: 56, loft: 8, pts: [[0, 0], [.2, 3], [.35, 11], [.5, 18], [.65, 20], [.8, 18], [1, 12]], note: 'Deep P92 with extra toe curve' }
+  { id: 'jagr', name: 'Jagr', code: 'PRO68', lie: 6, len: 0.3, hh: 58, th: 70, loft: 9, toe: 'square', toeL: 4, rock: 2, pts: [[0, 0.0], [0.1, 0.8], [0.2, 0.5], [0.3, -0.2], [0.4, -0.3], [0.5, 0.1], [0.6, 0.7], [0.7, 1.9], [0.8, 4.6], [0.9, 10.1], [1, 19.0]], note: 'Big open toe curve, bigger than a P28, square toe' },
+  { id: 'p92', name: 'P92', code: 'P92', lie: 5.5, len: 0.3, hh: 56, th: 70, loft: 9, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 1.0], [0.3, 1.2], [0.4, 1.8], [0.5, 2.9], [0.6, 4.4], [0.7, 6.9], [0.8, 10.8], [0.9, 17.2], [1, 26.8]], note: 'Retail P92: mid-toe curve, open face, round toe' },
+  { id: 'p92m', name: 'P92M', code: 'PRO92M', lie: 6, len: 0.3, hh: 60, th: 77, loft: 9, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 1.0], [0.3, 1.2], [0.4, 1.8], [0.5, 2.9], [0.6, 4.4], [0.7, 6.9], [0.8, 10.8], [0.9, 17.2], [1, 26.8]], note: 'The P92 curve on a max-height blade' },
+  { id: 'p88', name: 'P88', code: 'P88', lie: 6, len: 0.3, hh: 56, th: 68, loft: 5, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 0.9], [0.3, 1.5], [0.4, 2.2], [0.5, 3.3], [0.6, 5.2], [0.7, 7.4], [0.8, 9.8], [0.9, 12.4], [1, 15.0]], note: 'Kane: mid curve, slightly open face, round toe' },
+  { id: 'kane', name: 'Kane', code: 'PRO1088', lie: 6, len: 0.31, hh: 56, th: 70, loft: 4, toe: 'semi', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, -0.0], [0.2, -0.6], [0.3, -1.2], [0.4, -1.4], [0.5, -1.3], [0.6, -0.6], [0.7, 0.9], [0.8, 2.9], [0.9, 6.3], [1, 11.7]], note: 'Flatter than a P10, a bigger heel dip and an angled toe' },
+  { id: 'p10', name: 'P10', code: 'PRO10', lie: 6, len: 0.32, hh: 58, th: 72, loft: 4, toe: 'round', toeL: 1, rock: 2, pts: [[0, -0.0], [0.1, 0.0], [0.2, -0.3], [0.3, -0.6], [0.4, -0.6], [0.5, -0.4], [0.6, 0.2], [0.7, 1.9], [0.8, 4.9], [0.9, 9.4], [1, 15.7]], note: 'Old P10: long and fairly straight with a small toe curve' },
+  { id: 'draisaitl', name: 'Draisaitl', code: 'PRO2299', lie: 6, len: 0.32, hh: 56, th: 70, loft: 4, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.3], [0.2, 0.9], [0.3, 1.4], [0.4, 2.1], [0.5, 3.2], [0.6, 4.9], [0.7, 7.1], [0.8, 9.7], [0.9, 13.4], [1, 18.8]], note: 'Very flat PM9-style paddle, a passing curve' },
+  { id: 'datsyuk', name: 'Datsyuk', code: 'PRO13', lie: 4, len: 0.32, hh: 62, th: 78, loft: 3, toe: 'semi', toeL: 2, rock: 2, pts: [[0, 0.0], [0.1, -0.2], [0.2, -0.5], [0.3, -0.7], [0.4, -0.9], [0.5, -1.2], [0.6, -1.2], [0.7, -0.4], [0.8, 1.1], [0.9, 3.8], [1, 7.7]], note: 'Long flat paddle, max height, curves back at the heel' },
+  { id: 'crosby', name: 'Crosby', code: 'PRO87', lie: 4, len: 0.28, hh: 54, th: 64, loft: 5, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 0.9], [0.3, 1.5], [0.4, 2.7], [0.5, 4.7], [0.6, 7.5], [0.7, 10.7], [0.8, 14.5], [0.9, 19.6], [1, 26.3]], note: 'PM9-style mid curve on a small blade' },
+  { id: 'malkin', name: 'Malkin', code: 'PRO71', lie: 6, len: 0.29, hh: 56, th: 68, loft: 5, toe: 'round', toeL: 2, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 0.9], [0.3, 1.5], [0.4, 2.2], [0.5, 3.3], [0.6, 5.2], [0.7, 7.8], [0.8, 11.7], [0.9, 18.3], [1, 27.7]], note: 'A P88 with the last quarter bent into a hook' },
+  { id: 'panarin', name: 'Panarin', code: 'PRO1910', lie: 6, len: 0.3, hh: 56, th: 70, loft: 7, toe: 'round', toeL: 2, rock: 2, pts: [[0, -0.0], [0.1, 1.1], [0.2, 1.8], [0.3, 2.3], [0.4, 3.0], [0.5, 4.2], [0.6, 6.1], [0.7, 8.5], [0.8, 12.0], [0.9, 18.0], [1, 26.9]], note: 'Half P92, half P91A' },
+  { id: 'mcdavid', name: 'McDavid', code: 'PRO97', lie: 4, len: 0.29, hh: 56, th: 68, loft: 7, toe: 'semi', toeL: 2, rock: 0, pts: [[0, 0.0], [0.1, 0.1], [0.2, 0.2], [0.3, 0.1], [0.4, 0.1], [0.5, 0.8], [0.6, 2.4], [0.7, 4.7], [0.8, 7.9], [0.9, 12.7], [1, 19.9]], note: 'A deeper P92-like curve on an Iginla blade' },
+  { id: 'kuznetsov', name: 'Kuznetsov', code: 'PRO9292', lie: 7, len: 0.3, hh: 54, th: 66, loft: 8, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, -0.5], [0.2, -1.1], [0.3, -1.8], [0.4, -1.9], [0.5, -1.4], [0.6, -0.6], [0.7, 1.0], [0.8, 3.7], [0.9, 9.2], [1, 19.3]], note: 'Straighter P92 with loft and a toe kink' },
+  { id: 'zegras', name: 'Zegras', code: 'PRO9246', lie: 6, len: 0.3, hh: 56, th: 70, loft: 9, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, 0.4], [0.2, 0.4], [0.3, 0.1], [0.4, -0.0], [0.5, 0.6], [0.6, 1.7], [0.7, 3.8], [0.8, 7.4], [0.9, 13.8], [1, 24.0]], note: 'Deep P92: a P28 curve on a P92 blade' },
+  { id: 'caufield', name: 'Caufield', code: 'PRO22', lie: 6, len: 0.3, hh: 60, th: 76, loft: 9, toe: 'round', toeL: 4, rock: 2, pts: [[0, -0.0], [0.1, 0.8], [0.2, 1.3], [0.3, 1.8], [0.4, 2.6], [0.5, 3.9], [0.6, 5.8], [0.7, 8.9], [0.8, 13.3], [0.9, 20.7], [1, 32.1]], note: 'Open P92-like curve, max height, shaved toe' },
+  { id: 'laine', name: 'Laine', code: 'PRO29', lie: 6.5, len: 0.3, hh: 56, th: 70, loft: 9, toe: 'semi', toeL: 4, rock: 2, pts: [[0, -0.0], [0.1, 0.6], [0.2, 1.0], [0.3, 0.9], [0.4, 0.3], [0.5, 0.2], [0.6, 0.6], [0.7, 1.8], [0.8, 4.4], [0.9, 10.5], [1, 21.0]], note: 'Very open heel and toe mix, semi-square toe' },
+  { id: 'ovechkin', name: 'Ovechkin', code: 'PRO8', lie: 6, len: 0.3, hh: 56, th: 70, loft: 11, toe: 'round', toeL: 5, rock: 2, pts: [[0, -0.0], [0.1, 0.3], [0.2, 0.6], [0.3, 0.9], [0.4, 1.3], [0.5, 2.4], [0.6, 4.0], [0.7, 6.4], [0.8, 10.1], [0.9, 16.7], [1, 27.7]], note: 'Massive open spoon from heel to toe' },
+  { id: 'hossa', name: 'Hossa', code: 'PRO81', lie: 6, len: 0.29, hh: 56, th: 66, loft: 6, toe: 'round', toeL: 2, rock: 0, pts: [[0, 0.0], [0.1, 1.0], [0.2, 1.6], [0.3, 2.0], [0.4, 2.5], [0.5, 2.9], [0.6, 3.7], [0.7, 5.2], [0.8, 8.1], [0.9, 15.1], [1, 27.5]], note: 'Flat heel, huge hook, toe shaved on top, no rocker' },
+  { id: 'kovalchuk', name: 'Kovalchuk', code: 'PRO7117', lie: 5, len: 0.3, hh: 56, th: 70, loft: 7, toe: 'round', toeL: 3, rock: 2, pts: [[0, -0.0], [0.1, 0.3], [0.2, 0.5], [0.3, 0.8], [0.4, 1.2], [0.5, 2.0], [0.6, 3.4], [0.7, 5.5], [0.8, 9.1], [0.9, 17.5], [1, 31.8]], note: 'Like a P28 with much more toe hook' },
+  { id: 'kovalev', name: 'Kovalev', code: 'PRO272', lie: 5.5, len: 0.32, hh: 56, th: 70, loft: 7, toe: 'round', toeL: 3, rock: 4, pts: [[0, 0.0], [0.1, 0.7], [0.2, 0.9], [0.3, 1.0], [0.4, 1.4], [0.5, 2.2], [0.6, 3.4], [0.7, 5.5], [0.8, 9.4], [0.9, 17.1], [1, 29.0]], note: 'Flat heel, banana blade, huge toe hook, big rocker' }
 ];
 const curveById = id => CURVES.find(c => c.id === id) || CURVES[0];
 const curveLabel = cv => cv.name + (cv.code !== cv.name ? ' ' + cv.code : '') + ' · lie ' + cv.lie + ' · ' + Math.round(cv.len * 100) + ' cm';
@@ -721,12 +745,12 @@ function makeProfile(cv) {
     const t = i / n; u[i] = t * cv.len;
     let k = 0; while (k < cv.pts.length - 2 && t > cv.pts[k + 1][0]) k++;
     const a = cv.pts[k], b = cv.pts[k + 1], f = b[0] > a[0] ? clamp((t - a[0]) / (b[0] - a[0]), 0, 1) : 0;
-    c[i] = (a[1] + (b[1] - a[1]) * f) * 0.001; h[i] = (cv.hh + (cv.th - cv.hh) * t) * 0.001;
+    c[i] = -(a[1] + (b[1] - a[1]) * f) * 0.001; h[i] = (cv.hh + (cv.th - cv.hh) * t) * 0.001;      // the toe hooks forward, toward the puck: the face sits in front of the heel line (w = -c > 0)
   }
   for (let pass = 0; pass < 2; pass++) { const c0 = c.slice(); for (let i = 1; i < n; i++) c[i] = (c0[i - 1] + 2 * c0[i] + c0[i + 1]) / 4; }   // soften the corners
-  let mh = 0, mc = 0; for (let i = 0; i <= n; i++) { mh = Math.max(mh, h[i]); mc = Math.max(mc, c[i]); }
+  let mh = 0, mc = 0, cmin = 0; for (let i = 0; i <= n; i++) { mh = Math.max(mh, h[i]); mc = Math.max(mc, c[i]); cmin = Math.min(cmin, c[i]); }
   // shaft-to-blade angle: lie 5 is 135 degrees and each lie number is 2 degrees steeper
-  return { n, Lb: cv.len, u, c, h, mh, mc, lieAng: (135 - 2 * (cv.lie - 5)) * Math.PI / 180, loft: cv.loft * Math.PI / 180, cv };
+  return { n, Lb: cv.len, u, c, h, mh, mc, cmin, dep: -cmin, lieAng: (135 - 2 * (cv.lie - 5)) * Math.PI / 180, loft: cv.loft * Math.PI / 180, toeL: (cv.toeL || 0) * Math.PI / 180, cv };
 }
 const hAt = (bp, u) => { const t = clamp(u / bp.Lb, 0, 1) * bp.n, i = Math.min(bp.n - 1, Math.floor(t)), f = t - i; return bp.h[i] + (bp.h[i + 1] - bp.h[i]) * f; };
 
@@ -932,9 +956,9 @@ function stickSolve(A) {
 
 // ---- the puck
 const PK = { x: 0, y: PUCK.HH, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, rot: 0, out: 0, inNet: false, goalLatch: false, watch: 0, wPeak: 0, last: 0, tapAt: -9, ctl: 0,
-  cr: 0, rel: -9, touch: -9, touchT: 0, touchOk: -9, wasCr: false, vrm: 0, catchAt: -9, crT: 0, carryV: 0, near: 9, liftAt: -9, lift: 0, liftSum: 0 };
+  cr: 0, rel: -9, touch: -9, touchT: 0, touchOk: -9, wasCr: false, vrm: 0, catchAt: -9, crT: 0, carryV: 0, near: 9, liftAt: -9, lift: 0, liftSum: 0, sh: 0, shPk: 0, shT: 0, shUp: 0, shVx: 0, shVz: 0, soft: false, shots: 0 };
 // puck help: s is its strength (0 = off), hx hz where you stand, svx svz how you are moving
-const PA = { s: 0, hx: 0, hz: 0, svx: 0, svz: 0, keep: 0, lift: 0 };
+const PA = { s: 0, hx: 0, hz: 0, svx: 0, svz: 0, keep: 0, lift: 1.6, fx: 1, fz: 0 };
 const EV = [];                       // events from this frame: { k, v, x, y, z }
 const SAMP = (() => { const a = []; for (let r = 0; r < 3; r++) for (let k = 0; k < 10; k++) { const t = k * Math.PI / 5; a.push([PUCK.R * Math.cos(t), (r - 1) * PUCK.HH, PUCK.R * Math.sin(t)]); } a.push([0, 0, 0]); return a; })();
 const _C = { nx: 0, ny: 0, nz: 0, pen: 0, cu: 0, cv: 0, cw: 0 }, _vb = [0, 0, 0], _Fk = newFrame();
@@ -943,7 +967,7 @@ function bladeContact(F, bp, cx, cy, cz, C) {
   for (let s = 0; s < SAMP.length; s++) {
     const px = cx + SAMP[s][0], py = cy + SAMP[s][1], pz = cz + SAMP[s][2], rx = px - F.Ox, ry = py - F.Oy, rz = pz - F.Oz;
     const u = rx * F.Ux + ry * F.Uy + rz * F.Uz, v = rx * F.Px + ry * F.Py + rz * F.Pz, w = rx * F.Wx + ry * F.Wy + rz * F.Wz - TB2;
-    if (u < -TB2 || u > bp.Lb + TB2 || v < 0 || v > bp.mh || w < -bp.mc - BL.TB - 0.001 || w > 0.001 + TB2) continue;
+    if (u < -TB2 || u > bp.Lb + TB2 || v < 0 || v > bp.mh || w < -bp.mc - BL.TB - 0.001 || w > -bp.cmin + 0.001 + TB2) continue;
     if (v > hAt(bp, u)) continue;
     const i0 = clamp(Math.floor(u / bp.Lb * n) - 1, 0, n - 1), i1 = Math.min(n - 1, i0 + 2);
     let bd = 1e9, qu = 0, qw = 0, du = 0, dw = 0;
@@ -960,7 +984,7 @@ function bladeContact(F, bp, cx, cy, cz, C) {
   }
   return best > 0;
 }
-function resetPuck(x, z) { PK.liftSum = 0; PK.x = x; PK.z = z; PK.y = PUCK.HH; PK.vx = PK.vy = PK.vz = 0; PK.spin = 0; PK.out = 0; PK.inNet = false; PK.goalLatch = false; PK.watch = 0; PK.tapAt = -9; PK.cr = 0; PK.rel = -9; PK.touch = -9; PK.touchT = 0; PK.wasCr = false; PK.vrm = 0; PK.near = 9; PK.liftAt = -9; }
+function resetPuck(x, z) { PK.liftSum = 0; PK.x = x; PK.z = z; PK.y = PUCK.HH; PK.vx = PK.vy = PK.vz = 0; PK.spin = 0; PK.out = 0; PK.inNet = false; PK.goalLatch = false; PK.watch = 0; PK.tapAt = -9; PK.cr = 0; PK.rel = -9; PK.touch = -9; PK.touchT = 0; PK.wasCr = false; PK.vrm = 0; PK.near = 9; PK.liftAt = -9; PK.sh = 0; PK.soft = false; }
 function segHit(x0, y0, z0, x1, y1, z1, r, e, k) {
   const dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, l2 = dx * dx + dy * dy + dz * dz;
   const t = l2 > 0 ? clamp(((PK.x - x0) * dx + (PK.y - y0) * dy + (PK.z - z0) * dz) / l2, 0, 1) : 0;
@@ -993,7 +1017,7 @@ function worldCollide(h, px, py, pz) {
     }
   }
   if (PK.y <= PUCK.HH + 0.0008 && Math.abs(PK.vy) < 0.06) {               // sliding on ice
-    const sp = Math.hypot(PK.vx, PK.vz), d = 0.22 * h; if (sp <= d) { PK.vx = PK.vz = 0; } else { PK.vx -= PK.vx / sp * d; PK.vz -= PK.vz / sp * d; }
+    const sp = Math.hypot(PK.vx, PK.vz), d = 0.36 * h; if (sp <= d) { PK.vx = PK.vz = 0; } else { PK.vx -= PK.vx / sp * d; PK.vz -= PK.vz / sp * d; }
     PK.spin *= Math.exp(-0.8 * h);
   }
   // boards and glass; above the glass the puck leaves the rink
@@ -1057,12 +1081,20 @@ function worldCollide(h, px, py, pz) {
 // (2) After a touch the puck's speed relative to you fades for a moment (gentle touches only), so you can catch up with it. (3) Light contacts bounce less.
 // Keep (PA.keep, the trigger held): the same cradle with a much wider and stronger grip that only a real swing (over 6.5 m/s) breaks, and it works even with puck help off.
 const _T = [0, 0, 0], _vp = [0, 0, 0];
+// The angle a puck leaves the blade at: the face's tilt (built-in loft plus however you have turned the blade open), a little extra toward the toe of an open
+// curve, times the Shot lift setting. Slow pushes stay on the ice.
+function launchAngle(Wy, u, rel) {
+  const bp = STK.bp, toe = bp && bp.toeL ? bp.toeL * Math.pow(clamp(u / bp.Lb, 0, 1), 2) : 0;
+  return clamp((Math.asin(clamp(Wy, -1, 1)) + toe) * PA.lift, 0, 0.8) * sstep((rel - 2.5) / 4);
+}
 function puckHelp(dt, now, haveBlade) {
   const kp = PA.keep ? 1 : 0, s = Math.max(PA.s, kp), bp = STK.bp, age = now - PK.touch;
-  if (PA.s > 0 && age < 1.6 && PK.y < PUCK.HH + 0.03) {
-    const rx = PK.vx - PA.svx, rz = PK.vz - PA.svz, r = Math.hypot(rx, rz), dd = Math.hypot(PK.x - PA.hx, PK.z - PA.hz);
-    const w = sstep((7 - r) / 4) * sstep((3.4 - dd) / 1.4) * sstep((1.6 - age) / 0.8), k = 1 - Math.exp(-dt * 1.3 * PA.s * w);
-    PK.vx -= rx * k; PK.vz -= rz * k;
+  if (PA.s > 0 && PK.soft && age < 2.2 && PK.y < PUCK.HH + 0.03 && !PK.sh) {        // a soft push: the puck does not run away from you
+    const rx = PK.vx - PA.svx, rz = PK.vz - PA.svz, r = Math.hypot(rx, rz), ddx = PK.x - PA.hx, ddz = PK.z - PA.hz, dd = Math.hypot(ddx, ddz);
+    if (rx * ddx + rz * ddz > 0) {
+      const w = sstep((6 - r) / 2.5) * sstep((5.5 - dd) / 2) * sstep((2.2 - age) / 0.8), k = 1 - Math.exp(-dt * 1.8 * PA.s * w);
+      PK.vx -= rx * k; PK.vz -= rz * k;
+    }
   }
   let eT = 0, vr = 0; PK.near = 9;
   if (haveBlade && bp) {
@@ -1071,29 +1103,49 @@ function puckHelp(dt, now, haveBlade) {
     const i = clamp(Math.round(uP / bp.Lb * bp.n), 0, bp.n), wl = -bp.c[i] + PUCK.R + 0.004 - BL.TB / 2;
     bpt(Fn, uP, PUCK.HH, wl, _T); pointVel(Fn, Fp, uP, PUCK.HH, wl, dt, _vp);
     PK.carryV = Math.hypot(_vp[0] - PA.svx, _vp[2] - PA.svz);
-    const openF = 1 - 0.4 * sstep((Fn.Wy - 0.16) / 0.2);                                                 // an open face means a shot: let go sooner
-    if (PK.carryV > (kp ? 6.5 : 3) * openF) PK.rel = Math.max(PK.rel, now + (kp ? 0.25 : 0.4));        // a swing at it: let it go
     const dxp = _T[0] - PK.x, dyp = _T[1] - PK.y, dzp = _T[2] - PK.z, d3 = Math.hypot(dxp, dyp, dzp);
     PK.near = d3;
     vr = Math.hypot(PK.vx - _vp[0], PK.vz - _vp[2]);
     const wP = (PK.x - _T[0]) * Fn.Wx + (PK.y - _T[1]) * Fn.Wy + (PK.z - _T[2]) * Fn.Wz;
+    // Pushes and shots. A puck on the face that the blade drives forward rides the blade for the whole stroke (like a wrist shot loading the puck) and leaves it
+    // when the stroke peaks, the blade comes up off the ice, or the blade turns away: at the blade's own speed, at the angle of the face, plus however fast the
+    // blade was rising. Sideways stickhandling is untouched (the cradle holds it, and a hard pull away lets go as before).
+    const rvx = _vp[0] - PA.svx, rvz = _vp[2] - PA.svz, cv = Math.max(PK.carryV, 1e-6), lwh = Math.hypot(Fn.Wx, Fn.Wz) || 1;
+    const into = (rvx * Fn.Wx + rvz * Fn.Wz) / lwh / cv, fwd = (rvx * PA.fx + rvz * PA.fz) / cv; PK.into = into; PK.fwd = fwd; PK.d3 = d3; PK.wP = wP;
+    if (!PK.sh && (PK.cr > 0.3 || now - PK.touch < 0.06) && now >= PK.rel && PK.carryV > 0.9 && into > 0.3 && fwd > 0.25 && d3 < 0.14 && wP > -0.1) { PK.sh = 1; PK.shPk = 0; PK.shT = 0; PK.shUp = 0; PK.shWy = -1; }
+    if (PK.sh) {
+      PK.shT += dt; PK.cr = 1;
+      if (PK.carryV > PK.shPk && PK.carryV < 35) { PK.shPk = PK.carryV; PK.shVx = _vp[0]; PK.shVz = _vp[2]; }     // (a jump in tracking or a snap turn is not a swing)
+      PK.shUp = Math.max(PK.shUp, _vp[1] + STK.dvy); if (PK.shPk > 0.9) PK.shWy = Math.max(PK.shWy, Fn.Wy);
+      const lifted = _T[1] > PUCK.HH + 0.035;
+      if (PK.carryV < 0.5 * PK.shPk || PK.carryV > 35 || lifted || PK.shT > 0.5 || into < 0.05 || d3 > 0.18) {
+        const rx = PK.shVx - PA.svx, rz = PK.shVz - PA.svz, rel = Math.hypot(rx, rz), th = launchAngle(Math.max(PK.shWy, Fn.Wy), uP, rel);
+        PK.vx = PK.shVx; PK.vz = PK.shVz; PK.vy = Math.min(rel * Math.tan(th) + 0.8 * clamp(PK.shUp, 0, 5) * sstep((rel - 2) / 3), 0.7 * rel);     // never steeper than about 35 degrees
+        if (PK.vy > 0.05) PK.y = PUCK.HH + 0.002;
+        PK.sh = 0; PK.cr = 0; PK.rel = now + 0.35; PK.touch = now; PK.soft = rel < 4.5; PK.lift = PK.vy; PK.liftSum = PK.vy; PK.liftAt = now; PK.shots++;
+        if (rel > 3) { PK.watch = 0.1; PK.wPeak = 0; EV.push({ k: 'tap', v: rel * 0.6, x: PK.x, y: PK.y, z: PK.z }); }
+        if (PK.vy > 0.8) EV.push({ k: 'lift', v: PK.vy, x: PK.x, y: PK.y, z: PK.z });
+      } else {                                                                 // ride: the puck stays where it is on the face and goes where the blade goes
+        PK.vx = _vp[0] + clamp(dxp * 12, -3, 3); PK.vz = _vp[2] + clamp(dzp * 12, -3, 3); if (PK.vy > 0) PK.vy = 0;
+      }
+    } else if (PK.carryV > (kp ? 6.5 : 3.5) && into < 0.3) PK.rel = Math.max(PK.rel, now + (kp ? 0.25 : 0.4));   // a hard pull away from the puck: let it go
     const Rc = (0.16 + 0.10 * s) * (kp ? 2 : 1), vcap = (2.5 + 2.0 * s) * (kp ? 3 : 1), inU = sstep((u + 0.03) / 0.03) * sstep((bp.Lb + 0.05 - u) / 0.03);
     if (now >= PK.rel && _T[1] < PUCK.HH + (kp ? 0.14 : 0.07) && PK.y < PUCK.HH + 0.025 && wP > -0.03) eT = inU * sstep((Rc - d3) / (0.5 * Rc)) * sstep((vcap - vr) / (0.5 * vcap));
     if (now < PK.rel) PK.cr = 0; else PK.cr += (eT - PK.cr) * (1 - Math.exp(-dt / (eT > PK.cr ? (kp ? 0.025 : 0.07) : 0.04)));   // lets go at once when you swing
-    if (PK.cr > 0.02) {
+    if (PK.cr > 0.02 && !PK.sh) {
       const kv = 1 - Math.exp(-dt * (10 + 8 * s) * (kp ? 3.5 : 1) * PK.cr), g = (4 + 3 * s) * (kp ? 2 : 1), gm = kp ? 4 : 2;
       let ax = _vp[0] + clamp(dxp * g, -gm, gm) - PK.vx, az = _vp[2] + clamp(dzp * g, -gm, gm) - PK.vz;
       const lh = Math.hypot(Fn.Ux, Fn.Uz) || 1, uxh = Fn.Ux / lh, uzh = Fn.Uz / lh, al = ax * uxh + az * uzh;
       ax -= al * uxh * 0.15; az -= al * uzh * 0.15;                          // along the blade the grip is softer, so the puck can slide a little (dangles)
       PK.vx += ax * kv; PK.vz += az * kv;
     }
-  } else PK.cr *= 0.7;
+  } else { PK.cr *= 0.7; PK.sh = 0; }
   PK.vrm = Math.max(vr, PK.vrm * Math.exp(-dt / 0.25));
   if (PK.cr > 0.5 && !PK.wasCr) { PK.wasCr = true; if (now - PK.catchAt > 0.6) { PK.catchAt = now; EV.push({ k: 'catch', v: PK.vrm, x: PK.x, y: PK.y, z: PK.z }); } } else if (PK.cr < 0.15) PK.wasCr = false;
   if (PK.cr > 0.4) PK.crT += dt;
 }
 // Turning the rig (snap or smooth turn) carries the blade round with you; a puck that is on the blade has to come too.
-const puckFollows = now => PK.cr > 0.25 || (PK.near < 0.3 && now >= PK.rel && PK.y < PUCK.HH + 0.03);
+const puckFollows = now => PK.cr > 0.25 || PK.sh || (PK.near < 0.3 && now >= PK.rel && PK.y < PUCK.HH + 0.03);
 function turnPuck(delta, hx, hz, svx, svz) {
   const c = Math.cos(delta), sn = Math.sin(delta), px = PK.x - hx, pz = PK.z - hz;
   PK.x = hx + px * c + pz * sn; PK.z = hz - px * sn + pz * c;
@@ -1137,19 +1189,19 @@ function puckAdvance(dt, haveBlade, power, now) {
           PK.vx += nx * imp; PK.vy += ny * imp; PK.vz += nz * imp;
           const tx = rx - vn * nx, ty = ry - vn * ny, tz = rz - vn * nz, ts = Math.hypot(tx, ty, tz);
           if (ts > 1e-6) { const j = Math.min(ts, 0.4 * imp); PK.vx -= tx / ts * j; PK.vy -= ty / ts * j; PK.vz -= tz / ts * j; PK.spin += clamp((nx * tz - nz * tx) * 4, -40, 40) * 0.2; }
-          if (PA.lift > 0 && imp > 1.4 && PK.y < PUCK.HH + 0.03) {          // lift help: how open the face is, how fast the puck goes, and hands flicking up, get the puck off the ice
+          if (!PK.sh && imp > 1.4 && PK.y < PUCK.HH + 0.03) {          // a hit: the puck leaves at the face angle, plus the blade rising
             if (now - PK.liftAt > 0.25) PK.liftSum = 0;
             PK.liftAt = now;
-            const hs = Math.hypot(PK.vx, PK.vz), ang = clamp(_Fk.Wy - 0.07, 0, 0.5), up = clamp(_vb[1], 0, 6), hard = sstep((imp - 1.4) / 3.2);
-            const want = PA.lift * hard * (hs * ang * 1.0 + 0.45 * up), cap = Math.min(0.38 * hs + 0.7, 6.5);
+            const hs = Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz), up = clamp(_vb[1], 0, 6), hard = sstep((imp - 1.4) / 3.2);
+            const want = Math.min(hard * (hs * Math.tan(launchAngle(_Fk.Wy, _C.cu, hs)) + 0.8 * up * sstep((hs - 2) / 3)), 0.7 * hs), cap = 9;
             let add = Math.max(0, want - PK.liftSum); if (PK.vy + add > cap) add = Math.max(0, cap - PK.vy);
             PK.vy += add; PK.liftSum += add; PK.lift = PK.liftSum; if (add > 0.4) EV.push({ k: 'lift', v: PK.liftSum, x: PK.x, y: PK.y, z: PK.z });
           }
           if ((imp > 0.8 || (imp > 0.3 && PK.cr < 0.3)) && now - PK.tapAt > 0.07) { PK.tapAt = now; EV.push({ k: 'tap', v: imp, x: PK.x, y: PK.y, z: PK.z }); }
           if (imp > 3) { PK.watch = 0.1; PK.wPeak = 0; }
-          PK.ctl += h; PK.touch = now;
+          PK.ctl += h; PK.touch = now; PK.soft = imp < 4.5;
           if (imp < 6 && PK.cr < 0.3 && PK.touchT <= 0 && now - PK.touchOk > 0.5) { PK.touchT = 0.15; PK.touchOk = now; }
-          if ((PA.s > 0 || PA.keep) && imp > 2.5 && (_vb[0] - PA.svx) * nx + _vb[1] * ny + (_vb[2] - PA.svz) * nz > (PA.keep ? 6 : 3) * (1 - 0.4 * sstep((_Fk.Wy - 0.16) / 0.2))) PK.rel = Math.max(PK.rel, now + (PA.keep ? 0.25 : 0.4));
+          if (!PK.sh && (PA.s > 0 || PA.keep) && imp > 2.5 && (_vb[0] - PA.svx) * nx + _vb[1] * ny + (_vb[2] - PA.svz) * nz > (PA.keep ? 6 : 3) * (1 - 0.4 * sstep((_Fk.Wy - 0.16) / 0.2))) PK.rel = Math.max(PK.rel, now + (PA.keep ? 0.25 : 0.4));
         }
       }
     }
@@ -1171,13 +1223,24 @@ function placePuck() {
   const side = st.shot === 'right' ? 1 : -1;
   if (H.ok) resetPuck(H.x + H.fx * 0.95 - H.fz * 0.3 * side, H.z + H.fz * 0.95 + H.fx * 0.3 * side); else resetPuck(1, 0.4);
 }
-// The stick: dark purple with gold trim. The shaft is a rounded rectangle, with a darker grip at the top, a gold knob and gold bands, and a wider
-// hosel at the heel; the blade is built from the curve profile with a gold top edge so you can see which way the face is turned.
+// The stick: a black carbon shaft with a purple and gold graphic, a cloth-tape grip and knob at the top and a tapered hosel down to the blade. The blade is
+// built from the curve: the real face shape, height rising from heel to toe, the toe shape (round, square or semi-square), a little rocker, a thickness that
+// thins toward the toe, and black cloth tape from heel to toe with the carbon showing at both ends.
 const GOLD = 0xe0a928;
-const mShaft = new THREE.MeshStandardMaterial({ color: 0x3a1670, roughness: 0.38, metalness: 0.3 });
-const mGrip = new THREE.MeshStandardMaterial({ color: 0x1d0c38, roughness: 0.85, metalness: 0.0 });
+function tapeTex(base, seam) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = base; g.fillRect(0, 0, 256, 128);
+  for (let i = 0; i < 2600; i++) { g.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.06).toFixed(3) + ')'; g.fillRect(Math.random() * 256, Math.random() * 128, 2, 1); }
+  g.strokeStyle = seam; g.lineWidth = 3; for (let x = -64; x < 320; x += 64) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 30, 128); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const mShaft = new THREE.MeshStandardMaterial({ color: 0x16161b, roughness: 0.3, metalness: 0.35 });
+const mPurple = new THREE.MeshStandardMaterial({ color: 0x4a1d8c, roughness: 0.35, metalness: 0.3 });
+const mGrip = new THREE.MeshStandardMaterial({ color: 0x1c1c20, roughness: 0.95, metalness: 0.0 });
 const mGold = new THREE.MeshStandardMaterial({ color: GOLD, roughness: 0.3, metalness: 0.7, emissive: 0x2e1c00 });
-const bladeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.12, side: THREE.DoubleSide });
+const mTape = new THREE.MeshStandardMaterial({ map: tapeTex('#202024', '#0c0c0e'), roughness: 0.92, metalness: 0.0, side: THREE.DoubleSide });
+const mCarbon = new THREE.MeshStandardMaterial({ color: 0x141418, roughness: 0.28, metalness: 0.4, side: THREE.DoubleSide });
+const bladeMat = [mTape, mCarbon];
 const shaftGeo = (() => {
   const sh = new THREE.Shape(), r = 0.18, h = 0.5;
   sh.moveTo(-h + r, -h); sh.lineTo(h - r, -h); sh.absarc(h - r, -h + r, r, -Math.PI / 2, 0, false); sh.lineTo(h, h - r); sh.absarc(h - r, h - r, r, 0, Math.PI / 2, false);
@@ -1189,14 +1252,27 @@ function addPart(mat, s0, s1, w, d, top) {
   const m = new THREE.Mesh(shaftGeo, mat); m.matrixAutoUpdate = false; m.frustumCulled = false; m.visible = false; m.castShadow = true; scene.add(m);
   PARTS.push({ m, s0, s1, w, d, top: !!top }); return m;
 }
-const shaftM = addPart(mShaft, 0, 99, BL.SHW, BL.SHD, false);
-const knobM = addPart(mGold, 0, 0.04, BL.SHW + 0.006, BL.SHD + 0.006, true);
-addPart(mGrip, 0.04, 0.3, BL.SHW + 0.002, BL.SHD + 0.002, true);
-addPart(mGold, 0.3, 0.315, BL.SHW + 0.005, BL.SHD + 0.005, true);
-addPart(mGold, 0.33, 0.337, BL.SHW + 0.005, BL.SHD + 0.005, true);
-addPart(mShaft, 0, 0.16, BL.SHW + 0.008, BL.SHD + 0.014, false);                  // hosel
-addPart(mGold, 0.16, 0.172, BL.SHW + 0.011, BL.SHD + 0.017, false);
-addPart(mGold, 0.19, 0.196, BL.SHW + 0.011, BL.SHD + 0.017, false);
+const shaftM = addPart(mShaft, 0.279, 99, BL.SHW, BL.SHD, false);
+const knobM = addPart(mGrip, 0, 0.03, BL.SHW + 0.011, BL.SHD + 0.011, true);          // a tape knob
+addPart(mGrip, 0.03, 0.045, BL.SHW + 0.006, BL.SHD + 0.006, true);
+addPart(mGrip, 0.045, 0.27, BL.SHW + 0.0025, BL.SHD + 0.0025, true);                  // cloth tape grip
+addPart(mGold, 0.40, 0.406, BL.SHW + 0.0008, BL.SHD + 0.0008, true);                  // purple and gold graphic below the grip
+addPart(mPurple, 0.406, 0.60, BL.SHW + 0.0006, BL.SHD + 0.0006, true);
+addPart(mGold, 0.60, 0.606, BL.SHW + 0.0008, BL.SHD + 0.0008, true);
+addPart(mGold, 0.272, 0.279, BL.SHW + 0.0008, BL.SHD + 0.0008, false);                // where the hosel meets the shaft
+// the hosel: a rounded rectangle that tapers from the shaft down to the blade's heel, built at real size (it does not stretch with the stick)
+function rrPts(w, d, k) { const out = [], r = Math.min(w, d) * 0.32, hw = w / 2 - r, hd = d / 2 - r;
+  for (const [cx, cz, a0] of [[hw, hd, 0], [-hw, hd, Math.PI / 2], [-hw, -hd, Math.PI], [hw, -hd, Math.PI * 1.5]]) for (let i = 0; i <= k; i++) { const a = a0 + i / k * Math.PI / 2; out.push([cx + r * Math.cos(a), cz + r * Math.sin(a)]); }
+  return out; }
+const hoselGeo = (() => {
+  const SEC = [[-0.006, 0.017, 0.0125], [0.03, 0.019, 0.0135], [0.09, 0.023, 0.016], [0.17, 0.027, 0.0195], [0.279, BL.SHW, BL.SHD]], k = 3, ring = rrPts(1, 1, k).length;
+  const pos = [], idx = [];
+  for (const [y, w, d] of SEC) for (const [x, z] of rrPts(w, d, k)) pos.push(x, y, z);
+  for (let j = 0; j < SEC.length - 1; j++) for (let i = 0; i < ring; i++) { const a = j * ring + i, b = j * ring + (i + 1) % ring, c = a + ring, e = b + ring; idx.push(a, c, b, b, c, e); }
+  const base = pos.length / 3; pos.push(0, SEC[0][0], 0); for (let i = 0; i < ring; i++) idx.push(base, i, (i + 1) % ring);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+})();
+const hoselM = new THREE.Mesh(hoselGeo, mShaft); hoselM.matrixAutoUpdate = false; hoselM.frustumCulled = false; hoselM.visible = false; hoselM.castShadow = true; scene.add(hoselM);
 // Two hockey gloves on the shaft: the top one at the top hand, the lower one wherever your lower hand slides to. Dark purple shell, black backhand plate,
 // gold cuff trim, a thumb along the shaft toward the blade and a cuff that points back at your shoulder. They replace the small blue balls that sit at the
 // controllers. Each glove is built for one hand (the backhand plate and thumb sit on opposite sides for left and right).
@@ -1224,22 +1300,41 @@ function makeGlove(side) {                   // side +1 right hand, -1 left hand
 }
 const gloveL = makeGlove(-1), gloveR = makeGlove(1);
 let bladeM = null, curveCur = null, stickOn = false;
-const showStick = v => { for (const p of PARTS) p.m.visible = v; if (bladeM) bladeM.visible = v; gloveL.visible = gloveR.visible = v; };
+const showStick = v => { for (const p of PARTS) p.m.visible = v; hoselM.visible = v; if (bladeM) bladeM.visible = v; gloveL.visible = gloveR.visible = v; };
 function buildBladeGeo(bp) {
-  const n = bp.n, TB = BL.TB, pos = [], col = [], GL = 0.84;
-  const cF = new THREE.Color(0x5a2bb0), cB = new THREE.Color(0x2b1054), cG = new THREE.Color(GOLD), cE = new THREE.Color(0x3d1778);
-  const P = (i, f, back) => [bp.u[i], bp.h[i] * f, back ? -bp.c[i] - TB : -bp.c[i]];
-  const q = (a, b, c, d, k) => { for (const p of [a, b, c, a, c, d]) { pos.push(p[0], p[1], p[2]); col.push(k.r, k.g, k.b); } };
-  for (let i = 0; i < n; i++) {
-    q(P(i, 0, 0), P(i + 1, 0, 0), P(i + 1, GL, 0), P(i, GL, 0), cF);              // face (the side that hits the puck)
-    q(P(i, GL, 0), P(i + 1, GL, 0), P(i + 1, 1, 0), P(i, 1, 0), cG);              // gold trim along the top of the face
-    q(P(i + 1, 0, 1), P(i, 0, 1), P(i, GL, 1), P(i + 1, GL, 1), cB);              // back, a darker purple
-    q(P(i + 1, GL, 1), P(i, GL, 1), P(i, 1, 1), P(i + 1, 1, 1), cG);
-    q(P(i, 1, 0), P(i + 1, 1, 0), P(i + 1, 1, 1), P(i, 1, 1), cG);                // top edge
-    q(P(i + 1, 0, 0), P(i, 0, 0), P(i, 0, 1), P(i + 1, 0, 1), cB);                // bottom edge
+  const cv = bp.cv, L = bp.Lb, N = 44, M = 12, hh = cv.hh * 0.001, th = cv.th * 0.001, rock = (cv.rock || 0) * 0.001, toe = cv.toe || 'round';
+  const Rt = toe === 'square' ? 0.012 : toe === 'semi' ? 0.03 : 0.55 * th, Rb = toe === 'square' ? 0.008 : toe === 'semi' ? 0.016 : 0.026, Rh = 0.014;
+  const cAt = u => { const t = clamp(u / L, 0, 1) * bp.n, i = Math.min(bp.n - 1, Math.floor(t)), f = t - i; return bp.c[i] + (bp.c[i + 1] - bp.c[i]) * f; };
+  const vb = u => { const x = clamp(u / L, 0, 1) * 2 - 1; return rock * x * x * x * x; };                       // rocker: the heel and toe lift off the ice a touch
+  const vt = u => hh + (th - hh) * Math.sin(Math.PI / 2 * clamp(u / (0.78 * L), 0, 1));            // the top edge rises from the heel and levels off toward the toe
+  const thick = u => 0.0135 - 0.0055 * clamp(u / L, 0, 1);
+  const uEnd = v => { const v0 = vb(L); if (v > th - Rt) { const d = v - (th - Rt); return L - Rt + Math.sqrt(Math.max(0, Rt * Rt - d * d)); }
+    if (v < v0 + Rb) { const d = v0 + Rb - v; return L - Rb + Math.sqrt(Math.max(0, Rb * Rb - d * d)); } return L; };
+  const uBeg = v => v < Rh ? Rh - Math.sqrt(Math.max(0, Rh * Rh - (Rh - v) * (Rh - v))) - 0.003 : -0.003;   // a rounded heel under the hosel
+  const pos = [], uv = [], tri = [[], []];
+  const TU = 0.088, TV = 0.08, tapeA = 0.022, tapeB = L - 0.018, mat = u => (u > tapeA && u < tapeB ? 0 : 1);
+  const grid = (P, flip) => {                                                     // P[j][i] = [u, v, w]; smooth normals inside one surface
+    const base = pos.length / 3, R = P.length, C = P[0].length;
+    for (const row of P) for (const p of row) { pos.push(p[0], p[1], p[2]); uv.push(p[0] / TU, p[1] / TV + p[2] * 3); }
+    for (let j = 0; j < R - 1; j++) for (let i = 0; i < C - 1; i++) {
+      const a = base + j * C + i, b = a + 1, c = a + C, d = c + 1, m = mat((P[j][i][0] + P[j][i + 1][0]) / 2);
+      if (flip) tri[m].push(a, c, b, b, c, d); else tri[m].push(a, b, c, b, d, c);
+    }
+  };
+  const F = [], B = [];
+  for (let j = 0; j <= M; j++) {
+    const sj = j / M, vT = vb(L) + sj * (th - vb(L)), ue = uEnd(vT), vH = sj * hh, ub = uBeg(vH), rf = [], rb = [];
+    for (let i = 0; i <= N; i++) {
+      const f = i / N, u = ub + (ue - ub) * f, v = vb(u) + sj * (vt(u) - vb(u)), w = -cAt(u);
+      rf.push([u, v, w]); rb.push([u, v, w - thick(u)]);
+    }
+    F.push(rf); B.push(rb);
   }
-  q(P(0, 0, 1), P(0, 0, 0), P(0, 1, 0), P(0, 1, 1), cE); q(P(n, 0, 0), P(n, 0, 1), P(n, 1, 1), P(n, 1, 0), cE);
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
+  grid(F, false); grid(B, true);
+  grid([F[0], B[0]], true); grid([F[M], B[M]], false);                             // bottom and top edges
+  grid(F.map((r, j) => [r[N], B[j][N]]), false); grid(F.map((r, j) => [r[0], B[j][0]]), true);   // toe and heel edges
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(tri[0].concat(tri[1])); g.addGroup(0, tri[0].length, 0); g.addGroup(tri[0].length, tri[1].length, 1); g.computeVertexNormals(); return g;
 }
 function setCurve(id) {
   const cv = curveById(id); st.curve = cv.id; curveCur = cv;
@@ -1685,6 +1780,7 @@ function applyStickMeshes() {
     p.m.matrix.set(F.Ex * p.w, F.Sx * L, zx * p.d, F.Ox + F.Sx * c, F.Ey * p.w, F.Sy * L, zy * p.d, F.Oy + F.Sy * c, F.Ez * p.w, F.Sz * L, zz * p.d, F.Oz + F.Sz * c, 0, 0, 0, 1);
     p.m.matrixWorldNeedsUpdate = true; p.m.visible = true;
   }
+  hoselM.matrix.set(F.Ex, F.Sx, zx, F.Ox, F.Ey, F.Sy, zy, F.Oy, F.Ez, F.Sz, zz, F.Oz, 0, 0, 0, 1); hoselM.matrixWorldNeedsUpdate = true; hoselM.visible = true;
   placeGlove(handTop === 'left' ? gloveL : gloveR, STK.tTop, handTop); placeGlove(handLo === 'left' ? gloveL : gloveR, STK.tLo, handLo, STK.mOne);
   (handLo === 'left' ? gloveL : gloveR).userData.gold.emissive.setHex(keepOn ? 0xa06a00 : 0x2e1c00);
   (handLo === 'left' ? gloveR : gloveL).userData.gold.emissive.setHex(0x2e1c00);
@@ -1694,7 +1790,7 @@ function applyStickMeshes() {
 function puckFrame(dt) {
   pClock += dt;
   if (PK.out > 1.2) { placePuck(); EV.length = 0; run.pk.outs++; toast('Puck out of play'); }
-  PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || 0;
+  PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || 1; PA.fx = H.fx; PA.fz = H.fz;
   puckAdvance(dt, stickOn, POWERS[st.power], pClock);
   puck.position.set(PK.x, PK.y, PK.z); puck.rotation.y = PK.rot; puck.material.emissive.setHex(keepOn && stickOn ? 0x4a3000 : 0x000000);
   const ah = PK.y - PUCK.HH; if (ah > run.pk.apex) run.pk.apex = ah;
@@ -2038,7 +2134,7 @@ function renderTable(rows) {
   const tb = $('lvtable'); tb.innerHTML = '';
   rows.forEach((r, i) => { const tr = document.createElement('tr'); r.forEach((c, j) => { const td = document.createElement(i === 0 ? 'th' : 'td'); td.textContent = c; if (r.length === 2 && j === 1) td.colSpan = 5; tr.appendChild(td); }); tb.appendChild(tr); });
 }
-const RADIOS = ['cf', 'sf', 'af', 'pf', 'bf', 'rf', 'hf', 'kf', 'uf', 'zf', 'xf', 'lf', 'mf', 'gf', 'ic', 'oh'], CHECKS = ['cb', 'sb', 'kb'];
+const RADIOS = ['cf', 'sf', 'af', 'pf', 'bf', 'rf', 'hf', 'kf', 'uf', 'zf', 'xf', 'lf', 'mf', 'gf', 'ic', 'oh', 'pp', 'cu'], CHECKS = ['cb', 'sb', 'kb'];
 const ALLIN = RADIOS.concat(CHECKS).map(n => 'input[name="' + n + '"]').join(',');
 const picked = () => { const o = {}; for (const n of RADIOS) o[n] = (document.querySelector('input[name="' + n + '"]:checked') || {}).value || ''; for (const n of CHECKS) o[n] = Array.from(document.querySelectorAll('input[name="' + n + '"]:checked')).map(x => x.value); return o; };
 function comfortLine() {
@@ -2057,7 +2153,7 @@ function stickLine() {
 function feelLine() {
   const p = picked(), bits = [];
   if (p.af) bits.push('Accuracy: ' + p.af); if (p.pf) bits.push('Shot power: ' + p.pf); if (p.bf) bits.push('Boards: ' + p.bf);
-  if (p.rf) bits.push('Blade roll: ' + p.rf); if (p.lf) bits.push('Lifting the puck: ' + p.lf); if (p.ic) bits.push('Blade on the ice: ' + p.ic); if (p.oh) bits.push('One hand on the stick: ' + p.oh); if (p.hf) bits.push('Keep puck and snap turns: ' + p.hf); if (p.mf) bits.push('Menu and start screen: ' + p.mf); if (p.gf) bits.push('Gloves: ' + p.gf); if (p.uf) bits.push('Puck control: ' + p.uf); if (p.zf) bits.push('Sounds: ' + p.zf); if (p.xf) bits.push('Buzz: ' + p.xf); if (p.kf) bits.push('Stick length: ' + p.kf);
+  if (p.rf) bits.push('Blade roll: ' + p.rf); if (p.lf) bits.push('Lifting the puck: ' + p.lf); if (p.ic) bits.push('Blade on the ice: ' + p.ic); if (p.oh) bits.push('One hand on the stick: ' + p.oh); if (p.pp) bits.push('Pushing the puck ahead: ' + p.pp); if (p.cu) bits.push('Curves and stick look: ' + p.cu); if (p.hf) bits.push('Keep puck and snap turns: ' + p.hf); if (p.mf) bits.push('Menu and start screen: ' + p.mf); if (p.gf) bits.push('Gloves: ' + p.gf); if (p.uf) bits.push('Puck control: ' + p.uf); if (p.zf) bits.push('Sounds: ' + p.zf); if (p.xf) bits.push('Buzz: ' + p.xf); if (p.kf) bits.push('Stick length: ' + p.kf);
   if (p.kb.length) bits.push('Also: ' + p.kb.join(', '));
   return bits.length ? bits.join('. ') : 'Accuracy, power, boards, roll, lift, keep puck, menu, gloves, puck control, sound, buzz: not rated yet';
 }
@@ -2077,7 +2173,7 @@ function fmt(n, d) { return n == null || Number.isNaN(n) ? '--' : n.toFixed(d ==
 function buildResult(r) {
   $('result').hidden = false;
   document.querySelectorAll(ALLIN).forEach(x => { x.checked = false; });
-  const lines = ['Ravens VR Phase 3 report (round 5)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+  const lines = ['Ravens VR Phase 3 report (round 6)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     'Page: ' + (probeInfo.frame ? 'inside a frame (VR permission ' + probeInfo.policy + ')' : 'its own page'),
     'Browser: ' + (probeInfo.device || probeInfo.ua.slice(0, 80)), 'VR supported: ' + (probeInfo.vr === null ? 'unknown' : probeInfo.vr ? 'yes' : 'no')];
   const rows = [['Scene', 'Seconds', 'Average', 'Low 1%', 'Worst', 'Slow']];
@@ -2097,7 +2193,7 @@ function buildResult(r) {
     'Braking: ' + k.brakes + ' stops, ' + fmt(k.brakeT, 1) + ' s on the trigger. Boards and nets: ' + k.bumps + ' hits, hardest ' + fmt(kmh(k.hard)) + ' km/h. Snap turns: ' + k.snaps + '. Vignette peak ' + fmt(k.vigMax * 100) + '%',
     'Assist: crossover time ' + fmt(k.crossT, 1) + ' s, punch turns ' + k.punches);
   lines.push('Puck: ' + pk.contacts + ' touches, ' + pk.hits + ' hits over 22 km/h, hardest ' + fmt(pk.best) + ' km/h, ' + pk.goals + ' goals, ' + pk.posts + ' post or bar hits, ' + pk.boards + ' off the boards, ' + pk.outs + ' out of play, ice scrape ' + fmt(pk.scrapeT, 1) + ' s');
-  lines.push('Shot lift: ' + LIFT_NAMES[st.liftP] + ', ' + pk.lifts + ' lifted shots, highest the puck got ' + fmt(pk.apex, 2) + ' m');
+  lines.push('Shot lift: ' + LIFT_NAMES[st.liftP] + ', ' + PK.shots + ' pushes and shots off a carried puck, ' + pk.lifts + ' lifted shots, highest the puck got ' + fmt(pk.apex, 2) + ' m');
   lines.push('Blade to ice: ' + ICE_NAMES[st.iceP] + ', blade on the ice ' + fmt(pk.iceT) + ' s of ' + fmt(pk.stickT) + ' s held; stick stretch ' + fmt(pk.extMin * 100) + ' to +' + fmt(pk.extMax * 100) + ' cm (average ' + fmt(pk.stickT > 1 ? pk.extSum / pk.stickT * 100 : 0, 1) + ' cm), biggest lie change ' + fmt(pk.lieMax) + ' degrees');
   lines.push('Hands: lower-hand switch ' + ONEM_NAMES[st.oneM] + ', one hand ' + pk.oneN + ' times for ' + fmt(pk.oneT) + ' s');
   lines.push('Puck help: ' + ASSIST_NAMES[st.assistP] + ', puck carried on the blade ' + fmt(PK.crT, 1) + ' s, ' + pk.catches + ' catches' + (pk.tN ? '; after ' + pk.tN + ' light touches the puck was moving at ' + fmt(kmh(pk.tSum / pk.tN)) + ' km/h on average, ' + fmt(kmh(pk.tRel / pk.tN)) + ' km/h relative to you (worst ' + fmt(kmh(pk.tMax)) + ')' : ''));
@@ -2148,14 +2244,14 @@ function drawCurve() {
   const cv = curveCur || curveById(st.curve), bp = makeProfile(cv), cvs = $('curve-cv'), g = cvs.getContext('2d'), W = cvs.width, Hh = cvs.height;
   const cs = getComputedStyle(document.documentElement), fg = cs.getPropertyValue('--fg').trim() || '#000', ac = cs.getPropertyValue('--accent').trim() || '#06c', mu = cs.getPropertyValue('--muted').trim() || '#666';
   g.clearRect(0, 0, W, Hh);
-  const sc = (W - 120) / 0.33, x0 = 60, y0 = 56;
+  const sc = (W - 120) / 0.33, x0 = 60, y0 = 74;
   g.fillStyle = ac; g.globalAlpha = 0.85; g.beginPath();
-  for (let i = 0; i <= bp.n; i++) { const x = x0 + bp.u[i] * sc, y = y0 + bp.c[i] * sc * 3.2; if (i) g.lineTo(x, y); else g.moveTo(x, y); }
-  for (let i = bp.n; i >= 0; i--) g.lineTo(x0 + bp.u[i] * sc, y0 + (bp.c[i] + BL.TB) * sc * 3.2);
+  for (let i = 0; i <= bp.n; i++) { const x = x0 + bp.u[i] * sc, y = y0 - bp.c[i] * sc * 2; if (i) g.lineTo(x, y); else g.moveTo(x, y); }
+  for (let i = bp.n; i >= 0; i--) g.lineTo(x0 + bp.u[i] * sc, y0 - (bp.c[i] * 2 + BL.TB) * sc);
   g.closePath(); g.fill(); g.globalAlpha = 1;
   g.strokeStyle = mu; g.setLineDash([5, 5]); g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + cv.len * sc, y0); g.stroke(); g.setLineDash([]);
-  g.fillStyle = fg; g.font = '600 20px sans-serif'; g.fillText('heel', x0 - 4, y0 - 24); g.textAlign = 'right'; g.fillText('toe', x0 + cv.len * sc + 4, y0 - 24); g.textAlign = 'left';
-    $('curve-info').textContent = cv.name + (cv.code !== cv.name ? ' ' + cv.code : '') + ': lie ' + cv.lie + ', blade ' + Math.round(cv.len * 1000) / 10 + ' cm, ' + (cv.hh / 10).toFixed(1) + ' cm tall at the heel, deepest cut ' + (bp.mc * 1000).toFixed(0) + ' mm, face opened ' + cv.loft + '°. ' + cv.note + '. Lie, length and height come from the shop page; the shape is my approximation' + (cv.approx ? ' (this one has no page of its own)' : '') + '. Drawing: top view, face up, depth exaggerated 3 times.';
+  g.fillStyle = fg; g.font = '600 20px sans-serif'; g.fillText('heel', x0 - 4, y0 - 36); g.textAlign = 'right'; g.fillText('toe', x0 + cv.len * sc + 4, y0 - 36); g.textAlign = 'left';
+    $('curve-info').textContent = cv.name + (cv.code !== cv.name ? ' ' + cv.code : '') + ': lie ' + cv.lie + ', blade ' + Math.round(cv.len * 1000) / 10 + ' cm, ' + (cv.hh / 10).toFixed(1) + ' cm tall at the heel and ' + (cv.th / 10).toFixed(1) + ' at the toe, ' + (bp.dep * 1000).toFixed(0) + ' mm of curve at the toe, face opened ' + cv.loft + '°, ' + ({ round: 'round', square: 'square', semi: 'semi-square' }[cv.toe] || 'round') + ' toe. ' + cv.note + '. Lie and length come from the shop page and the shape is traced from its 3D curve picture. Drawing: top view, face down, depth exaggerated 2 times.';
 }
 function nextCurve() {
   const i = CURVES.findIndex(c => c.id === st.curve); setCurve(CURVES[(i + 1) % CURVES.length].id); saveSettings();
