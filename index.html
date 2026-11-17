@@ -88,7 +88,7 @@ details.rate[open]>summary{margin-bottom:10px}
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Stage A, round 2</p>
+    <p class="eyebrow">Ravens VR · Stage B: drills</p>
     <h1>Stick and puck</h1>
     <p class="lede">Round 6 of the stick and puck test. Shots now come off the stick the way a real wrist shot does: the puck rides the blade through your sweep and leaves at the angle of the face and the lift of your follow-through. Soft pushes stay close to you, all twenty curves are traced from the shop pictures you sent, and the stick and blade are rebuilt. Press Enter VR and spend about ten minutes stickhandling, pushing the puck ahead while you skate, and shooting.</p>
   </header>
@@ -243,6 +243,14 @@ details.rate[open]>summary{margin-bottom:10px}
           <option value="1">Light</option>
           <option value="2" selected>Normal</option>
           <option value="3">Strong</option>
+        </select>
+      </label>
+      <label class="f">Start with
+        <select id="sdrill">
+          <option value="none" selected>Free play</option>
+          <option value="shoot">Drill: shooting from spots</option>
+          <option value="give">Drill: give-and-go</option>
+          <option value="oneone">Drill: 1 on 1</option>
         </select>
       </label>
       <label class="f">On the ice with you
@@ -487,7 +495,7 @@ const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
-const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'btn', aimP: 1, hapP: 2, others: 'both', goalP: 1, netP: 0 };
+const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'btn', aimP: 1, hapP: 2, others: 'both', goalP: 1, netP: 0, drillI: 0, startDrill: 'none' };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -498,7 +506,7 @@ function loadSettings() {
       if (ok(j.speed, [0, 1, 2])) o.speed = j.speed; if (ok(j.steer, ['body', 'head'])) o.steer = j.steer; if (ok(j.turn, ['snap30', 'snap45', 'smooth', 'off'])) o.turn = j.turn;
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
-      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['btn', 'grip', 'off'])) o.oneM = j.oneM; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP;
+      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['btn', 'grip', 'off'])) o.oneM = j.oneM; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone'])) o.startDrill = j.startDrill;
     }
   } catch (e) { /* storage is optional */ }
   return o;
@@ -709,9 +717,9 @@ const btex = new THREE.CanvasTexture(bc); if ('colorSpace' in btex) btex.colorSp
 }
 function drawBoard(l) {
   bx.fillStyle = '#0d131a'; bx.fillRect(0, 0, 1024, 512);
-  bx.fillStyle = '#5aa9ee'; bx.font = '600 38px sans-serif'; bx.fillText('RAVENS VR  ·  PHASE 3', 40, 64);
+  bx.fillStyle = '#5aa9ee'; bx.font = '600 38px sans-serif'; bx.fillText(DR.on ? 'RAVENS VR  ·  DRILL' : 'RAVENS VR', 40, 64);
   bx.fillStyle = '#e6edf3'; bx.font = '700 170px sans-serif'; bx.fillText(l.spd, 40, 238);
-  bx.font = '500 48px sans-serif'; bx.fillStyle = '#93a2b0'; bx.fillText('km/h', 60 + l.spd.length * 98, 238);
+  bx.font = '500 48px sans-serif'; bx.fillStyle = '#93a2b0'; bx.fillText(DR.on ? 'goals' : 'km/h', 60 + l.spd.length * 98, 238);
   bx.fillStyle = '#e6edf3'; bx.font = '500 42px sans-serif';
   bx.fillText(l.l2, 40, 306); bx.fillText(l.l3, 40, 358);
   bx.fillStyle = '#93a2b0'; bx.font = '500 32px sans-serif'; bx.fillText(l.l4, 40, 412); bx.fillText(l.l5 || '', 40, 462);
@@ -2084,7 +2092,7 @@ function othersInit() {
   if (GOAL.on) { const s = GOAL.p.s; s.x = GOAL.x; s.z = GOAL.z; s.fx = -1; s.fz = 0; s.b = 0; s.glove = s.blocker = null; posePlayer(GOAL.p, 0.016); goalBoxes(); }
 }
 function othersFrame(dt) {
-  if (MATE.on) mateFrame(dt);
+  if (MATE.on && !MATE.drillHide) mateFrame(dt);
   if (GOAL.on) goalFrame(dt);
 }
 function mateFrame(dt) {
@@ -2101,7 +2109,7 @@ function mateFrame(dt) {
   const youHave = stickOn && (PK.cr > 0.4 || PK.sh);
   if (M.st === 'hold') { tx = M.x; tz = M.z; }
   else if (incoming) { tx = cxI - (bx0 - M.x); tz = czI - (bz0 - M.z); }
-  else if (loose && dPk < 7 && Math.hypot(PK.vx, PK.vz) < 2.5 && dYou > 2.5 && M.cool <= 0) { tx = PK.x - M.fx * 0.85; tz = PK.z - M.fz * 0.85; }   // go and get a loose puck
+  else if (!M.drill && loose && dPk < 7 && Math.hypot(PK.vx, PK.vz) < 2.5 && dYou > 2.5 && M.cool <= 0) { tx = PK.x - M.fx * 0.85; tz = PK.z - M.fz * 0.85; }   // go and get a loose puck
   else {                                                            // a pass option: ahead and to your left of the way you are skating (not where you look)
     const sp2 = Math.hypot(S.vx, S.vz), kd = 1 - Math.exp(-dt / 0.8);
     const dx0 = sp2 > 1.5 ? S.vx / sp2 : H.fx, dz0 = sp2 > 1.5 ? S.vz / sp2 : H.fz;
@@ -2109,7 +2117,8 @@ function mateFrame(dt) {
     const fx = M.dx / dl, fz = M.dz / dl, lead = 5 + sp2 * 0.6;
     const nx = clamp(H.x + fx * lead + fz * 7, -26, 26), nz = clamp(H.z + fz * lead - fx * 7, -10.5, 10.5);
     M.spT = (M.spT || 0) - dt;
-    if (M.sx == null || (!youHave && (Math.hypot(nx - M.sx, nz - M.sz) > 4 || M.spT <= 0))) { M.sx = nx; M.sz = nz; M.spT = 3; }   // he picks a spot and stays there, not drifting with every move you make
+    if (M.sx == null || (!youHave && (Math.hypot(nx - M.sx, nz - M.sz) > 4 || M.spT <= 0))) { M.sx = nx; M.sz = nz; M.spT = 3; }
+    if (M.drill) { M.sx = M.drill.spot[0]; M.sz = M.drill.spot[1]; }   // he picks a spot and stays there, not drifting with every move you make
     tx = M.sx; tz = M.sz;
   }
   const dx = tx - M.x, dz = tz - M.z, d = Math.hypot(dx, dz), want = Math.min(incoming ? 6 : youHave ? 2.5 : 6, d * (incoming ? 3 : 1.2)), wx = d > 0.01 ? dx / d * want : 0, wz = d > 0.01 ? dz / d * want : 0;
@@ -2129,7 +2138,7 @@ function mateFrame(dt) {
     const dr = Math.sin(M.t * 9) * 0.12 * (M.t < 0.4 ? 1 : 0), [qx, qz] = toWorld(P, 0.36 + dr, 0.85);   // a little stickhandle, then the pass
     PK.x = qx; PK.z = qz; PK.y = PUCK.HH; PK.vx = M.vx; PK.vz = M.vz; PK.vy = 0; PK.cr = 0;
     if (M.t > 0.4 && s.shotT < 0) s.shotT = 0.15;
-    if (M.t > 0.72 && H.ok) {                                         // pass it back to your blade, leading you if you are skating
+    if (M.t > 0.72 && H.ok && (!M.drill || M.drill.gate)) {                                         // pass it back to your blade, leading you if you are skating
       let px = H.x + H.fx * 0.9, pz = H.z + H.fz * 0.9;
       if (stickOn && STK.ok) { const F = STK.F, o = [0, 0, 0]; bpt(F, STK.bp.Lb * 0.5, PUCK.HH, -STK.bp.c[Math.round(STK.bp.n / 2)] + PUCK.R + 0.02, o); px = o[0]; pz = o[2]; }
       const spd = clamp(5 + Math.hypot(px - qx, pz - qz) * 0.6, 7, 12); let t = Math.hypot(px - qx, pz - qz) / spd; px += S.vx * t; pz += S.vz * t;
@@ -2193,12 +2202,148 @@ function goalFrame(dt) {
     else if (l.z > 0 && l.z < 0.6 && Math.abs(l.x) < 0.5 && Math.hypot(PK.vx, PK.vz) < 2 && PK.y < PUCK.HH + 0.05 && PK.cr < 0.3 && !PK.sh) { G.hold = 1.2; G.held = 'cover'; }
   }
 }
+// ---------------------------------------------------------------- drills (Stage B): shooting from spots, give-and-go, 1 on 1
+const DRILLS = [
+  { id: 'shoot', name: 'Shooting from spots', reps: 10, how: 'Skate to the puck at the lit cone and shoot. Ten shots from five spots.' },
+  { id: 'give', name: 'Give-and-go', reps: 8, how: 'Pass to #17 on the wall, skate to the slot cone, take his pass back and shoot.' },
+  { id: 'oneone', name: '1 on 1', reps: 6, how: 'Beat the defender with the puck and score. He will poke check you.' }
+];
+const DR = { on: false, id: null, d: null, rep: 0, phase: '', t: 0, goals: 0, saves: 0, shots: 0, miss: 0, steals: 0, passes: 0, pmiss: 0, msg: '', spot: null, k0: null, best: {} };
+try { DR.best = JSON.parse(localStorage.getItem('ravens-vr3-drills') || '{}') || {}; } catch (e) { DR.best = {}; }
+const SPOTS = [[GX - 10.5, 0], [20.1, 6.7], [20.1, -6.7], [GX - 6.5, 2.6], [GX - 6.5, -2.6]];
+// cones on the ice: orange, the live one with a ring round it
+const coneGeo = new THREE.ConeGeometry(0.09, 0.24, 14), coneMat = new THREE.MeshStandardMaterial({ color: 0xff6a13, roughness: 0.6 }), CONES = [];
+const ringM = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.5, 32), new THREE.MeshBasicMaterial({ color: 0xe0a928, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+ringM.rotation.x = -Math.PI / 2; ringM.position.y = 0.006; ringM.visible = false; scene.add(ringM);
+function setCones(list) {
+  while (CONES.length < list.length) { const c = new THREE.Mesh(coneGeo, coneMat); c.castShadow = true; scene.add(c); CONES.push(c); }
+  CONES.forEach((c, i) => { c.visible = i < list.length; if (i < list.length) c.position.set(list[i][0], 0.12, list[i][1]); });
+}
+function lightSpot(p) { if (!p) { ringM.visible = false; return; } ringM.visible = true; ringM.position.x = p[0]; ringM.position.z = p[1]; }
+// move you to a spot facing a direction (yaw: 0 = toward the far net), with the stick and puck coming along
+function teleportTo(x, z, yaw) {
+  if (!HEADW) return;
+  const hw = HEADW.clone(); rotateRig(headYaw() - yaw, hw);
+  rig.updateMatrixWorld(true); rig.position.x += x - hw.x; rig.position.z += z - hw.z; S.x = x; S.z = z; S.vx = S.vz = 0; snapTele = true; H.x = x; H.z = z;
+}
+// the defender for 1 on 1
+const DFN = { on: false, p: null, x: 11, z: 0, vx: 0, vz: 0, fx: -1, fz: 0, cool: 0, box: { kind: 'skater', part: 'legs', on: false, x: 0, z: 0, ax: 1, az: 0, hw: 0.26, hd: 0.14, y0: 0, h: 0.85, e: 0.2, vx: 0, vz: 0 } };
+function defShow(v) {
+  if (v && !DFN.p) DFN.p = makePlayer('visitors', '4', 'left', false);
+  DFN.on = v; if (DFN.p) DFN.p.root.visible = v; DFN.box.on = v;
+  const i = OBST.indexOf(DFN.box); if (v && i < 0) OBST.push(DFN.box); if (!v && i >= 0) OBST.splice(i, 1);
+}
+function defFrame(dt) {
+  const D = DFN, P = D.p, s = P.s; D.cool -= dt;
+  const ax = H.x, az = H.z, nx = GX, nz = 0, toN = Math.hypot(nx - ax, nz - az) || 1;
+  let tx, tz;
+  const beaten = (D.x - ax) * (nx - ax) / toN < 0.3;                         // you are level with him or past him: he chases the puck
+  if (beaten) { tx = PK.x; tz = PK.z; }
+  else { const gap = clamp(toN * 0.22, 1.6, 4.2); tx = ax + (nx - ax) / toN * gap; tz = az + (nz - az) / toN * gap; }   // between you and the net, closing the gap as you come in
+  const dx = tx - D.x, dz = tz - D.z, d = Math.hypot(dx, dz), want = Math.min(beaten ? 7 : 6.2, d * 2.5), wx = d > 0.01 ? dx / d * want : 0, wz = d > 0.01 ? dz / d * want : 0;
+  D.vx += clamp(wx - D.vx, -6 * dt, 6 * dt); D.vz += clamp(wz - D.vz, -6 * dt, 6 * dt); D.x += D.vx * dt; D.z += D.vz * dt;
+  const lx = PK.x - D.x, lz = PK.z - D.z, ll = Math.hypot(lx, lz) || 1, k = 1 - Math.exp(-dt * 6), y0 = Math.atan2(D.fx, D.fz);
+  D.fx += (lx / ll - D.fx) * k; D.fz += (lz / ll - D.fz) * k; const fl = Math.hypot(D.fx, D.fz) || 1; D.fx /= fl; D.fz /= fl;
+  let dy = Math.atan2(D.fx, D.fz) - y0; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+  // his stick reaches for the puck; close enough, he pokes it
+  const reach = Math.min(1.25, Math.max(0.75, ll)), bx = D.x + D.fx * reach, bz = D.z + D.fz * reach;
+  if (D.cool <= 0 && Math.hypot(PK.x - bx, PK.z - bz) < 0.5 && PK.y < PUCK.HH + 0.05) {
+    D.cool = 0.9;
+    const onYou = stickOn && (PK.cr > 0.4 || PK.sh), chance = onYou ? 0.42 : 0.8;
+    if (Math.random() < chance) {
+      const a = Math.atan2(D.fz, D.fx) + (Math.random() - 0.5) * 1.2, v = 3 + Math.random() * 3;
+      PK.vx = Math.cos(a) * v + D.vx * 0.5; PK.vz = Math.sin(a) * v + D.vz * 0.5; PK.cr = 0; PK.sh = 0; PK.rel = pClock + 0.45; PK.touch = pClock; PK.soft = false;
+      EV.push({ k: 'mpass', v: 4, x: PK.x, y: PK.y, z: PK.z }); DR.poked = pClock;
+      if (!onYou && DR.on && DR.id === 'oneone') DR.defHas = true;
+    }
+  }
+  D.box.x = D.x; D.box.z = D.z; D.box.ax = D.fx; D.box.az = D.fz; D.box.vx = D.vx; D.box.vz = D.vz;
+  s.x = D.x; s.z = D.z; s.fx = D.fx; s.fz = D.fz; s.speed = Math.hypot(D.vx, D.vz); s.turn = dt > 0 ? dy / dt : 0; s.lookX = PK.x; s.lookZ = PK.z; s.bx = bx; s.bz = bz;
+  posePlayer(P, dt);
+}
+function drillStart(id) {
+  const d = DRILLS.find(q => q.id === id); if (!d || !st.inVR) return;
+  Object.assign(DR, { on: true, id, d, rep: 0, goals: 0, saves: 0, shots: 0, miss: 0, steals: 0, passes: 0, pmiss: 0, msg: d.how, phase: 'next', t: 0, defHas: false });
+  if (!GOAL.on) { st.others = st.others === 'mate' ? 'both' : st.others === 'none' ? 'goalie' : st.others; othersInit(); }
+  if (id === 'give' && !MATE.on) { st.others = 'both'; othersInit(); }
+  if (id !== 'give' && MATE.on) { MATE.drillHide = true; MATE.p.root.visible = false; } else MATE.drillHide = false;
+  defShow(id === 'oneone');
+  setCones(id === 'shoot' ? SPOTS : id === 'give' ? [[GX - 7, 0], [16, 9]] : [[0, 0]]);
+  toast(d.name + ': ' + d.how);
+}
+function drillStop(quiet) {
+  if (!DR.on) return;
+  DR.on = false; setCones([]); lightSpot(null); defShow(false);
+  MATE.drill = null; MATE.drillHide = false; if (MATE.p) MATE.p.root.visible = MATE.on;
+  if (!quiet) toast('Drill stopped');
+}
+function drillEnd() {
+  const d = DR.d, sc = DR.goals, prev = DR.best[d.id] || 0;
+  if (sc > prev) { DR.best[d.id] = sc; try { localStorage.setItem('ravens-vr3-drills', JSON.stringify(DR.best)); } catch (e) { } }
+  run.drills = run.drills || []; run.drills.push(d.name + ': ' + sc + ' goals from ' + d.reps + (d.id === 'give' ? ', ' + DR.passes + ' passes completed' : '') + (d.id === 'oneone' ? ', ' + DR.steals + ' times the defender won it' : '') + ', ' + DR.saves + ' saves');
+  toast(d.name + ' done: ' + sc + ' of ' + d.reps + (sc > prev ? '  (new best)' : '  (best ' + prev + ')'));
+  drillStop(true); boardText();
+}
+// one rep: set it up, wait for the shot to end (goal, save, miss, steal or time), then the next
+function drillRep() {
+  const d = DR.d; DR.rep++; DR.t = 0; DR.phase = 'play'; DR.k0 = { goals: run.pk.goals, saves: run.pk.saves }; DR.shot = false; DR.defHas = false; DR.passStage = 0;
+  if (d.id === 'shoot') {
+    const sp = SPOTS[(DR.rep - 1) % SPOTS.length]; DR.spot = sp; lightSpot(sp); resetPuck(sp[0], sp[1]);
+    if (DR.rep === 1) teleportTo(GX - 16, 0, 0);
+    DR.msg = 'Shot ' + DR.rep + ' of ' + d.reps + ': the lit cone';
+  } else if (d.id === 'give') {
+    teleportTo(8.5, 3, 0); DR.spot = [GX - 7, 0]; lightSpot(null);
+    MATE.drill = { spot: [16, 9], gate: false }; MATE.x = 16; MATE.z = 9; MATE.vx = MATE.vz = 0; MATE.st = 'free'; MATE.cool = 0.3;
+    placePuckOnBlade(); DR.msg = 'Pass to #17 on the wall';
+  } else if (d.id === 'oneone') {
+    teleportTo(-3, 0, 0); placePuckOnBlade(); DFN.x = 12; DFN.z = 0; DFN.vx = DFN.vz = 0; DFN.fx = -1; DFN.fz = 0; DFN.cool = 0.5;
+    DR.msg = 'Attempt ' + DR.rep + ' of ' + d.reps + ': beat him and score';
+  }
+  if (GOAL.on) { GOAL.hold = 0; GOAL.x = GX - 0.45; GOAL.z = 0; }
+}
+function placePuckOnBlade() {
+  if (stickOn && STK.ok) { const F = STK.F, o = [0, 0, 0]; bpt(F, STK.bp.Lb * 0.45, PUCK.HH, -STK.bp.c[Math.round(STK.bp.n * 0.45)] + PUCK.R + 0.004 - BL.TB / 2, o); resetPuck(o[0], o[2]); }
+  else placePuck();
+}
+function drillFrame(dt) {
+  if (!DR.on) return;
+  const d = DR.d; DR.t += dt;
+  if (DR.phase === 'next') { if (DR.t > (DR.rep === 0 ? 1.5 : 1.3)) { if (DR.rep >= d.reps) { drillEnd(); return; } drillRep(); } return; }
+  if (DR.phase !== 'play') return;
+  let goal = PK.goalLatch || PK.inNet, save = GOAL.hold > 0;                // read this frame's events straight away (a fast puck can be in the net before they are counted)
+  for (const e of EV) { if (e.k === 'goal') goal = true; if (e.k === 'block' && e.kind === 'goalie') save = true; }
+  if (PK.vx > 4 && PK.x > 6 && Math.hypot(PK.vx, PK.vz) > 6 && MATE.st !== 'hold' && (d.id !== 'give' || DR.passStage >= 2)) { const tg = (GX - PK.x) / PK.vx, zAt = PK.z + PK.vz * tg; if (tg > 0 && Math.abs(zAt) < 2.5) DR.shot = true; }   // a shot: heading for the net
+  let end = null;
+  if (goal) { DR.goals++; end = 'Goal!'; }
+  else if (save && DR.shot) { DR.saves++; end = 'Saved'; }
+  else if (DR.shot && ((PK.x > GX + 0.3 && !PK.inNet) || Math.hypot(PK.vx, PK.vz) < 0.8 || PK.out > 0)) { DR.miss++; end = 'Missed the net'; }
+  else if (PK.out > 0) end = 'Puck out of play';
+  if (!end && d.id === 'oneone') {
+    if (DR.defHas || (DR.poked && pClock - DR.poked < 0.05 && !DR.shot)) { if (DR.defHas) { DR.steals++; end = 'He took it off you'; } }
+    if (!end && DFN.on && Math.hypot(PK.x - DFN.x, PK.z - DFN.z) < 1.2 && Math.hypot(PK.vx - DFN.vx, PK.vz - DFN.vz) < 1.5 && !(stickOn && PK.cr > 0.3)) { DR.steals++; end = 'He took it off you'; }
+  }
+  if (!end && d.id === 'give') {
+    if (DR.passStage === 0 && MATE.st === 'hold') { DR.passStage = 1; DR.passes++; DR.msg = 'Now skate to the slot cone'; }
+    if (DR.passStage === 0 && DR.t > 1 && Math.hypot(PK.vx, PK.vz) < 0.5 && !(stickOn && PK.cr > 0.3) && Math.hypot(PK.x - H.x, PK.z - H.z) > 2.5) { DR.pmiss++; end = 'The pass missed him'; }
+    if (DR.passStage === 1) { if (MATE.drill) MATE.drill.gate = Math.hypot(H.x - DR.spot[0], H.z - DR.spot[1]) < 3.2 || MATE.t > 3; if (MATE.st === 'free' && MATE.cool > 0) { DR.passStage = 2; DR.msg = 'Shoot!'; } }
+  }
+  if (!end && DR.t > (d.id === 'shoot' ? 16 : 18)) end = 'Out of time';
+  if (end) { DR.shots += DR.shot ? 1 : 0; DR.msg = end; toast(end + '   ' + DR.goals + ' of ' + DR.rep); DR.phase = 'next'; DR.t = 0; lightSpot(null); if (end === 'Goal!' && audio) { } }
+  if (DFN.on) defFrame(dt);
+}
+function drillBoard() {
+  const d = DR.d;
+  return { spd: String(DR.goals), l2: d.name + '   ' + Math.min(DR.rep, d.reps) + ' of ' + d.reps, l3: 'Goals ' + DR.goals + '   Saves ' + DR.saves + '   Missed ' + DR.miss + (d.id === 'give' ? '   Passes ' + DR.passes : '') + (d.id === 'oneone' ? '   Lost it ' + DR.steals : ''),
+    l4: DR.msg, l5: 'Best ' + (DR.best[d.id] || 0) + ' of ' + d.reps + '     X: menu, Drills tab to stop' };
+}
 function puckFrame(dt) {
   pClock += dt;
   if (PK.out > 1.2) { placePuck(); EV.length = 0; run.pk.outs++; toast('Puck out of play'); }
   PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz; PA.aim = AIMS[st.aimP] || 0;
   puckAdvance(dt, stickOn, POWERS[st.power], pClock);
   othersFrame(dt);
+  if (DR.autoT > 0) { DR.autoT -= dt; if (DR.autoT <= 0) drillStart(st.startDrill); }
+  drillFrame(dt);
   puck.position.set(PK.x, PK.y, PK.z); puck.rotation.y = PK.rot; puck.material.emissive.setHex(keepOn && stickOn ? 0x4a3000 : 0x000000);
   const ah = PK.y - PUCK.HH; if (ah > run.pk.apex) run.pk.apex = ah;
   const k = 1 / (1 + Math.max(0, PK.y - PUCK.HH) * 1.6);
@@ -2267,6 +2412,7 @@ function pkEffects(dt) {
   if (audio) audio.scrape(scr ? clamp(bladeSp / 8, 0.1, 1) * clamp(0.3 + STK.depth / 0.03, 0.3, 1) : 0);
 }
 function boardText() {
+  if (DR.on) { drawBoard(drillBoard()); return; }
   const lv = run.frames[st.level], recent = lv.slice(-120);
   const fps = recent.length > 10 ? Math.round(1000 / (recent.reduce((a, b) => a + b, 0) / recent.length)) : 0;
   const hz = run.hz || 0, period = hz ? 1000 / hz : 14;
@@ -2315,7 +2461,7 @@ for (const h of ['left', 'right']) {
   const d = new THREE.Mesh(new THREE.SphereGeometry(0.011, 10, 8), new THREE.MeshBasicMaterial({ color: 0xe0a928, fog: false, depthTest: false })); d.visible = false; d.renderOrder = 902; d.frustumCulled = false; scene.add(d); dots[h] = d;
 }
 const MENU = { open: false, tab: 0, dirty: true, hov: { left: -1, right: -1 }, hits: [], leave: 0, tabArm: true };
-const TABS = ['Stick', 'Puck', 'Skating', 'Game'];
+const TABS = ['Stick', 'Puck', 'Skating', 'Game', 'Drills'];
 const cyc = (n, i, d) => (i + d + n) % n;
 function setSetting(key, val) {
   st[key] = val;
@@ -2350,6 +2496,12 @@ function menuRows(tab) {
     { l: 'Aim help', v: () => AIM_NAMES[st.aimP], s: d => setSetting('aimP', cyc(3, st.aimP, d)) },
     { l: 'Puck buzz', v: () => HAP_NAMES[st.hapP], s: d => setSetting('hapP', cyc(4, st.hapP, d)) }
   ];
+  if (tab === 4) return [
+    { l: 'Drill', v: () => DRILLS[st.drillI].name, s: d => setSetting('drillI', cyc(DRILLS.length, st.drillI, d)) },
+    { l: DR.on ? 'Stop the drill' : 'Start it (the menu closes)', v: () => DR.on ? 'Stop' : 'Start', s: () => { if (DR.on) drillStop(); else { closeMenu(); drillStart(DRILLS[st.drillI].id); } } },
+    { l: 'Goalie', v: () => GOALIE_NAMES[st.goalP], s: d => setSetting('goalP', cyc(3, st.goalP, d)) },
+    { l: 'Net size', v: () => NET_NAMES[st.netP].split(' (')[0], s: d => setSetting('netP', cyc(3, st.netP, d)) }
+  ];
   if (tab === 2) return [
     { l: 'Top speed', v: () => SPEED_NAMES[st.speed] + '  ' + Math.round(kmh(SPEEDS[st.speed])) + ' km/h', s: d => setSetting('speed', cyc(3, st.speed, d)) },
     { l: 'Steer by', v: () => st.steer === 'body' ? 'Your body' : 'Your head', s: () => setSetting('steer', st.steer === 'body' ? 'head' : 'body') },
@@ -2378,9 +2530,9 @@ function drawMenu() {
   mg.textBaseline = 'middle'; mg.textAlign = 'left'; mg.fillStyle = '#e0a928'; mg.font = '700 34px system-ui, sans-serif'; mg.fillText('RAVENS VR', 38, 44);
   mg.fillStyle = '#b9a8d8'; mg.textAlign = 'right'; mg.font = '500 22px system-ui, sans-serif'; mg.fillText('Paused   ·   point and pull the trigger   ·   X resumes', MW - 38, 44);
   TABS.forEach((n, i) => {
-    widget(38 + i * 240, 78, 232, 54, i === MENU.tab ? '#5a2bb0' : '#2a1a44', () => { MENU.tab = i; });
-    mg.textAlign = 'center'; mg.fillStyle = i === MENU.tab ? '#ffffff' : '#c9bde3'; mg.font = '700 27px system-ui, sans-serif'; mg.fillText(n, 38 + i * 240 + 116, 78 + 28);
-    if (i === MENU.tab) { mg.fillStyle = '#e0a928'; mg.fillRect(38 + i * 240 + 24, 78 + 49, 184, 4); }
+    widget(38 + i * 190, 78, 182, 54, i === MENU.tab ? '#5a2bb0' : '#2a1a44', () => { MENU.tab = i; });
+    mg.textAlign = 'center'; mg.fillStyle = i === MENU.tab ? '#ffffff' : '#c9bde3'; mg.font = '700 26px system-ui, sans-serif'; mg.fillText(n, 38 + i * 190 + 91, 78 + 28);
+    if (i === MENU.tab) { mg.fillStyle = '#e0a928'; mg.fillRect(38 + i * 190 + 20, 78 + 49, 142, 4); }
   });
   menuRows(MENU.tab).forEach((r, i) => {
     const y = 152 + i * 58;
@@ -2535,7 +2687,7 @@ async function enterVR() {
     S.x = -10; S.z = 0; S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
     BODY.ok = false; st.yOff = 0; snapArmed = true; calibReq = false; braking = false; vigU = 0; lastYaw = -Math.PI / 2;
     H.ok = false; needPuck = true; if (audio) audio.resume();
-    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; handsOne = false; grabPend = 0; snapTele = false; recalT = 0; H.ok = false; othersInit(); MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
+    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; handsOne = false; grabPend = 0; snapTele = false; recalT = 0; H.ok = false; othersInit(); DR.autoT = st.startDrill !== 'none' ? 4 : 0; MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
     toast('Ready stance, blade near the ice. X opens the menu');
     try {
       const sup = session.supportedFrameRates ? Array.from(session.supportedFrameRates) : [];
@@ -2549,7 +2701,7 @@ async function enterVR() {
 }
 function onEnd() {
   st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
-  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; handsOne = false; grabPend = 0; MENU.open = false; st.inVR = false; othersInit(); menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
+  closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; handsOne = false; grabPend = 0; MENU.open = false; drillStop(true); st.inVR = false; othersInit(); menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
   const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, pk: { ...run.pk }, frames: run.frames.map(a => a.slice()) };
   buildResult(ended);
 }
@@ -2598,7 +2750,7 @@ function fmt(n, d) { return n == null || Number.isNaN(n) ? '--' : n.toFixed(d ==
 function buildResult(r) {
   $('result').hidden = false;
   document.querySelectorAll(ALLIN).forEach(x => { x.checked = false; });
-  const lines = ['Ravens VR report (Stage A: players and goalies)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+  const lines = ['Ravens VR report (Stage B: drills)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     'Page: ' + (probeInfo.frame ? 'inside a frame (VR permission ' + probeInfo.policy + ')' : 'its own page'),
     'Browser: ' + (probeInfo.device || probeInfo.ua.slice(0, 80)), 'VR supported: ' + (probeInfo.vr === null ? 'unknown' : probeInfo.vr ? 'yes' : 'no')];
   const rows = [['Scene', 'Seconds', 'Average', 'Low 1%', 'Worst', 'Slow']];
@@ -2621,6 +2773,7 @@ function buildResult(r) {
   lines.push('Shot lift: ' + LIFT_NAMES[st.liftP] + ', ' + PK.shots + ' pushes and shots off a carried puck, ' + pk.lifts + ' lifted shots, highest the puck got ' + fmt(pk.apex, 2) + ' m');
   lines.push('Blade to ice: ' + ICE_NAMES[st.iceP] + ', blade on the ice ' + fmt(pk.iceT) + ' s of ' + fmt(pk.stickT) + ' s held; stick stretch ' + fmt(pk.extMin * 100) + ' to +' + fmt(pk.extMax * 100) + ' cm (average ' + fmt(pk.stickT > 1 ? pk.extSum / pk.stickT * 100 : 0, 1) + ' cm), biggest lie change ' + fmt(pk.lieMax) + ' degrees');
   lines.push('Curve in the shot: ' + (pk.relN ? 'pucks left the blade on average ' + Math.round(100 * pk.relU / pk.relN) + '% of the way from heel to toe' : 'no carried shots') + '; aim help ' + AIM_NAMES[st.aimP] + ' turned ' + pk.aimed + ' shots or passes; puck buzz ' + HAP_NAMES[st.hapP]);
+  if (run.drills && run.drills.length) lines.push('Drills: ' + run.drills.join('; '));
   lines.push('On the ice with you: ' + OTHER_NAMES[st.others] + '. Pass partner took ' + pk.mateGot + ' passes and passed back ' + pk.matePass + ' times; the goalie stopped ' + pk.saves + ' shots (' + pk.gHits + ' pucks hit him)');
   lines.push('Hands: lower-hand switch ' + ONEM_NAMES[st.oneM] + ', one hand ' + pk.oneN + ' times for ' + fmt(pk.oneT) + ' s');
   lines.push('Puck help: ' + ASSIST_NAMES[st.assistP] + ', puck carried on the blade ' + fmt(PK.crT, 1) + ' s, ' + pk.catches + ' catches' + (pk.tN ? '; after ' + pk.tN + ' light touches the puck was moving at ' + fmt(kmh(pk.tSum / pk.tN)) + ' km/h on average, ' + fmt(kmh(pk.tRel / pk.tN)) + ' km/h relative to you (worst ' + fmt(kmh(pk.tMax)) + ')' : ''));
@@ -2665,7 +2818,7 @@ function syncUI() {
   $('curve').value = st.curve; $('power').value = String(st.power); $('assist').value = st.assist ? 'on' : 'off';
   $('shot').value = st.shot; $('hz').value = String(st.wantHz); $('speed').value = String(st.speed); $('steer').value = st.steer;
   $('turn').value = st.turn; $('vig').value = String(st.vig); $('height').value = st.height; $('sound').value = st.sound ? 'on' : 'off';
-  $('len').value = String(Math.round(st.lenIn)); $('keepm').value = st.keepM; $('lift').value = String(st.liftP); $('rsrc').value = st.rollSrc; $('roll').value = String(st.rollG); $('bend').value = st.bendOn ? 'on' : 'off'; $('pa').value = String(st.assistP); $('ice').value = String(st.iceP); $('onem').value = st.oneM; $('aim').value = String(st.aimP); $('hap').value = String(st.hapP); $('others').value = st.others;
+  $('len').value = String(Math.round(st.lenIn)); $('keepm').value = st.keepM; $('lift').value = String(st.liftP); $('rsrc').value = st.rollSrc; $('roll').value = String(st.rollG); $('bend').value = st.bendOn ? 'on' : 'off'; $('pa').value = String(st.assistP); $('ice').value = String(st.iceP); $('onem').value = st.oneM; $('aim').value = String(st.aimP); $('hap').value = String(st.hapP); $('others').value = st.others; $('sdrill').value = st.startDrill;
 }
 function drawCurve() {
   const cv = curveCur || curveById(st.curve), bp = makeProfile(cv), cvs = $('curve-cv'), g = cvs.getContext('2d'), W = cvs.width, Hh = cvs.height;
@@ -2697,7 +2850,7 @@ document.querySelectorAll('#lvl button').forEach(b => b.addEventListener('click'
 const bind = (id, key, conv) => $(id).addEventListener('change', e => { st[key] = conv ? conv(e.target.value) : e.target.value; saveSettings(); });
 bind('shot', 'shot'); bind('hz', 'wantHz', Number); bind('speed', 'speed', Number); bind('steer', 'steer'); bind('turn', 'turn'); bind('vig', 'vig', Number);
 bind('height', 'height'); bind('sound', 'sound', v => v === 'on'); bind('power', 'power', Number); bind('assist', 'assist', v => v === 'on');
-bind('len', 'lenIn', Number); $('len').addEventListener('change', () => { st.len = st.lenIn * 0.0254; }); bind('keepm', 'keepM'); bind('lift', 'liftP', Number); bind('rsrc', 'rollSrc'); bind('roll', 'rollG', Number); bind('bend', 'bendOn', v => v === 'on'); bind('pa', 'assistP', Number); bind('ice', 'iceP', Number); bind('onem', 'oneM'); bind('aim', 'aimP', Number); bind('hap', 'hapP', Number); bind('others', 'others'); $('onem').addEventListener('change', () => { if (st.oneM === 'off') { handsOne = false; grabPend = 0; } });
+bind('len', 'lenIn', Number); $('len').addEventListener('change', () => { st.len = st.lenIn * 0.0254; }); bind('keepm', 'keepM'); bind('lift', 'liftP', Number); bind('rsrc', 'rollSrc'); bind('roll', 'rollG', Number); bind('bend', 'bendOn', v => v === 'on'); bind('pa', 'assistP', Number); bind('ice', 'iceP', Number); bind('onem', 'oneM'); bind('aim', 'aimP', Number); bind('hap', 'hapP', Number); bind('others', 'others'); bind('sdrill', 'startDrill'); $('onem').addEventListener('change', () => { if (st.oneM === 'off') { handsOne = false; grabPend = 0; } });
 $('curve').addEventListener('change', e => { setCurve(e.target.value); saveSettings(); drawCurve(); MENU.dirty = true; });
 matchMedia('(prefers-color-scheme: dark)').addEventListener && matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawCurve());
 document.querySelectorAll(ALLIN).forEach(x => x.addEventListener('change', refreshRep));
@@ -2707,7 +2860,7 @@ $('copy').addEventListener('click', async () => {
   catch (e) { try { const r = document.createRange(); r.selectNodeContents($('rep')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); out.textContent = 'Selected. Copy it with your keyboard.'; } catch (e2) { out.textContent = 'Select the text above and copy it.'; } }
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
-if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
+if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
 })();
 </script>
 
