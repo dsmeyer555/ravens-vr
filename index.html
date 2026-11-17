@@ -88,7 +88,7 @@ details.rate[open]>summary{margin-bottom:10px}
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Phase 3 · round 6b</p>
+    <p class="eyebrow">Ravens VR · Phase 3 · round 7</p>
     <h1>Stick and puck</h1>
     <p class="lede">Round 6 of the stick and puck test. Shots now come off the stick the way a real wrist shot does: the puck rides the blade through your sweep and leaves at the angle of the face and the lift of your follow-through. Soft pushes stay close to you, all twenty curves are traced from the shop pictures you sent, and the stick and blade are rebuilt. Press Enter VR and spend about ten minutes stickhandling, pushing the puck ahead while you skate, and shooting.</p>
   </header>
@@ -202,14 +202,14 @@ details.rate[open]>summary{margin-bottom:10px}
       <label class="f">Puck help (grace for stickhandling)
         <select id="pa">
           <option value="0">Off (pure physics)</option>
-          <option value="1">Light</option>
-          <option value="2" selected>Normal</option>
-          <option value="3">Strong</option>
+          <option value="1">Low</option>
+          <option value="2" selected>Normal (open the blade to go top shelf)</option>
+          <option value="3">High</option>
         </select>
       </label>
       <label class="f">Shot lift (how much the face angle counts)
         <select id="lift">
-          <option value="0">Real only (just the face angle)</option>
+          <option value="0">Lowest (stays near the ice)</option>
           <option value="1">Light</option>
           <option value="2" selected>Normal</option>
           <option value="3">Strong</option>
@@ -706,7 +706,7 @@ const FRAME_H = 1.22, POST_R = 0.03, WALL_TOP = 2.62, BOARD_TOP = 1.12;
 const POWERS = [1.0, 1.35, 1.8], POWER_NAMES = ['Raw', 'Natural', 'Boosted'];
 const ROLLS = [0, 0.6, 1.0, 1.4, 1.9], ROLL_NAMES = ['Off (blade stays flat)', 'Gentle', 'Normal', 'Strong', 'Extra strong'];
 const ASSISTS = [0, 0.5, 1, 1.6], ASSIST_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
-const LIFTS = [1.0, 1.1, 1.25, 1.5], LIFT_NAMES = ['Real only', 'Light', 'Normal', 'Strong'];      // how much the face angle is exaggerated when the puck leaves it
+const LIFTS = [[8, 2.2], [14, 3.5], [22, 4.8], [30, 6.0]], LIFT_NAMES = ['Lowest', 'Low', 'Normal', 'High'];      // the steepest a puck can leave the blade (degrees) and the fastest it can rise (m/s)      // how much the face angle is exaggerated when the puck leaves it
 // blade to ice: below the first height (m, of the blade's lowest point above the ice) the blade rests on the ice; it lets go gradually up to the second
 const ICES = [[0, 0], [0.10, 0.45], [0.26, 0.80], [0.45, 1.10]], ICE_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
 const ROLL_SRC = ['lower', 'top', 'both'], ROLL_SRC_NAMES = ['Lower hand', 'Top hand', 'Both hands'];
@@ -716,26 +716,26 @@ const sstep = t => { t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); 
 // length from the heel) is traced from the shop's 3D curve images (left curves mirrored), one scale for all of them. hh / th are the blade height at the heel
 // and toe (mm), loft the face's built-in tilt, toeL extra opening toward the toe of an open curve (degrees), toe the toe shape and rock the rocker (mm).
 const CURVES = [
-  { id: 'jagr', name: 'Jagr', code: 'PRO68', lie: 6, len: 0.3, hh: 58, th: 70, loft: 9, toe: 'square', toeL: 4, rock: 2, pts: [[0, 0.0], [0.1, 0.8], [0.2, 0.5], [0.3, -0.2], [0.4, -0.3], [0.5, 0.1], [0.6, 0.7], [0.7, 1.9], [0.8, 4.6], [0.9, 10.1], [1, 19.0]], note: 'Big open toe curve, bigger than a P28, square toe' },
-  { id: 'p92', name: 'P92', code: 'P92', lie: 5.5, len: 0.3, hh: 56, th: 70, loft: 9, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 1.0], [0.3, 1.2], [0.4, 1.8], [0.5, 2.9], [0.6, 4.4], [0.7, 6.9], [0.8, 10.8], [0.9, 17.2], [1, 26.8]], note: 'Retail P92: mid-toe curve, open face, round toe' },
-  { id: 'p92m', name: 'P92M', code: 'PRO92M', lie: 6, len: 0.3, hh: 60, th: 77, loft: 9, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 1.0], [0.3, 1.2], [0.4, 1.8], [0.5, 2.9], [0.6, 4.4], [0.7, 6.9], [0.8, 10.8], [0.9, 17.2], [1, 26.8]], note: 'The P92 curve on a max-height blade' },
-  { id: 'p88', name: 'P88', code: 'P88', lie: 6, len: 0.3, hh: 56, th: 68, loft: 5, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 0.9], [0.3, 1.5], [0.4, 2.2], [0.5, 3.3], [0.6, 5.2], [0.7, 7.4], [0.8, 9.8], [0.9, 12.4], [1, 15.0]], note: 'Kane: mid curve, slightly open face, round toe' },
-  { id: 'kane', name: 'Kane', code: 'PRO1088', lie: 6, len: 0.31, hh: 56, th: 70, loft: 4, toe: 'semi', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, -0.0], [0.2, -0.6], [0.3, -1.2], [0.4, -1.4], [0.5, -1.3], [0.6, -0.6], [0.7, 0.9], [0.8, 2.9], [0.9, 6.3], [1, 11.7]], note: 'Flatter than a P10, a bigger heel dip and an angled toe' },
-  { id: 'p10', name: 'P10', code: 'PRO10', lie: 6, len: 0.32, hh: 58, th: 72, loft: 4, toe: 'round', toeL: 1, rock: 2, pts: [[0, -0.0], [0.1, 0.0], [0.2, -0.3], [0.3, -0.6], [0.4, -0.6], [0.5, -0.4], [0.6, 0.2], [0.7, 1.9], [0.8, 4.9], [0.9, 9.4], [1, 15.7]], note: 'Old P10: long and fairly straight with a small toe curve' },
-  { id: 'draisaitl', name: 'Draisaitl', code: 'PRO2299', lie: 6, len: 0.32, hh: 56, th: 70, loft: 4, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.3], [0.2, 0.9], [0.3, 1.4], [0.4, 2.1], [0.5, 3.2], [0.6, 4.9], [0.7, 7.1], [0.8, 9.7], [0.9, 13.4], [1, 18.8]], note: 'Very flat PM9-style paddle, a passing curve' },
-  { id: 'datsyuk', name: 'Datsyuk', code: 'PRO13', lie: 4, len: 0.32, hh: 62, th: 78, loft: 3, toe: 'semi', toeL: 2, rock: 2, pts: [[0, 0.0], [0.1, -0.2], [0.2, -0.5], [0.3, -0.7], [0.4, -0.9], [0.5, -1.2], [0.6, -1.2], [0.7, -0.4], [0.8, 1.1], [0.9, 3.8], [1, 7.7]], note: 'Long flat paddle, max height, curves back at the heel' },
-  { id: 'crosby', name: 'Crosby', code: 'PRO87', lie: 4, len: 0.28, hh: 54, th: 64, loft: 5, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 0.9], [0.3, 1.5], [0.4, 2.7], [0.5, 4.7], [0.6, 7.5], [0.7, 10.7], [0.8, 14.5], [0.9, 19.6], [1, 26.3]], note: 'PM9-style mid curve on a small blade' },
-  { id: 'malkin', name: 'Malkin', code: 'PRO71', lie: 6, len: 0.29, hh: 56, th: 68, loft: 5, toe: 'round', toeL: 2, rock: 2, pts: [[0, 0.0], [0.1, 0.6], [0.2, 0.9], [0.3, 1.5], [0.4, 2.2], [0.5, 3.3], [0.6, 5.2], [0.7, 7.8], [0.8, 11.7], [0.9, 18.3], [1, 27.7]], note: 'A P88 with the last quarter bent into a hook' },
-  { id: 'panarin', name: 'Panarin', code: 'PRO1910', lie: 6, len: 0.3, hh: 56, th: 70, loft: 7, toe: 'round', toeL: 2, rock: 2, pts: [[0, -0.0], [0.1, 1.1], [0.2, 1.8], [0.3, 2.3], [0.4, 3.0], [0.5, 4.2], [0.6, 6.1], [0.7, 8.5], [0.8, 12.0], [0.9, 18.0], [1, 26.9]], note: 'Half P92, half P91A' },
-  { id: 'mcdavid', name: 'McDavid', code: 'PRO97', lie: 4, len: 0.29, hh: 56, th: 68, loft: 7, toe: 'semi', toeL: 2, rock: 0, pts: [[0, 0.0], [0.1, 0.1], [0.2, 0.2], [0.3, 0.1], [0.4, 0.1], [0.5, 0.8], [0.6, 2.4], [0.7, 4.7], [0.8, 7.9], [0.9, 12.7], [1, 19.9]], note: 'A deeper P92-like curve on an Iginla blade' },
-  { id: 'kuznetsov', name: 'Kuznetsov', code: 'PRO9292', lie: 7, len: 0.3, hh: 54, th: 66, loft: 8, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, -0.5], [0.2, -1.1], [0.3, -1.8], [0.4, -1.9], [0.5, -1.4], [0.6, -0.6], [0.7, 1.0], [0.8, 3.7], [0.9, 9.2], [1, 19.3]], note: 'Straighter P92 with loft and a toe kink' },
-  { id: 'zegras', name: 'Zegras', code: 'PRO9246', lie: 6, len: 0.3, hh: 56, th: 70, loft: 9, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, 0.4], [0.2, 0.4], [0.3, 0.1], [0.4, -0.0], [0.5, 0.6], [0.6, 1.7], [0.7, 3.8], [0.8, 7.4], [0.9, 13.8], [1, 24.0]], note: 'Deep P92: a P28 curve on a P92 blade' },
-  { id: 'caufield', name: 'Caufield', code: 'PRO22', lie: 6, len: 0.3, hh: 60, th: 76, loft: 9, toe: 'round', toeL: 4, rock: 2, pts: [[0, -0.0], [0.1, 0.8], [0.2, 1.3], [0.3, 1.8], [0.4, 2.6], [0.5, 3.9], [0.6, 5.8], [0.7, 8.9], [0.8, 13.3], [0.9, 20.7], [1, 32.1]], note: 'Open P92-like curve, max height, shaved toe' },
-  { id: 'laine', name: 'Laine', code: 'PRO29', lie: 6.5, len: 0.3, hh: 56, th: 70, loft: 9, toe: 'semi', toeL: 4, rock: 2, pts: [[0, -0.0], [0.1, 0.6], [0.2, 1.0], [0.3, 0.9], [0.4, 0.3], [0.5, 0.2], [0.6, 0.6], [0.7, 1.8], [0.8, 4.4], [0.9, 10.5], [1, 21.0]], note: 'Very open heel and toe mix, semi-square toe' },
-  { id: 'ovechkin', name: 'Ovechkin', code: 'PRO8', lie: 6, len: 0.3, hh: 56, th: 70, loft: 11, toe: 'round', toeL: 5, rock: 2, pts: [[0, -0.0], [0.1, 0.3], [0.2, 0.6], [0.3, 0.9], [0.4, 1.3], [0.5, 2.4], [0.6, 4.0], [0.7, 6.4], [0.8, 10.1], [0.9, 16.7], [1, 27.7]], note: 'Massive open spoon from heel to toe' },
-  { id: 'hossa', name: 'Hossa', code: 'PRO81', lie: 6, len: 0.29, hh: 56, th: 66, loft: 6, toe: 'round', toeL: 2, rock: 0, pts: [[0, 0.0], [0.1, 1.0], [0.2, 1.6], [0.3, 2.0], [0.4, 2.5], [0.5, 2.9], [0.6, 3.7], [0.7, 5.2], [0.8, 8.1], [0.9, 15.1], [1, 27.5]], note: 'Flat heel, huge hook, toe shaved on top, no rocker' },
-  { id: 'kovalchuk', name: 'Kovalchuk', code: 'PRO7117', lie: 5, len: 0.3, hh: 56, th: 70, loft: 7, toe: 'round', toeL: 3, rock: 2, pts: [[0, -0.0], [0.1, 0.3], [0.2, 0.5], [0.3, 0.8], [0.4, 1.2], [0.5, 2.0], [0.6, 3.4], [0.7, 5.5], [0.8, 9.1], [0.9, 17.5], [1, 31.8]], note: 'Like a P28 with much more toe hook' },
-  { id: 'kovalev', name: 'Kovalev', code: 'PRO272', lie: 5.5, len: 0.32, hh: 56, th: 70, loft: 7, toe: 'round', toeL: 3, rock: 4, pts: [[0, 0.0], [0.1, 0.7], [0.2, 0.9], [0.3, 1.0], [0.4, 1.4], [0.5, 2.2], [0.6, 3.4], [0.7, 5.5], [0.8, 9.4], [0.9, 17.1], [1, 29.0]], note: 'Flat heel, banana blade, huge toe hook, big rocker' }
+  { id: 'jagr', name: 'Jagr', code: 'PRO68', lie: 6, len: 0.3, hh: 58, th: 70, loft: 9, toe: 'square', toeL: 4, rock: 2, pts: [[0, 0.0], [0.1, 0.4], [0.2, 0.1], [0.3, -0.2], [0.4, 0.4], [0.5, 1.8], [0.6, 3.5], [0.7, 6.0], [0.8, 10.9], [0.9, 18.4], [1, 27.7]], note: 'Big open toe curve, bigger than a P28, square toe' },
+  { id: 'p92', name: 'P92', code: 'P92', lie: 5.5, len: 0.3, hh: 56, th: 70, loft: 9, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, -0.1], [0.2, -0.1], [0.3, -0.2], [0.4, 0.3], [0.5, 1.6], [0.6, 3.5], [0.7, 6.8], [0.8, 12.5], [0.9, 20.6], [1, 30.7]], note: 'Retail P92: mid-toe curve, open face, round toe' },
+  { id: 'p92m', name: 'P92M', code: 'PRO92M', lie: 6, len: 0.3, hh: 60, th: 77, loft: 9, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, -0.1], [0.2, -0.1], [0.3, -0.2], [0.4, 0.3], [0.5, 1.6], [0.6, 3.5], [0.7, 6.8], [0.8, 12.5], [0.9, 20.6], [1, 30.7]], note: 'The P92 curve on a max-height blade' },
+  { id: 'p88', name: 'P88', code: 'P88', lie: 6, len: 0.3, hh: 56, th: 68, loft: 5, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.0], [0.2, -0.1], [0.3, 0.2], [0.4, 0.8], [0.5, 1.9], [0.6, 4.2], [0.7, 7.3], [0.8, 11.0], [0.9, 15.1], [1, 19.1]], note: 'Kane: mid curve, slightly open face, round toe' },
+  { id: 'kane', name: 'Kane', code: 'PRO1088', lie: 6, len: 0.31, hh: 56, th: 70, loft: 4, toe: 'semi', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.5], [0.2, 0.1], [0.3, -0.3], [0.4, -0.1], [0.5, 0.7], [0.6, 2.3], [0.7, 5.1], [0.8, 8.7], [0.9, 13.8], [1, 20.9]], note: 'Flatter than a P10, a bigger heel dip and an angled toe' },
+  { id: 'p10', name: 'P10', code: 'PRO10', lie: 6, len: 0.32, hh: 58, th: 72, loft: 4, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.3], [0.2, 0.1], [0.3, 0.1], [0.4, 0.6], [0.5, 1.4], [0.6, 2.8], [0.7, 5.9], [0.8, 11.1], [0.9, 17.7], [1, 25.1]], note: 'Old P10: long and fairly straight with a small toe curve' },
+  { id: 'draisaitl', name: 'Draisaitl', code: 'PRO2299', lie: 6, len: 0.32, hh: 56, th: 70, loft: 4, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, 0.2], [0.2, 0.4], [0.3, 0.5], [0.4, 0.9], [0.5, 1.8], [0.6, 3.7], [0.7, 6.4], [0.8, 9.7], [0.9, 13.9], [1, 19.1]], note: 'Very flat PM9-style paddle, a passing curve' },
+  { id: 'datsyuk', name: 'Datsyuk', code: 'PRO13', lie: 4, len: 0.32, hh: 62, th: 78, loft: 3, toe: 'semi', toeL: 2, rock: 2, pts: [[0, 0.0], [0.1, 0.1], [0.2, 0.0], [0.3, 0.2], [0.4, 0.4], [0.5, 0.3], [0.6, 0.8], [0.7, 2.5], [0.8, 5.2], [0.9, 9.1], [1, 13.9]], note: 'Long flat paddle, max height, curves back at the heel' },
+  { id: 'crosby', name: 'Crosby', code: 'PRO87', lie: 4, len: 0.28, hh: 54, th: 64, loft: 5, toe: 'round', toeL: 1, rock: 2, pts: [[0, 0.0], [0.1, -0.2], [0.2, -0.3], [0.3, -0.1], [0.4, 1.0], [0.5, 3.6], [0.6, 7.3], [0.7, 11.6], [0.8, 16.7], [0.9, 23.1], [1, 30.4]], note: 'PM9-style mid curve on a small blade' },
+  { id: 'malkin', name: 'Malkin', code: 'PRO71', lie: 6, len: 0.29, hh: 56, th: 68, loft: 5, toe: 'round', toeL: 2, rock: 2, pts: [[0, 0.0], [0.1, 0.0], [0.2, -0.1], [0.3, 0.2], [0.4, 0.8], [0.5, 1.9], [0.6, 4.2], [0.7, 7.6], [0.8, 13.1], [0.9, 21.4], [1, 32.0]], note: 'A P88 with the last quarter bent into a hook' },
+  { id: 'panarin', name: 'Panarin', code: 'PRO1910', lie: 6, len: 0.3, hh: 56, th: 70, loft: 7, toe: 'round', toeL: 2, rock: 2, pts: [[0, 0.0], [0.1, 0.1], [0.2, 0.1], [0.3, 0.0], [0.4, 0.2], [0.5, 1.3], [0.6, 3.2], [0.7, 6.0], [0.8, 10.5], [0.9, 17.2], [1, 25.2]], note: 'Half P92, half P91A' },
+  { id: 'mcdavid', name: 'McDavid', code: 'PRO97', lie: 4, len: 0.29, hh: 56, th: 68, loft: 7, toe: 'semi', toeL: 2, rock: 0, pts: [[0, 0.0], [0.1, -0.2], [0.2, 0.1], [0.3, 0.3], [0.4, 0.5], [0.5, 1.9], [0.6, 4.7], [0.7, 8.7], [0.8, 13.8], [0.9, 20.6], [1, 29.6]], note: 'A deeper P92-like curve on an Iginla blade' },
+  { id: 'kuznetsov', name: 'Kuznetsov', code: 'PRO9292', lie: 7, len: 0.3, hh: 54, th: 66, loft: 8, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, 0.1], [0.2, 0.1], [0.3, 0.3], [0.4, 1.2], [0.5, 3.1], [0.6, 5.5], [0.7, 9.1], [0.8, 14.4], [0.9, 22.9], [1, 35.9]], note: 'Straighter P92 with loft and a toe kink' },
+  { id: 'zegras', name: 'Zegras', code: 'PRO9246', lie: 6, len: 0.3, hh: 56, th: 70, loft: 9, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, 0.1], [0.2, 0.1], [0.3, -0.3], [0.4, -0.3], [0.5, 0.8], [0.6, 2.8], [0.7, 6.2], [0.8, 12.0], [0.9, 20.6], [1, 32.2]], note: 'Deep P92: a P28 curve on a P92 blade' },
+  { id: 'caufield', name: 'Caufield', code: 'PRO22', lie: 6, len: 0.3, hh: 60, th: 76, loft: 9, toe: 'round', toeL: 4, rock: 2, pts: [[0, 0.0], [0.1, -0.1], [0.2, -0.3], [0.3, -0.3], [0.4, 0.3], [0.5, 1.5], [0.6, 3.9], [0.7, 8.0], [0.8, 14.1], [0.9, 23.4], [1, 36.1]], note: 'Open P92-like curve, max height, shaved toe' },
+  { id: 'laine', name: 'Laine', code: 'PRO29', lie: 6.5, len: 0.3, hh: 56, th: 70, loft: 9, toe: 'semi', toeL: 4, rock: 2, pts: [[0, 0.0], [0.1, -0.2], [0.2, -0.1], [0.3, -0.5], [0.4, -1.6], [0.5, -2.1], [0.6, -1.6], [0.7, -0.1], [0.8, 3.8], [0.9, 11.1], [1, 22.0]], note: 'Very open heel and toe mix, semi-square toe' },
+  { id: 'ovechkin', name: 'Ovechkin', code: 'PRO8', lie: 6, len: 0.3, hh: 56, th: 70, loft: 11, toe: 'round', toeL: 5, rock: 2, pts: [[0, 0.0], [0.1, -0.1], [0.2, 0.2], [0.3, 0.7], [0.4, 1.4], [0.5, 3.1], [0.6, 5.6], [0.7, 9.3], [0.8, 14.9], [0.9, 23.3], [1, 34.3]], note: 'Massive open spoon from heel to toe' },
+  { id: 'hossa', name: 'Hossa', code: 'PRO81', lie: 6, len: 0.29, hh: 56, th: 66, loft: 6, toe: 'round', toeL: 2, rock: 0, pts: [[0, 0.0], [0.1, -0.1], [0.2, -0.1], [0.3, -0.2], [0.4, -0.3], [0.5, -0.4], [0.6, 0.1], [0.7, 1.7], [0.8, 5.4], [0.9, 13.8], [1, 27.3]], note: 'Flat heel, huge hook, toe shaved on top, no rocker' },
+  { id: 'kovalchuk', name: 'Kovalchuk', code: 'PRO7117', lie: 5, len: 0.3, hh: 56, th: 70, loft: 7, toe: 'round', toeL: 3, rock: 2, pts: [[0, 0.0], [0.1, -0.4], [0.2, -0.4], [0.3, -0.3], [0.4, 0.1], [0.5, 1.1], [0.6, 3.1], [0.7, 6.1], [0.8, 11.4], [0.9, 21.7], [1, 36.8]], note: 'Like a P28 with much more toe hook' },
+  { id: 'kovalev', name: 'Kovalev', code: 'PRO272', lie: 5.5, len: 0.32, hh: 56, th: 70, loft: 7, toe: 'round', toeL: 3, rock: 6, pts: [[0, 0.0], [0.1, 0.2], [0.2, -0.0], [0.3, 0.0], [0.4, 0.3], [0.5, 1.1], [0.6, 2.8], [0.7, 5.8], [0.8, 11.5], [0.9, 21.4], [1, 34.5]], note: 'Flat heel, banana blade, huge toe hook, big rocker' }
 ];
 const curveById = id => CURVES.find(c => c.id === id) || CURVES[0];
 const curveLabel = cv => cv.name + (cv.code !== cv.name ? ' ' + cv.code : '') + ' · lie ' + cv.lie + ' · ' + Math.round(cv.len * 100) + ' cm';
@@ -900,7 +900,7 @@ function stickSolve(A) {
   const wlo = hasLo ? (rs === 1 ? 1 - mC : rs === 2 ? 0.5 * (1 - mC) : 0) : 0; K.wlo = wlo; K.r0a = wlo > 0.5 ? K.r0lo : K.r0;
   let er = erT * (1 - wlo) + erL * wlo;
   er -= clamp(er, -0.07, 0.07);
-  K.roll = er; K.rollG = clamp(er * gain, -1.6, 1.6);
+  K.roll = er; K.rollG = clamp(er * gain, -0.85, 0.85);
   const faceFor = (sx, sy, sz, o) => {                                   // the neutral face for this shaft, turned about it by the roll
     neutralFace(hand, sx, sy, sz, A.fx, A.fz, _r);
     const g = K.rollG; if (Math.abs(g) < 1e-4) { o[0] = _r[0]; o[1] = _r[1]; o[2] = _r[2]; return o; }
@@ -958,7 +958,7 @@ function stickSolve(A) {
 const PK = { x: 0, y: PUCK.HH, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, rot: 0, out: 0, inNet: false, goalLatch: false, watch: 0, wPeak: 0, last: 0, tapAt: -9, ctl: 0,
   cr: 0, rel: -9, touch: -9, touchT: 0, touchOk: -9, wasCr: false, vrm: 0, catchAt: -9, crT: 0, carryV: 0, near: 9, liftAt: -9, lift: 0, liftSum: 0, sh: 0, shPk: 0, shT: 0, shUp: 0, shVx: 0, shVz: 0, soft: false, shots: 0 };
 // puck help: s is its strength (0 = off), hx hz where you stand, svx svz how you are moving
-const PA = { s: 0, hx: 0, hz: 0, svx: 0, svz: 0, keep: 0, lift: 1.6, fx: 1, fz: 0 };
+const PA = { s: 0, hx: 0, hz: 0, svx: 0, svz: 0, keep: 0, lift: null, fx: 1, fz: 0 };
 const EV = [];                       // events from this frame: { k, v, x, y, z }
 const SAMP = (() => { const a = []; for (let r = 0; r < 3; r++) for (let k = 0; k < 10; k++) { const t = k * Math.PI / 5; a.push([PUCK.R * Math.cos(t), (r - 1) * PUCK.HH, PUCK.R * Math.sin(t)]); } a.push([0, 0, 0]); return a; })();
 const _C = { nx: 0, ny: 0, nz: 0, pen: 0, cu: 0, cv: 0, cw: 0 }, _vb = [0, 0, 0], _Fk = newFrame();
@@ -1017,7 +1017,7 @@ function worldCollide(h, px, py, pz) {
     }
   }
   if (PK.y <= PUCK.HH + 0.0008 && Math.abs(PK.vy) < 0.06) {               // sliding on ice
-    const sp = Math.hypot(PK.vx, PK.vz), d = 0.36 * h; if (sp <= d) { PK.vx = PK.vz = 0; } else { PK.vx -= PK.vx / sp * d; PK.vz -= PK.vz / sp * d; }
+    const sp = Math.hypot(PK.vx, PK.vz), d = 0.6 * h; if (sp <= d) { PK.vx = PK.vz = 0; } else { PK.vx -= PK.vx / sp * d; PK.vz -= PK.vz / sp * d; }
     PK.spin *= Math.exp(-0.8 * h);
   }
   // boards and glass; above the glass the puck leaves the rink
@@ -1031,7 +1031,7 @@ function worldCollide(h, px, py, pz) {
         // The wall takes some of the speed going into it (less the harder the hit), and rubs a little off the speed along it in
         // proportion to how hard it was hit, so a puck sliding along the boards keeps its speed and one banked at 45 degrees loses about 40%.
         const hard = -vn, glass = PK.y >= BOARD_TOP;
-        const e = Math.max(0.38, (glass ? 0.52 : 0.62) - 0.008 * hard) * clamp((hard - 0.3) / 1.2, 0, 1);
+        const e = Math.max(0.3, (glass ? 0.45 : 0.5) - 0.01 * hard) * clamp((hard - 0.3) / 1.2, 0, 1);
         let tx = PK.vx - vn * b.nx, tz = PK.vz - vn * b.nz; const ts = Math.hypot(tx, tz), t0x = tx, t0z = tz;
         if (ts > 1e-6) { const d = Math.min(ts, 0.14 * (1 + e) * hard); tx -= tx / ts * d; tz -= tz / ts * d; }
         PK.vx = tx - e * vn * b.nx; PK.vz = tz - e * vn * b.nz;
@@ -1085,14 +1085,22 @@ const _T = [0, 0, 0], _vp = [0, 0, 0];
 // curve, times the Shot lift setting. Slow pushes stay on the ice.
 function launchAngle(Wy, u, rel) {
   const bp = STK.bp, toe = bp && bp.toeL ? bp.toeL * Math.pow(clamp(u / bp.Lb, 0, 1), 2) : 0;
-  return clamp((Math.asin(clamp(Wy, -1, 1)) + toe) * PA.lift, 0, 0.6) * sstep((rel - 2.5) / 4);
+  return clamp(Math.asin(clamp(Wy, -1, 1)) + toe, 0, liftCap()[0]) * sstep((rel - 2.5) / 4);
+}
+const liftCap = () => { const L = PA.lift || LIFTS[2]; return [L[0] * Math.PI / 180, L[1]]; };
+// No shot leaves steeper than the Shot lift setting allows, however open the face or however hard the hit.
+function capRise(rel) { const c = liftCap(), m = Math.min(c[1], Math.max(0.6, rel * Math.tan(c[0]))); if (PK.vy > m) PK.vy = m; }
+// VR swings are faster than real ones (the stick weighs nothing), so very hard hits are toned down: up to 10 m/s as is, above that a bit over half.
+function capSpeed() {
+  const rx = PK.vx - PA.svx, rz = PK.vz - PA.svz, r = Math.hypot(rx, rz);
+  if (r > 10) { const k = (10 + (r - 10) * 0.55) / r; PK.vx = PA.svx + rx * k; PK.vz = PA.svz + rz * k; }
 }
 function puckHelp(dt, now, haveBlade) {
   const kp = PA.keep ? 1 : 0, s = Math.max(PA.s, kp), bp = STK.bp, age = now - PK.touch;
-  if (PA.s > 0 && PK.soft && age < 2.2 && PK.y < PUCK.HH + 0.03 && !PK.sh) {        // a soft push: the puck does not run away from you
+  if (PA.s > 0 && PK.soft && age < 2.6 && PK.y < PUCK.HH + 0.03 && !PK.sh) {        // a soft push: the puck does not run away from you
     const rx = PK.vx - PA.svx, rz = PK.vz - PA.svz, r = Math.hypot(rx, rz), ddx = PK.x - PA.hx, ddz = PK.z - PA.hz, dd = Math.hypot(ddx, ddz);
     if (rx * ddx + rz * ddz > 0) {
-      const w = sstep((6 - r) / 2.5) * sstep((5.5 - dd) / 2) * sstep((2.2 - age) / 0.8), k = 1 - Math.exp(-dt * 1.8 * PA.s * w);
+      const w = sstep((7 - r) / 3) * sstep((8 - dd) / 3) * sstep((2.6 - age) / 0.8), k = 1 - Math.exp(-dt * 2.8 * PA.s * w);
       PK.vx -= rx * k; PK.vz -= rz * k;
     }
   }
@@ -1120,7 +1128,7 @@ function puckHelp(dt, now, haveBlade) {
       const lifted = _T[1] > PUCK.HH + 0.035;
       if (PK.carryV < 0.5 * PK.shPk || PK.carryV > 35 || lifted || PK.shT > 0.5 || into < 0.05 || d3 > 0.18) {
         const rx = PK.shVx - PA.svx, rz = PK.shVz - PA.svz, rel = Math.hypot(rx, rz), th = launchAngle(PK.shWy, uP, rel);
-        PK.vx = PK.shVx; PK.vz = PK.shVz; PK.vy = Math.min(rel * Math.tan(th) + 0.35 * clamp(PK.shUp, 0, 5) * sstep((rel - 2) / 3), 0.55 * rel);     // never steeper than about 29 degrees
+        PK.vx = PK.shVx; PK.vz = PK.shVz; capSpeed(); const rel2 = Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz); PK.vy = rel2 * Math.tan(th) + 0.25 * clamp(PK.shUp, 0, 5) * sstep((rel2 - 2) / 3); capRise(rel2);
         if (PK.vy > 0.05) PK.y = PUCK.HH + 0.002;
         PK.sh = 0; PK.cr = 0; PK.rel = now + 0.35; PK.touch = now; PK.soft = rel < 4.5; PK.lift = PK.vy; PK.liftSum = PK.vy; PK.liftAt = now; PK.shots++;
         if (rel > 3) { PK.watch = 0.1; PK.wPeak = 0; EV.push({ k: 'tap', v: rel * 0.6, x: PK.x, y: PK.y, z: PK.z }); }
@@ -1193,13 +1201,13 @@ function puckAdvance(dt, haveBlade, power, now) {
             if (now - PK.liftAt > 0.25) PK.liftSum = 0;
             PK.liftAt = now;
             const hs = Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz), up = clamp(_vb[1], 0, 6), hard = sstep((imp - 1.4) / 3.2);
-            const want = Math.min(hard * (hs * Math.tan(launchAngle(_Fk.Wy, _C.cu, hs)) + 0.35 * up * sstep((hs - 2) / 3)), 0.55 * hs), cap = 9;
+            const want = hard * (hs * Math.tan(launchAngle(_Fk.Wy, _C.cu, hs)) + 0.25 * up * sstep((hs - 2) / 3)), cap = liftCap()[1];
             let add = Math.max(0, want - PK.liftSum); if (PK.vy + add > cap) add = Math.max(0, cap - PK.vy);
             PK.vy += add; PK.liftSum += add; PK.lift = PK.liftSum; if (add > 0.4) EV.push({ k: 'lift', v: PK.liftSum, x: PK.x, y: PK.y, z: PK.z });
           }
           if ((imp > 0.8 || (imp > 0.3 && PK.cr < 0.3)) && now - PK.tapAt > 0.07) { PK.tapAt = now; EV.push({ k: 'tap', v: imp, x: PK.x, y: PK.y, z: PK.z }); }
           if (imp > 3) { PK.watch = 0.1; PK.wPeak = 0; }
-          PK.ctl += h; PK.touch = now; PK.soft = imp < 4.5;
+          PK.ctl += h; PK.touch = now; PK.soft = imp < 4.5; capSpeed(); capRise(Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz));
           if (imp < 6 && PK.cr < 0.3 && PK.touchT <= 0 && now - PK.touchOk > 0.5) { PK.touchT = 0.15; PK.touchOk = now; }
           if (!PK.sh && (PA.s > 0 || PA.keep) && imp > 2.5 && (_vb[0] - PA.svx) * nx + _vb[1] * ny + (_vb[2] - PA.svz) * nz > (PA.keep ? 6 : 3) * (1 - 0.4 * sstep((_Fk.Wy - 0.16) / 0.2))) PK.rel = Math.max(PK.rel, now + (PA.keep ? 0.25 : 0.4));
         }
@@ -1265,7 +1273,7 @@ function rrPts(w, d, k) { const out = [], r = Math.min(w, d) * 0.32, hw = w / 2 
   for (const [cx, cz, a0] of [[hw, hd, 0], [-hw, hd, Math.PI / 2], [-hw, -hd, Math.PI], [hw, -hd, Math.PI * 1.5]]) for (let i = 0; i <= k; i++) { const a = a0 + i / k * Math.PI / 2; out.push([cx + r * Math.cos(a), cz + r * Math.sin(a)]); }
   return out; }
 const hoselGeo = (() => {
-  const SEC = [[-0.006, 0.017, 0.0125], [0.03, 0.019, 0.0135], [0.09, 0.023, 0.016], [0.17, 0.027, 0.0195], [0.279, BL.SHW, BL.SHD]], k = 3, ring = rrPts(1, 1, k).length;
+  const SEC = [[-0.006, 0.026, 0.0125], [0.03, 0.023, 0.0135], [0.09, 0.023, 0.016], [0.17, 0.027, 0.0195], [0.279, BL.SHW, BL.SHD]], k = 3, ring = rrPts(1, 1, k).length;
   const pos = [], idx = [];
   for (const [y, w, d] of SEC) for (const [x, z] of rrPts(w, d, k)) pos.push(x, y, z);
   for (let j = 0; j < SEC.length - 1; j++) for (let i = 0; i < ring; i++) { const a = j * ring + i, b = j * ring + (i + 1) % ring, c = a + ring, e = b + ring; idx.push(a, c, b, b, c, e); }
@@ -1303,21 +1311,21 @@ let bladeM = null, curveCur = null, stickOn = false;
 const showStick = v => { for (const p of PARTS) p.m.visible = v; hoselM.visible = v; if (bladeM) bladeM.visible = v; gloveL.visible = gloveR.visible = v; };
 function buildBladeGeo(bp) {
   const cv = bp.cv, L = bp.Lb, N = 44, M = 12, hh = cv.hh * 0.001, th = cv.th * 0.001, rock = (cv.rock || 0) * 0.001, toe = cv.toe || 'round';
-  const Rt = toe === 'square' ? 0.012 : toe === 'semi' ? 0.03 : 0.55 * th, Rb = toe === 'square' ? 0.008 : toe === 'semi' ? 0.016 : 0.026, Rh = 0.014;
+  const Rt = toe === 'square' ? 0.02 : toe === 'semi' ? 0.03 : 0.55 * th, Rb = toe === 'square' ? 0.028 : toe === 'semi' ? 0.024 : 0.03, Rh = 0.026, cot = Math.cos(bp.lieAng) / Math.sin(bp.lieAng);
   const cAt = u => { const t = clamp(u / L, 0, 1) * bp.n, i = Math.min(bp.n - 1, Math.floor(t)), f = t - i; return bp.c[i] + (bp.c[i + 1] - bp.c[i]) * f; };
   const vb = u => { const x = clamp(u / L, 0, 1) * 2 - 1; return rock * x * x * x * x; };                       // rocker: the heel and toe lift off the ice a touch
-  const vt = u => hh + (th - hh) * Math.sin(Math.PI / 2 * clamp(u / (0.78 * L), 0, 1));            // the top edge rises from the heel and levels off toward the toe
+  const vt = u => (hh + (th - hh) * Math.sin(Math.PI / 2 * clamp(u / (0.78 * L), 0, 1))) * (0.72 + 0.28 * sstep((u + 0.02) / 0.07));   // dips into the hosel at the heel            // the top edge rises from the heel and levels off toward the toe
   const thick = u => 0.0135 - 0.0055 * clamp(u / L, 0, 1);
   const uEnd = v => { const v0 = vb(L); if (v > th - Rt) { const d = v - (th - Rt); return L - Rt + Math.sqrt(Math.max(0, Rt * Rt - d * d)); }
     if (v < v0 + Rb) { const d = v0 + Rb - v; return L - Rb + Math.sqrt(Math.max(0, Rb * Rb - d * d)); } return L; };
-  const uBeg = v => v < Rh ? Rh - Math.sqrt(Math.max(0, Rh * Rh - (Rh - v) * (Rh - v))) - 0.003 : -0.003;   // a rounded heel under the hosel
+  const uBeg = v => v < Rh ? Rh - Math.sqrt(Math.max(0, Rh * Rh - (Rh - v) * (Rh - v))) - 0.003 : -0.003 + (v - Rh) * cot * 0.85;   // a rounded heel that runs up into the hosel
   const pos = [], uv = [], tri = [[], []];
-  const TU = 0.088, TV = 0.08, tapeA = 0.022, tapeB = L - 0.018, mat = u => (u > tapeA && u < tapeB ? 0 : 1);
-  const grid = (P, flip) => {                                                     // P[j][i] = [u, v, w]; smooth normals inside one surface
+  const TU = 0.088, TV = 0.08, iA = Math.round(N * 0.12), iB = N - Math.round(N * 0.07), mat = i => (i >= iA && i < iB ? 0 : 1);     // tape between two columns, so its edges run straight
+  const grid = (P, flip, cols) => {                                                     // P[j][i] = [u, v, w]; smooth normals inside one surface
     const base = pos.length / 3, R = P.length, C = P[0].length;
     for (const row of P) for (const p of row) { pos.push(p[0], p[1], p[2]); uv.push(p[0] / TU, p[1] / TV + p[2] * 3); }
     for (let j = 0; j < R - 1; j++) for (let i = 0; i < C - 1; i++) {
-      const a = base + j * C + i, b = a + 1, c = a + C, d = c + 1, m = mat((P[j][i][0] + P[j][i + 1][0]) / 2);
+      const a = base + j * C + i, b = a + 1, c = a + C, d = c + 1, m = C > 2 ? mat(i) : (cols ? mat(cols[j]) : 1);
       if (flip) tri[m].push(a, c, b, b, c, d); else tri[m].push(a, b, c, b, d, c);
     }
   };
@@ -1331,7 +1339,7 @@ function buildBladeGeo(bp) {
     F.push(rf); B.push(rb);
   }
   grid(F, false); grid(B, true);
-  grid([F[0], B[0]], true); grid([F[M], B[M]], false);                             // bottom and top edges
+  grid([F[0], B[0]].map(r => r), true, null); grid([F[M], B[M]], false, null);                             // bottom and top edges
   grid(F.map((r, j) => [r[N], B[j][N]]), false); grid(F.map((r, j) => [r[0], B[j][0]]), true);   // toe and heel edges
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g.setIndex(tri[0].concat(tri[1])); g.addGroup(0, tri[0].length, 0); g.addGroup(tri[0].length, tri[1].length, 1); g.computeVertexNormals(); return g;
@@ -1790,7 +1798,7 @@ function applyStickMeshes() {
 function puckFrame(dt) {
   pClock += dt;
   if (PK.out > 1.2) { placePuck(); EV.length = 0; run.pk.outs++; toast('Puck out of play'); }
-  PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || 1; PA.fx = H.fx; PA.fz = H.fz;
+  PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz;
   puckAdvance(dt, stickOn, POWERS[st.power], pClock);
   puck.position.set(PK.x, PK.y, PK.z); puck.rotation.y = PK.rot; puck.material.emissive.setHex(keepOn && stickOn ? 0x4a3000 : 0x000000);
   const ah = PK.y - PUCK.HH; if (ah > run.pk.apex) run.pk.apex = ah;
@@ -2173,7 +2181,7 @@ function fmt(n, d) { return n == null || Number.isNaN(n) ? '--' : n.toFixed(d ==
 function buildResult(r) {
   $('result').hidden = false;
   document.querySelectorAll(ALLIN).forEach(x => { x.checked = false; });
-  const lines = ['Ravens VR Phase 3 report (round 6)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+  const lines = ['Ravens VR Phase 3 report (round 7)', 'Date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     'Page: ' + (probeInfo.frame ? 'inside a frame (VR permission ' + probeInfo.policy + ')' : 'its own page'),
     'Browser: ' + (probeInfo.device || probeInfo.ua.slice(0, 80)), 'VR supported: ' + (probeInfo.vr === null ? 'unknown' : probeInfo.vr ? 'yes' : 'no')];
   const rows = [['Scene', 'Seconds', 'Average', 'Low 1%', 'Worst', 'Slow']];
