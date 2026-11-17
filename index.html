@@ -88,7 +88,7 @@ details.rate[open]>summary{margin-bottom:10px}
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Ravens VR · Phase 3 · round 6</p>
+    <p class="eyebrow">Ravens VR · Phase 3 · round 6b</p>
     <h1>Stick and puck</h1>
     <p class="lede">Round 6 of the stick and puck test. Shots now come off the stick the way a real wrist shot does: the puck rides the blade through your sweep and leaves at the angle of the face and the lift of your follow-through. Soft pushes stay close to you, all twenty curves are traced from the shop pictures you sent, and the stick and blade are rebuilt. Press Enter VR and spend about ten minutes stickhandling, pushing the puck ahead while you skate, and shooting.</p>
   </header>
@@ -706,7 +706,7 @@ const FRAME_H = 1.22, POST_R = 0.03, WALL_TOP = 2.62, BOARD_TOP = 1.12;
 const POWERS = [1.0, 1.35, 1.8], POWER_NAMES = ['Raw', 'Natural', 'Boosted'];
 const ROLLS = [0, 0.6, 1.0, 1.4, 1.9], ROLL_NAMES = ['Off (blade stays flat)', 'Gentle', 'Normal', 'Strong', 'Extra strong'];
 const ASSISTS = [0, 0.5, 1, 1.6], ASSIST_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
-const LIFTS = [1.0, 1.3, 1.6, 2.0], LIFT_NAMES = ['Real only', 'Light', 'Normal', 'Strong'];      // how much the face angle is exaggerated when the puck leaves it
+const LIFTS = [1.0, 1.1, 1.25, 1.5], LIFT_NAMES = ['Real only', 'Light', 'Normal', 'Strong'];      // how much the face angle is exaggerated when the puck leaves it
 // blade to ice: below the first height (m, of the blade's lowest point above the ice) the blade rests on the ice; it lets go gradually up to the second
 const ICES = [[0, 0], [0.10, 0.45], [0.26, 0.80], [0.45, 1.10]], ICE_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
 const ROLL_SRC = ['lower', 'top', 'both'], ROLL_SRC_NAMES = ['Lower hand', 'Top hand', 'Both hands'];
@@ -1085,7 +1085,7 @@ const _T = [0, 0, 0], _vp = [0, 0, 0];
 // curve, times the Shot lift setting. Slow pushes stay on the ice.
 function launchAngle(Wy, u, rel) {
   const bp = STK.bp, toe = bp && bp.toeL ? bp.toeL * Math.pow(clamp(u / bp.Lb, 0, 1), 2) : 0;
-  return clamp((Math.asin(clamp(Wy, -1, 1)) + toe) * PA.lift, 0, 0.8) * sstep((rel - 2.5) / 4);
+  return clamp((Math.asin(clamp(Wy, -1, 1)) + toe) * PA.lift, 0, 0.6) * sstep((rel - 2.5) / 4);
 }
 function puckHelp(dt, now, haveBlade) {
   const kp = PA.keep ? 1 : 0, s = Math.max(PA.s, kp), bp = STK.bp, age = now - PK.touch;
@@ -1116,11 +1116,11 @@ function puckHelp(dt, now, haveBlade) {
     if (PK.sh) {
       PK.shT += dt; PK.cr = 1;
       if (PK.carryV > PK.shPk && PK.carryV < 35) { PK.shPk = PK.carryV; PK.shVx = _vp[0]; PK.shVz = _vp[2]; }     // (a jump in tracking or a snap turn is not a swing)
-      PK.shUp = Math.max(PK.shUp, _vp[1] + STK.dvy); if (PK.shPk > 0.9) PK.shWy = Math.max(PK.shWy, Fn.Wy);
+      if (PK.carryV > 0.7 * PK.shPk) { PK.shUp = Math.max(PK.shUp, _vp[1] + STK.dvy); PK.shWy = Math.max(PK.shWy, Fn.Wy); }          // the face and the rise around the peak of the sweep set the angle, not the follow-through after
       const lifted = _T[1] > PUCK.HH + 0.035;
       if (PK.carryV < 0.5 * PK.shPk || PK.carryV > 35 || lifted || PK.shT > 0.5 || into < 0.05 || d3 > 0.18) {
-        const rx = PK.shVx - PA.svx, rz = PK.shVz - PA.svz, rel = Math.hypot(rx, rz), th = launchAngle(Math.max(PK.shWy, Fn.Wy), uP, rel);
-        PK.vx = PK.shVx; PK.vz = PK.shVz; PK.vy = Math.min(rel * Math.tan(th) + 0.8 * clamp(PK.shUp, 0, 5) * sstep((rel - 2) / 3), 0.7 * rel);     // never steeper than about 35 degrees
+        const rx = PK.shVx - PA.svx, rz = PK.shVz - PA.svz, rel = Math.hypot(rx, rz), th = launchAngle(PK.shWy, uP, rel);
+        PK.vx = PK.shVx; PK.vz = PK.shVz; PK.vy = Math.min(rel * Math.tan(th) + 0.35 * clamp(PK.shUp, 0, 5) * sstep((rel - 2) / 3), 0.55 * rel);     // never steeper than about 29 degrees
         if (PK.vy > 0.05) PK.y = PUCK.HH + 0.002;
         PK.sh = 0; PK.cr = 0; PK.rel = now + 0.35; PK.touch = now; PK.soft = rel < 4.5; PK.lift = PK.vy; PK.liftSum = PK.vy; PK.liftAt = now; PK.shots++;
         if (rel > 3) { PK.watch = 0.1; PK.wPeak = 0; EV.push({ k: 'tap', v: rel * 0.6, x: PK.x, y: PK.y, z: PK.z }); }
@@ -1193,7 +1193,7 @@ function puckAdvance(dt, haveBlade, power, now) {
             if (now - PK.liftAt > 0.25) PK.liftSum = 0;
             PK.liftAt = now;
             const hs = Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz), up = clamp(_vb[1], 0, 6), hard = sstep((imp - 1.4) / 3.2);
-            const want = Math.min(hard * (hs * Math.tan(launchAngle(_Fk.Wy, _C.cu, hs)) + 0.8 * up * sstep((hs - 2) / 3)), 0.7 * hs), cap = 9;
+            const want = Math.min(hard * (hs * Math.tan(launchAngle(_Fk.Wy, _C.cu, hs)) + 0.35 * up * sstep((hs - 2) / 3)), 0.55 * hs), cap = 9;
             let add = Math.max(0, want - PK.liftSum); if (PK.vy + add > cap) add = Math.max(0, cap - PK.vy);
             PK.vy += add; PK.liftSum += add; PK.lift = PK.liftSum; if (add > 0.4) EV.push({ k: 'lift', v: PK.liftSum, x: PK.x, y: PK.y, z: PK.z });
           }
