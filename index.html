@@ -251,6 +251,9 @@ details.rate[open]>summary{margin-bottom:10px}
           <option value="shoot">Drill: shooting from spots</option>
           <option value="give">Drill: give-and-go</option>
           <option value="oneone">Drill: 1 on 1</option>
+          <option value="twoone">Drill: 2 on 1</option>
+          <option value="breakout">Drill: breakout</option>
+          <option value="defend">Drill: defending 1 on 1</option>
           <option value="scrim">3 on 3 scrimmage</option>
         </select>
       </label>
@@ -305,6 +308,7 @@ details.rate[open]>summary{margin-bottom:10px}
       <li><b>Puck help</b> (on Normal) catches a pass on your blade, carries the puck while you skate, carries it round with you on a snap turn, and slows a puck you have just nudged so you can catch up with it. It lets go the moment you swing at the puck, so passes and shots are not changed. You feel a soft buzz while the puck is on your blade, a tap for each touch, and a stronger kick for passes and shots.</li>
       <li><b>Get into your ready stance</b> with the blade just above the ice and keep it there for a second: the stick calibrates itself so the blade sits flat. Press <b>Y</b> any time to do it again (it also resets your height).</li>
       <li><b>Left thumbstick</b> skates. Push a little for a slow stride, fully for top speed. In an arc you crossover automatically, and pushing the stick well to the side at speed makes a punch turn (quick, and it costs speed). <b>Left trigger</b> brakes.</li>
+      <li><b>Call for the puck</b> in drills and the scrimmage: squeeze the <b>grip on your top hand</b>, or tap your blade on the ice twice. An open teammate taps his stick when he wants it from you.</li>
       <li><b>Right thumbstick</b> left and right turns you. Up and down sets the stick length (it starts at 58 in). <b>Click it</b> to change curve.</li>
       <li><b>A</b> (right) switches between one hand and two. <b>B</b> puts the puck back in front of you. <b>X</b> (left) opens the menu (top speed is in there now): point at it with either controller and pull the trigger. The right thumbstick left and right changes tab. The game stands still while it is open.</li>
       <li>The scoreboard over centre ice shows your speed, your last hit and best, goals, the frame rate, your stick length, whether you are keeping the puck, and the wrist roll the game sees. If you feel unwell, take the headset off.</li>
@@ -496,7 +500,7 @@ const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
-const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'btn', aimP: 1, hapP: 2, others: 'both', goalP: 1, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9 };
+const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'btn', aimP: 1, hapP: 2, others: 'both', goalP: 1, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -507,7 +511,8 @@ function loadSettings() {
       if (ok(j.speed, [0, 1, 2])) o.speed = j.speed; if (ok(j.steer, ['body', 'head'])) o.steer = j.steer; if (ok(j.turn, ['snap30', 'snap45', 'smooth', 'off'])) o.turn = j.turn;
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
-      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['btn', 'grip', 'off'])) o.oneM = j.oneM; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone', 'scrim'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2])) o.oppP = j.oppP;
+      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['btn', 'grip', 'off'])) o.oneM = j.oneM; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone', 'twoone', 'breakout', 'defend', 'scrim'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2])) o.oppP = j.oppP;
+      if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn;
       if (ok(j.mountH, ['off', 'right', 'left'])) o.mountH = j.mountH; if (typeof j.mD === 'number' && j.mD > 0.2 && j.mD < 1.8) o.mD = j.mD;
       if (Array.isArray(j.mAx) && j.mAx.length === 3 && j.mAx.every(v => typeof v === 'number' && isFinite(v)) && Math.abs(Math.hypot(...j.mAx) - 1) < 0.05) o.mAx = j.mAx;
     }
@@ -722,7 +727,7 @@ function drawBoard(l) {
   bx.fillStyle = '#0d131a'; bx.fillRect(0, 0, 1024, 512);
   bx.fillStyle = '#5aa9ee'; bx.font = '600 38px sans-serif'; bx.fillText(DR.on ? 'RAVENS VR  ·  DRILL' : SC.on ? 'RAVENS VR  ·  3 ON 3' : 'RAVENS VR', 40, 64);
   bx.fillStyle = '#e6edf3'; bx.font = '700 170px sans-serif'; bx.fillText(l.spd, 40, 238);
-  bx.font = '500 48px sans-serif'; bx.fillStyle = '#93a2b0'; bx.fillText(DR.on ? 'goals' : SC.on ? '' : 'km/h', 60 + l.spd.length * 98, 238);
+  bx.font = '500 48px sans-serif'; bx.fillStyle = '#93a2b0'; bx.fillText(DR.on ? (DR.d.unit || 'goals').toLowerCase() : SC.on ? '' : 'km/h', 60 + l.spd.length * 98, 238);
   bx.fillStyle = '#e6edf3'; bx.font = '500 42px sans-serif';
   bx.fillText(l.l2, 40, 306); bx.fillText(l.l3, 40, 358);
   bx.fillStyle = '#93a2b0'; bx.font = '500 32px sans-serif'; bx.fillText(l.l4, 40, 412); bx.fillText(l.l5 || '', 40, 462);
@@ -1309,7 +1314,7 @@ function puckAdvance(dt, haveBlade, power, now) {
           }
           if ((imp > 0.8 || (imp > 0.3 && PK.cr < 0.3)) && now - PK.tapAt > 0.07) { PK.tapAt = now; EV.push({ k: 'tap', v: imp, x: PK.x, y: PK.y, z: PK.z }); }
           if (imp > 3) { PK.watch = 0.1; PK.wPeak = 0; }
-          PK.ctl += h; PK.touch = now; PK.soft = imp < 4.5; capSpeed(); if (imp > 4 && now - (PK.aimAt || -9) > 0.3) { aimHelp(); PK.aimAt = now; } capRise(Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz));
+          PK.ctl += h; PK.touch = now; PK.htouch = now; PK.lastT = 'ravens'; PK.soft = imp < 4.5; capSpeed(); if (imp > 4 && now - (PK.aimAt || -9) > 0.3) { aimHelp(); PK.aimAt = now; } capRise(Math.hypot(PK.vx - PA.svx, PK.vz - PA.svz));
           if (imp < 6 && PK.cr < 0.3 && PK.touchT <= 0 && now - PK.touchOk > 0.5) { PK.touchT = 0.15; PK.touchOk = now; }
           if (!PK.sh && (PA.s > 0 || PA.keep) && imp > 2.5 && (_vb[0] - PA.svx) * nx + _vb[1] * ny + (_vb[2] - PA.svz) * nz > (PA.keep ? 6 : 3) * (1 - 0.4 * sstep((_Fk.Wy - 0.16) / 0.2))) PK.rel = Math.max(PK.rel, now + (PA.keep ? 0.25 : 0.4));
         }
@@ -1802,6 +1807,7 @@ function pollInput(dt, hw, hy) {
       continue;
     }
     if (role === 'free' && edge(1)) placePuck();
+    if (!mh && h === handTop && edge(1)) callForPuck('grip');                 // top-hand grip: call for the puck
     if (!mh && st.oneM === 'grip' && h === (st.shot === 'right' ? 'right' : 'left')) {                    // lower-hand grip: squeeze = two hands, let go = one hand
       const gr = !!(gp.buttons[1] && gp.buttons[1].pressed);
       if (gr && !pb[1]) setHands(false); else if (!gr && pb[1]) setHands(true);
@@ -2219,7 +2225,7 @@ function mateFrame(dt) {
     const dr = Math.sin(M.t * 9) * 0.12 * (M.t < 0.4 ? 1 : 0), [qx, qz] = toWorld(P, 0.36 + dr, 0.85);   // a little stickhandle, then the pass
     PK.x = qx; PK.z = qz; PK.y = PUCK.HH; PK.vx = M.vx; PK.vz = M.vz; PK.vy = 0; PK.cr = 0;
     if (M.t > 0.4 && s.shotT < 0) s.shotT = 0.15;
-    if (M.t > 0.72 && H.ok && (!M.drill || M.drill.gate)) {                                         // pass it back to your blade, leading you if you are skating
+    if ((M.t > 0.72 || (M.t > 0.25 && called())) && H.ok && (!M.drill || M.drill.gate)) {                                         // pass it back to your blade, leading you if you are skating
       let px = H.x + H.fx * 0.9, pz = H.z + H.fz * 0.9;
       if (stickOn && STK.ok) { const F = STK.F, o = [0, 0, 0]; bpt(F, STK.bp.Lb * 0.5, PUCK.HH, -STK.bp.c[Math.round(STK.bp.n / 2)] + PUCK.R + 0.02, o); px = o[0]; pz = o[2]; }
       const spd = clamp(5 + Math.hypot(px - qx, pz - qz) * 0.6, 7, 12); let t = Math.hypot(px - qx, pz - qz) / spd; px += S.vx * t; pz += S.vz * t;
@@ -2276,18 +2282,21 @@ function goalFrame(dt, G) {
   if (bk) { s.blocker = bk; G.bT = 0.5; } else if ((G.bT = (G.bT || 0) - dt) <= 0) s.blocker = null;
   P.handSp = GQ0.hs; posePlayer(P, dt); goalBoxes(G);
   // holding the puck: a glove catch, or a slow puck at his feet that he covers; then it comes back to you
-  if (G.hold > 0) { G.hold -= dt; const [hx, hz] = G.held === 'glove' ? toWorld(P, P.gHand.x * GSC, P.gHand.z * GSC) : toWorld(P, 0, 0.3); PK.x = hx; PK.z = hz; PK.y = G.held === 'glove' ? P.gHand.y * GSC : PUCK.HH; PK.vx = PK.vz = PK.vy = 0; if (G.hold <= 0) { if (SC.on) { resetPuck(nx - sg * 1.2, (Math.random() < 0.5 ? -1 : 1) * 2.5); PK.vz = Math.sign(PK.z) * 2; } else { placePuck(); toast(G.held === 'glove' ? 'Glove save. Puck back to you' : 'Goalie froze it. Puck back to you'); } } }
+  if (G.hold > 0) { G.hold -= dt; const [hx, hz] = G.held === 'glove' ? toWorld(P, P.gHand.x * GSC, P.gHand.z * GSC) : toWorld(P, 0, 0.3); PK.x = hx; PK.z = hz; PK.y = G.held === 'glove' ? P.gHand.y * GSC : PUCK.HH; PK.vx = PK.vz = PK.vy = 0; if (G.hold <= 0) { if (SC.on) { scFaceoff('Goalie froze it. Faceoff', [sg * (GX - 6.1), (PK.z >= 0 ? 1 : -1) * 6.71]); } else if (DR.on) { resetPuck(nx - sg * 1.5, (Math.random() < 0.5 ? -1 : 1) * 2.5); } else { placePuck(); toast(G.held === 'glove' ? 'Glove save. Puck back to you' : 'Goalie froze it. Puck back to you'); } } }
   else {
     const [gx, gz] = toWorld(P, P.gHand.x * GSC, P.gHand.z * GSC);
     if (Math.hypot(PK.x - gx, PK.z - gz) < 0.2 && Math.abs(PK.y - P.gHand.y * GSC) < 0.2 && Math.hypot(PK.vx, PK.vz) < 7) { G.hold = 1.2; G.held = 'glove'; }
-    else if (l.z > 0 && l.z < 0.6 && Math.abs(l.x) < 0.5 && Math.hypot(PK.vx, PK.vz) < 2 && PK.y < PUCK.HH + 0.05 && PK.cr < 0.3 && !PK.sh && !(SC.on && SC.sk.some(q => q.has))) { G.hold = 1.2; G.held = 'cover'; }
+    else if (l.z > 0 && l.z < 0.6 && Math.abs(l.x) < 0.5 && Math.hypot(PK.vx, PK.vz) < 2 && PK.y < PUCK.HH + 0.05 && PK.cr < 0.3 && !PK.sh && !skAnyHas()) { G.hold = 1.2; G.held = 'cover'; }
   }
 }
 // ---------------------------------------------------------------- drills (Stage B): shooting from spots, give-and-go, 1 on 1
 const DRILLS = [
   { id: 'shoot', name: 'Shooting from spots', reps: 10, how: 'Skate to the puck at the lit cone and shoot. Ten shots from five spots.' },
-  { id: 'give', name: 'Give-and-go', reps: 8, how: 'Pass to #17 on the wall, skate to the slot cone, take his pass back and shoot.' },
-  { id: 'oneone', name: '1 on 1', reps: 6, how: 'Beat the defender with the puck and score. He will poke check you.' }
+  { id: 'give', name: 'Give-and-go', reps: 8, how: 'Pass to #17 on the wall, skate to the slot cone, take his pass back and shoot. Call for it to get it sooner.' },
+  { id: 'oneone', name: '1 on 1', reps: 6, how: 'Beat the defender and score. He backs off, closes the gap, then comes at you.' },
+  { id: 'twoone', name: '2 on 1', reps: 8, how: 'You and #17 against one D. Shoot, or pass to #17 and call for it back.' },
+  { id: 'breakout', name: 'Breakout', reps: 8, score: 'exits', unit: 'Clean', how: 'Puck dumped in. Get to the wall at the lit cone, take the pass from #44, get it out past the blue line, then attack.' },
+  { id: 'defend', name: 'Defending 1 on 1', reps: 8, score: 'stops', unit: 'Stops', how: 'You are the D. Keep a tight gap, stay between him and the net, and take the puck off him.' }
 ];
 const DR = { on: false, id: null, d: null, rep: 0, phase: '', t: 0, goals: 0, saves: 0, shots: 0, miss: 0, steals: 0, passes: 0, pmiss: 0, msg: '', spot: null, k0: null, best: {} };
 try { DR.best = JSON.parse(localStorage.getItem('ravens-vr3-drills') || '{}') || {}; } catch (e) { DR.best = {}; }
@@ -2315,7 +2324,10 @@ function drillPiles() {
   const d = DR.d, left = Math.max(0, d.reps - DR.rep);
   if (d.id === 'shoot') setPiles(SPOTS.map((sp, i) => { let c = 0; for (let r = DR.rep + 1; r <= d.reps; r++) if ((r - 1) % SPOTS.length === i) c++; return [sp[0], sp[1], c]; }));
   else if (d.id === 'give') setPiles([[8.5, 3, left]]);
-  else setPiles([[-3, 0, left]]);
+  else if (d.id === 'twoone') setPiles([[-3, -5, left]]);
+  else if (d.id === 'breakout') setPiles([[-2, 7, left]]);
+  else if (d.id === 'defend') setPiles([[8, 0, left]]);
+  else setPiles([[-4, 0, left]]);
 }
 function lightSpot(p) { if (!p) { ringM.visible = false; return; } ringM.visible = true; ringM.position.x = p[0]; ringM.position.z = p[1]; }
 // move you to a spot facing a direction (yaw: 0 = toward the far net), with the stick and puck coming along
@@ -2331,29 +2343,43 @@ function defShow(v) {
   DFN.on = v; if (DFN.p) DFN.p.root.visible = v; DFN.box.on = v;
   const i = OBST.indexOf(DFN.box); if (v && i < 0) OBST.push(DFN.box); if (!v && i >= 0) OBST.splice(i, 1);
 }
+// the defender in the 1 on 1 (and the 2 on 1). He backs off as you come, closes the gap, then steps up and challenges for the puck.
 function defFrame(dt) {
-  const D = DFN, P = D.p, s = P.s; D.cool -= dt; if (DR.rep !== D.rep0) { D.rep0 = DR.rep; D.ax = D.az = null; }
-  const Q = OPPS[st.oppP] || OPPS[1], kr = 1 - Math.exp(-dt / Q.read); D.ax = D.ax == null ? H.x : D.ax + (H.x - D.ax) * kr; D.az = D.az == null ? H.z : D.az + (H.z - D.az) * kr;   // he reads you a moment late
-  const ax = D.ax, az = D.az, nx = GX, nz = 0, toN = Math.hypot(nx - ax, nz - az) || 1;
-  let tx, tz;
-  const beaten = (D.x - ax) * (nx - ax) / toN < 0.3;                         // you are level with him or past him: he chases the puck
-  if (beaten) { tx = PK.x; tz = PK.z; }
-  else { const gap = clamp(toN * 0.22, 1.6, 4.2); tx = ax + (nx - ax) / toN * gap; tz = az + (nz - az) / toN * gap; }   // between you and the net, closing the gap as you come in
-  const dx = tx - D.x, dz = tz - D.z, d = Math.hypot(dx, dz), want = Math.min((beaten ? Q.spd + 0.6 : Q.spd) * (D.cool > 0.45 ? 0.55 : 1), d * 2.5), wx = d > 0.01 ? dx / d * want : 0, wz = d > 0.01 ? dz / d * want : 0;
+  const D = DFN, P = D.p, s = P.s, Q = OPPS[st.oppP] || OPPS[1]; D.cool -= dt;
+  if (DR.rep !== D.rep0) { D.rep0 = DR.rep; D.ax = D.az = null; D.ph = 'back'; D.phT = 0; }
+  D.phT += dt;
+  const two = DR.id === 'twoone', C = DR.c17, cHas = two && C && C.has, cx0 = cHas ? C.x : H.x, cz0 = cHas ? C.z : H.z;
+  const kr = 1 - Math.exp(-dt / Q.read); D.ax = D.ax == null ? cx0 : D.ax + (cx0 - D.ax) * kr; D.az = D.az == null ? cz0 : D.az + (cz0 - D.az) * kr;   // he reads the carrier a moment late
+  const ax = D.ax, az = D.az, nx = GX, toN = Math.hypot(nx - ax, az) || 1, dC = Math.hypot(D.x - ax, D.z - az);
+  const beaten = (D.x - ax) * (nx - ax) / toN < 0.3, trig = [2.8, 2.0, 1.3][st.oppP] || 2;
+  if (D.ph === 'back' && (toN < 19 || D.x > GX - 10 || dC < 4.2)) { D.ph = 'close'; D.phT = 0; }
+  if (D.ph === 'close' && !two && (toN < 11.5 || dC < 2.4 || D.phT > trig)) { D.ph = 'attack'; D.phT = 0; }
+  if (D.ph === 'attack' && D.phT > 2.2 && dC > 3.2) { D.ph = 'close'; D.phT = 0; }      // you got away from him: he gathers himself
+  let tx, tz, vmax = Q.spd;
+  if (beaten) { tx = PK.x; tz = PK.z; vmax += 0.6; }
+  else if (two && D.ph !== 'attack') {                                 // 2 on 1: goal side, taking away the pass and shading to the slot; the goalie has the shooter
+    const ox = cHas ? H.x : C.x, oz = cHas ? H.z : C.z, lead = Math.max(ax, ox), gap = D.ph === 'back' ? clamp(toN * 0.3, 3.5, 6) : clamp(toN * 0.16, 1.8, 3);
+    tx = Math.min(lead + gap, GX - 3.5); tz = az * 0.45 + oz * 0.55;
+    if (toN < 8.5 && Math.abs(az) < 3.5) { D.ph = 'attack'; D.phT = 0; }
+  } else if (D.ph === 'attack') { const pn = Math.hypot(nx - PK.x, PK.z) || 1; tx = PK.x + (nx - PK.x) / pn * 0.5; tz = PK.z - PK.z / pn * 0.5; vmax = Q.spd + 0.8; }
+  else { const gap = D.ph === 'back' ? clamp(toN * 0.3, 3.6, 6.5) : clamp(toN * 0.14, 1.6, 2.6); tx = ax + (nx - ax) / toN * gap; tz = az - az / toN * gap; if (D.ph === 'back') vmax *= 0.85; }
+  const dx = tx - D.x, dz = tz - D.z, d = Math.hypot(dx, dz), want = Math.min(vmax * (D.cool > 0.45 ? 0.55 : 1), Math.sqrt(2 * Q.acc * 1.3 * Math.max(0, d - 0.1))), wx = d > 0.01 ? dx / d * want : 0, wz = d > 0.01 ? dz / d * want : 0;
   D.vx += clamp(wx - D.vx, -Q.acc * dt, Q.acc * dt); D.vz += clamp(wz - D.vz, -Q.acc * dt, Q.acc * dt); D.x += D.vx * dt; D.z += D.vz * dt;
+  [D.x, D.z] = inRink(D.x, D.z, 0.7);
   const lx = PK.x - D.x, lz = PK.z - D.z, ll = Math.hypot(lx, lz) || 1, k = 1 - Math.exp(-dt * 6), y0 = Math.atan2(D.fx, D.fz);
   D.fx += (lx / ll - D.fx) * k; D.fz += (lz / ll - D.fz) * k; const fl = Math.hypot(D.fx, D.fz) || 1; D.fx /= fl; D.fz /= fl;
   let dy = Math.atan2(D.fx, D.fz) - y0; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-  // his stick reaches for the puck; close enough, he pokes it
+  // his stick reaches for the puck; close enough, he pokes it (not while he is still backing off, unless you come right at him)
   const reach = Math.min(1.25, Math.max(0.75, ll)), bx = D.x + D.fx * reach, bz = D.z + D.fz * reach;
-  if (D.cool <= 0 && Math.hypot(PK.x - bx, PK.z - bz) < 0.5 && PK.y < PUCK.HH + 0.05) {
+  if ((D.ph !== 'back' || beaten || dC < 1.6) && D.cool <= 0 && Math.hypot(PK.x - bx, PK.z - bz) < 0.5 && PK.y < PUCK.HH + 0.05) {
     D.cool = 0.9;
-    const onYou = stickOn && (PK.cr > 0.4 || PK.sh), chance = onYou ? Q.poke : 0.75;
+    const onYou = humanHas(), chance = onYou ? Q.poke * (D.ph === 'attack' ? 1.25 : 0.8) : cHas ? Q.poke : 0.75;
     if (Math.random() < chance) {
+      if (cHas) { C.has = false; C.act = ''; C.cool = 0.6; }
       const a = Math.atan2(D.fz, D.fx) + (Math.random() - 0.5) * 1.2, v = 3 + Math.random() * 3;
       PK.vx = Math.cos(a) * v + D.vx * 0.5; PK.vz = Math.sin(a) * v + D.vz * 0.5; PK.cr = 0; PK.sh = 0; PK.rel = pClock + 0.45; PK.touch = pClock; PK.soft = false;
       EV.push({ k: 'mpass', v: 4, x: PK.x, y: PK.y, z: PK.z }); DR.poked = pClock;
-      if (!onYou && DR.on && DR.id === 'oneone') DR.defHas = true;
+      if (!onYou && !cHas && DR.on) DR.defHas = true;
     } else D.cool = 0.9 + Q.read;                                       // a missed poke: off balance for a moment
   }
   D.box.x = D.x; D.box.z = D.z; D.box.ax = D.fx; D.box.az = D.fz; D.box.vx = D.vx; D.box.vz = D.vz;
@@ -2363,258 +2389,652 @@ function defFrame(dt) {
 function drillStart(id) {
   const d = DRILLS.find(q => q.id === id); if (!d || !st.inVR) return;
   if (SC.on) scStop(true);
-  Object.assign(DR, { on: true, id, d, rep: 0, goals: 0, saves: 0, shots: 0, miss: 0, steals: 0, passes: 0, pmiss: 0, msg: d.how, phase: 'next', t: 0, defHas: false });
+  if (DR.on) drillStop(true);
+  Object.assign(DR, { on: true, id, d, rep: 0, goals: 0, saves: 0, shots: 0, miss: 0, steals: 0, passes: 0, pmiss: 0, exits: 0, stops: 0, against: 0, gaps: [], msg: d.how, phase: 'next', t: 0, defHas: false });
   if (!GOAL.on) { st.others = st.others === 'mate' ? 'both' : st.others === 'none' ? 'goalie' : st.others; othersInit(); }
   if (id === 'give' && !MATE.on) { st.others = 'both'; othersInit(); }
   if (id !== 'give' && MATE.on) { MATE.drillHide = true; MATE.p.root.visible = false; } else MATE.drillHide = false;
-  defShow(id === 'oneone');
-  setCones(id === 'shoot' ? SPOTS : id === 'give' ? [[GX - 7, 0], [16, 9]] : [[0, 0]]); drillPiles();
-  toast(d.name + ': ' + d.how);
+  defShow(id === 'oneone' || id === 'twoone');
+  DR.sk = []; DR.c17 = DR.d44 = DR.fc = DR.atk = null;
+  if (id === 'twoone' || id === 'breakout') DR.sk.push(DR.c17 = skGet('ravens', '17', 'left', 'C', 0));
+  if (id === 'breakout') { DR.sk.push(DR.d44 = skGet('ravens', '44', 'right', 'D', 0)); DR.sk.push(DR.fc = skGet('visitors', '9', 'right', 'C', 0)); }
+  if (id === 'defend') DR.sk.push(DR.atk = skGet('visitors', '9', 'right', 'C', 0));
+  for (const s of DR.sk) skShow(s, true);
+  g2Show(id === 'breakout' || id === 'defend');
+  setCones(id === 'shoot' ? SPOTS : id === 'give' ? [[GX - 7, 0], [16, 9]] : id === 'breakout' ? [[-GX + 9.5, -10]] : id === 'defend' ? [[-8.5, 0]] : [[0, 0]]); drillPiles();
+  toast(d.name + ': ' + d.how, 4);
 }
 function drillStop(quiet) {
   if (!DR.on) return;
   DR.on = false; setCones([]); lightSpot(null); defShow(false); setPiles([]);
+  for (const s of DR.sk || []) skShow(s, false); DR.sk = []; if (!SC.on) g2Show(false);
   MATE.drill = null; MATE.drillHide = false; if (MATE.p) MATE.p.root.visible = MATE.on;
   if (!quiet) toast('Drill stopped');
+  hudDraw();
 }
 function drillEnd() {
-  const d = DR.d, sc = DR.goals, prev = DR.best[d.id] || 0;
+  const d = DR.d, sc = d.score ? DR[d.score] : DR.goals, prev = DR.best[d.id] || 0;
   if (sc > prev) { DR.best[d.id] = sc; try { localStorage.setItem('ravens-vr3-drills', JSON.stringify(DR.best)); } catch (e) { } }
-  run.drills = run.drills || []; run.drills.push(d.name + ': ' + sc + ' goals from ' + d.reps + (d.id === 'give' ? ', ' + DR.passes + ' passes completed' : '') + (d.id === 'oneone' ? ', ' + DR.steals + ' times the defender won it' : '') + ', ' + DR.saves + ' saves');
-  toast(d.name + ' done: ' + sc + ' of ' + d.reps + (sc > prev ? '  (new best)' : '  (best ' + prev + ')'));
+  const extra = d.id === 'give' ? ', ' + DR.passes + ' passes completed' : d.id === 'oneone' || d.id === 'twoone' ? ', the D won it ' + DR.steals + ' times' : d.id === 'breakout' ? ', ' + DR.goals + ' goals off the rush' : d.id === 'defend' ? ', he scored ' + DR.against + (DR.gaps.length ? ', average gap at the blue line ' + (DR.gaps.reduce((a, b) => a + b, 0) / DR.gaps.length).toFixed(1) + ' m' : '') : '';
+  run.drills = run.drills || []; run.drills.push(d.name + ' (' + OPP_NAMES[st.oppP] + '): ' + sc + ' ' + (d.unit || 'goals').toLowerCase() + ' from ' + d.reps + extra + (d.id !== 'defend' ? ', ' + DR.saves + ' saves' : ''));
+  toast(d.name + ' done: ' + sc + ' of ' + d.reps + (sc > prev ? '  (new best)' : '  (best ' + prev + ')'), 3);
   drillStop(true); boardText();
 }
-// one rep: set it up, wait for the shot to end (goal, save, miss, steal or time), then the next
+// one rep: set it up, wait for it to end (goal, save, miss, steal, clean breakout or time), then the next
 function drillRep() {
-  const d = DR.d; DR.rep++; DR.t = 0; DR.phase = 'play'; DR.k0 = { goals: run.pk.goals, saves: run.pk.saves }; DR.shot = false; DR.defHas = false; DR.passStage = 0;
+  const d = DR.d, Q = OPPS[st.oppP] || OPPS[1]; DR.rep++; DR.t = 0; DR.phase = 'play'; DR.k0 = { goals: run.pk.goals, saves: run.pk.saves }; DR.shot = false; DR.defHas = false; DR.passStage = 0;
   drillPiles();
   if (d.id === 'shoot') {
     const sp = SPOTS[(DR.rep - 1) % SPOTS.length]; DR.spot = sp; lightSpot(sp); resetPuck(sp[0], sp[1]);
     if (DR.rep === 1) teleportTo(GX - 16, 0, 0);
     DR.msg = 'Shot ' + DR.rep + ' of ' + d.reps + ': the lit cone';
   } else if (d.id === 'give') {
-    teleportTo(8.5, 3, 0); DR.spot = [GX - 7, 0]; lightSpot(null);
+    teleportTo(8.5, 3, 0); resetPuck(9.4, 3.5); DR.spot = [GX - 7, 0]; lightSpot(null);
     MATE.drill = { spot: [16, 9], gate: false }; MATE.x = 16; MATE.z = 9; MATE.vx = MATE.vz = 0; MATE.st = 'free'; MATE.cool = 0.3;
     DR.placeN = 2; DR.msg = 'Pass to #17 on the wall';
-  } else if (d.id === 'oneone') {
-    teleportTo(-3, 0, 0); DR.placeN = 2; DFN.x = 12; DFN.z = 0; DFN.vx = DFN.vz = 0; DFN.fx = -1; DFN.fz = 0; DFN.cool = 0.5;
-    DR.msg = 'Attempt ' + DR.rep + ' of ' + d.reps + ': beat him and score';
+  } else if (d.id === 'oneone' || d.id === 'twoone') {
+    const two = d.id === 'twoone';
+    teleportTo(two ? -3 : -4, two ? -5 : 0, 0); resetPuck(two ? -2.1 : -3.1, two ? -4.6 : 0.4); DR.placeN = 2; DFN.x = two ? 14 : 16; DFN.z = 0; DFN.vx = DFN.vz = 0; DFN.fx = -1; DFN.fz = 0; DFN.cool = 0.5;
+    if (two) skPlace(DR.c17, -3, 3.5, 1, 0);
+    DR.msg = (two ? '2 on 1 ' : 'Attempt ') + DR.rep + ' of ' + d.reps + (two ? ': make him commit' : ': beat him and score');
+  } else if (d.id === 'breakout') {
+    teleportTo(-GX + 11, -9.4, 0); lightSpot([-GX + 9.5, -10]);
+    skPlace(DR.d44, -15, 2.5, -1, 0); skPlace(DR.c17, -11, 3.5, -1, 0); skPlace(DR.fc, 4, 2, -1, 0); DR.fc.cool = 0.6;
+    resetPuck(-2, 7); { const a = Math.atan2(5.5 - 7, -29.2 + 2); PK.vx = Math.cos(a) * 15; PK.vz = Math.sin(a) * 15; PK.lastT = 'visitors'; }
+    DR.bo = { dT: 0, exitT: null, fcGo: 1.2 - 0.3 * st.oppP };
+    DR.msg = 'Get to the wall. #44 is going back for it';
+  } else if (d.id === 'defend') {
+    teleportTo(-8.5, 0, 0);
+    const z = (Math.random() - 0.5) * 7, A = DR.atk; skPlace(A, 7, z, -1, 0); A.has = true; A.cool = 0; A.dec = 0.5; A.plan = ['wide', 'middle', 'shoot'][Math.floor(Math.random() * 3)]; A.side = z > 0.5 ? 1 : z < -0.5 ? -1 : (Math.random() < 0.5 ? -1 : 1); A.dekeT = 0;
+    resetPuck(A.x - 0.9, A.z); skGlue(A);
+    DR.dv = { lostT: null, gap: null, from: null };
+    DR.msg = 'Rep ' + DR.rep + ' of ' + d.reps + ': here he comes';
   }
   if (GOAL.on) { GOAL.hold = 0; GOAL.x = GX - 0.45; GOAL.z = 0; }
+  if (SC.g2 && SC.g2.on) { SC.g2.hold = 0; SC.g2.x = -GX + 0.45; SC.g2.z = 0; }
 }
 function placePuckOnBlade() {
   if (stickOn && STK.ok) { const F = STK.F, o = [0, 0, 0]; bpt(F, STK.bp.Lb * 0.45, PUCK.HH, -STK.bp.c[Math.round(STK.bp.n * 0.45)] + PUCK.R + 0.004 - BL.TB / 2, o); resetPuck(o[0], o[2]); }
   else placePuck();
 }
+// the AI skaters in the 2 on 1, the breakout and the defending drill
+function drillAI(dt) {
+  const Q = OPPS[st.oppP] || OPPS[1], all = skVis(), id = DR.id, hum = humanHas();
+  for (const s of DR.sk) { s.cool -= dt; s.poke -= dt; s.dec -= dt; s.prot -= dt; }
+  const C = DR.c17, D4 = DR.d44, F = DR.fc, A = DR.atk;
+  for (const s of DR.sk) if (s.has && skStolen(s, Q)) { if (s === A && DR.dv) DR.dv.lostT = DR.t; }
+  if (humanHas()) for (const s of DR.sk) if (s.has) { s.has = false; s.act = ''; s.cool = 0.7; if (s === A && DR.dv && DR.dv.lostT == null) DR.dv.lostT = DR.t; }
+  const anyHas = () => DR.sk.find(s => s.has) || (humanHas() ? 'human' : null);
+  // a teammate with the puck: shoot close in, pass back to you if you call, otherwise carry to the net
+  const mateWithPuck = (s, carryT) => {
+    if (skAct(s, dt, Q)) { return; }
+    if (s.act !== 'shoot' && s.act !== 'pass' && s.dec <= 0) {
+      s.dec = Q.dec * 0.6; const dN = Math.hypot(GX - s.x, s.z), hb = humanBlade();
+      if (called() && laneOpen(s.x, s.z, hb[0], hb[1], s.team) > 0.6) { skPass(s, { bl: hb, vx: S.vx, vz: S.vz }); s.actT = 0.12; }
+      else if (dN < 9.5 && s.x < GX - 0.8) { skShoot(s, GX, GOAL, Q); s.actT = 0.22; DR.shot = true; }
+      else s.act = 'carry';
+    }
+    if (s.has) skGlue(s);
+    return carryT;
+  };
+  if (id === 'twoone') {
+    if (!C.has && !hum && skCanPick(C)) { skPick(C); DR.shot = false; }
+    let t;
+    if (C.has) { mateWithPuck(C); t = [GX - 5, C.z * 0.5]; }
+    else t = skIncoming(C) || (H.x > GX - 11 ? [GX - 3, 1.8] : [clamp(H.x + 1.2, -20, GX - 3.5), 3.2]);
+    skMove(C, t[0], t[1], dt, Q, { all, vmax: Q.spd * 0.95 }); skTapCall(C, dt);
+  }
+  if (id === 'breakout') {
+    const B = DR.bo, car = anyHas();
+    if (!car) { for (const s of [D4, C, F]) if (skCanPick(s) && !(s === F && DR.t < B.fcGo)) { skPick(s); break; } }
+    // #44: goes back for it, takes it behind the net, then passes to you on the wall
+    let tD;
+    if (D4.has) {
+      B.dT += dt; const hb = humanBlade(), open = laneOpen(D4.x, D4.z, hb[0], hb[1], 'ravens'), fcNear = Math.hypot(F.x - D4.x, F.z - D4.z) < 2.2;
+      if (!skAct(D4, dt, Q) && D4.act !== 'pass') {
+        if ((called() || B.dT > 1.0 || fcNear) && open > 0.8 && H.x < -BLUEL) { skPass(D4, { bl: hb, vx: S.vx, vz: S.vz }); D4.actT = 0.15; DR.msg = 'Pass to you on the wall'; }
+        else if (B.dT > 3 || fcNear) {
+          const cb = skBlade(C); if (laneOpen(D4.x, D4.z, cb[0], cb[1], 'ravens') > 1 && !fcNear) { skPass(D4, { bl: cb, vx: C.vx, vz: C.vz }); DR.msg = '#44 went to #17'; }
+          else { D4.act = 'pass'; D4.p.s.shotT = 0.15; D4.aim = [-GX + 14, -11.5, 0, 12]; D4.actT = 0.15; DR.msg = 'Up the wall to you'; }
+        }
+      }
+      if (D4.has) skGlue(D4);
+      tD = [-GX - 0.6, -2.8];
+    } else tD = car ? [clamp(PK.x - 7, -GX + 3, 18), PK.z * 0.3] : [PK.x + PK.vx * 0.3, PK.z + PK.vz * 0.3];
+    skMove(D4, tD[0], tD[1], dt, Q, { all });
+    // #17: low in the middle for support, then up the ice with you, then to the net
+    let tC;
+    if (C.has) { mateWithPuck(C); tC = C.act === 'carry' ? [C.x + 7, C.z * 0.6] : [C.x, C.z]; }
+    else if (B.exitT != null) tC = H.x > GX - 12 ? [GX - 3.2, 1.8] : [clamp(H.x + 4, -20, GX - 4), 3];
+    else if (D4.has || !car) tC = [-GX + 8, 2];
+    else tC = skIncoming(C) || [clamp(H.x + 5, -GX + 8, 0), 2.5];
+    skMove(C, tC[0], tC[1], dt, Q, { all }); skTapCall(C, dt);
+    // their forechecker: goes after whoever has it
+    let tF;
+    if (F.has) { skGlue(F); tF = [F.x, F.z]; }
+    else if (DR.t < B.fcGo) tF = [F.x, F.z];
+    else { const c2 = anyHas(), cx = c2 === 'human' ? H.x : c2 ? c2.x : PK.x, cz = c2 === 'human' ? H.z : c2 ? c2.z : PK.z; tF = [cx + (c2 ? -1.0 : 0), cz]; if (c2) skPoke(F, Q, c2 === 'human', c2 === 'human' ? null : c2); }
+    skMove(F, tF[0], tF[1], dt, Q, { all, vmax: Q.spd * (0.8 + 0.07 * st.oppP), hit: true });
+  }
+  if (id === 'defend') {
+    const V = DR.dv; let t;
+    if (A.has) {
+      const nx = -GX, dN = Math.hypot(nx - A.x, A.z), hb = humanBlade(), dH = Math.hypot(H.x - A.x, H.z - A.z), ahead = H.x < A.x + 0.3;
+      if (V.gap == null && A.x < -BLUEL) V.gap = dH;                           // your gap when he crosses your blue line
+      if (skAct(A, dt, Q)) { DR.shot = true; }
+      else if (A.act !== 'shoot' && A.dec <= 0) {
+        A.dec = Q.dec * (0.7 + Math.random() * 0.5);
+        const lane = laneOpen(A.x, A.z, nx, 0, 'visitors');
+        if (dN < 4.5 || (dN < 11 && (lane > 0.6 || !ahead)) || (A.plan === 'shoot' && dN < 15 && dN > 10 && lane > 0.4)) { skShoot(A, nx, SC.g2, Q); V.from = [A.x, A.z]; }
+        else if (dH < 2.4 && ahead && A.dekeT <= 0) { A.dekeT = 0.7; A.dk = [A.x - 3, clamp(A.z + (A.z - hb[1] >= 0 ? 1 : -1) * 4, -9, 9)]; }
+      }
+      A.dekeT -= dt;
+      if (A.has) {
+        if (A.dekeT > 0) t = A.dk;
+        else if (A.plan === 'wide') t = A.x > -GX + 10 ? [-GX + 6, A.side * 7.5] : [-GX + 3, A.side * 2.5];
+        else t = [-GX + 5, A.z * 0.4];
+        skGlue(A);
+      } else t = [A.x - 2, A.z];
+    } else {
+      if (V.lostT != null && DR.t - V.lostT < 2 && !humanHas() && Math.hypot(PK.x - A.x, PK.z - A.z) < 4) { t = [PK.x, PK.z]; if (skCanPick(A)) { skPick(A); V.lostT = null; } }
+      else t = [A.x - A.vx * 0.3, A.z - A.vz * 0.3];
+    }
+    skMove(A, t[0], t[1], dt, Q, { all, vmax: Q.spd * (A.dekeT > 0 ? 1.1 : 0.92), hit: true });
+  }
+  if (SC.g2 && SC.g2.on) goalFrame(dt, SC.g2);
+}
 function drillFrame(dt) {
   if (!DR.on) return;
   const d = DR.d; DR.t += dt;
   if (DR.placeN > 0 && --DR.placeN === 0) placePuckOnBlade();     // after the teleport has reached the stick
-  if (DR.phase === 'next') { if (DR.t > (DR.rep === 0 ? 1.5 : 1.3)) { if (DR.rep >= d.reps) { drillEnd(); return; } drillRep(); } return; }
+  if (DR.phase === 'next') {
+    if (DR.sk) for (const s of DR.sk) { s.has = false; skMove(s, s.x, s.z, dt, OPPS[st.oppP] || OPPS[1]); }
+    if (SC.g2 && SC.g2.on) goalFrame(dt, SC.g2);
+    if (DR.t > (DR.rep === 0 ? 1.5 : 1.3)) { if (DR.rep >= d.reps) { drillEnd(); return; } drillRep(); }
+    return;
+  }
   if (DR.phase !== 'play') return;
-  let goal = PK.goalLatch || PK.inNet, save = GOAL.hold > 0;                // read this frame's events straight away (a fast puck can be in the net before they are counted)
-  for (const e of EV) { if (e.k === 'goal') goal = true; if (e.k === 'block' && e.kind === 'goalie') save = true; }
-  if (PK.vx > 4 && PK.x > 6 && Math.hypot(PK.vx, PK.vz) > 6 && MATE.st !== 'hold' && (d.id !== 'give' || DR.passStage >= 2)) { const tg = (GX - PK.x) / PK.vx, zAt = PK.z + PK.vz * tg; if (tg > 0 && Math.abs(zAt) < 2.5) DR.shot = true; }   // a shot: heading for the net
+  let goal = PK.goalLatch || PK.inNet, saveF = GOAL.hold > 0, saveN = !!(SC.g2 && SC.g2.on && SC.g2.hold > 0);   // read this frame's events straight away (a fast puck can be in the net before they are counted)
+  for (const e of EV) { if (e.k === 'goal') goal = true; if (e.k === 'block' && e.kind === 'goalie') { if ((e.x != null ? e.x : PK.x) > 0) saveF = true; else saveN = true; } }
+  const goalF = goal && PK.x > 0, goalN = goal && PK.x < 0;
+  if (DR.sk && DR.sk.length) drillAI(dt);
+  const mateHas = DR.sk && DR.sk.some(s => s.has && s.team === 'ravens');
+  if (!mateHas && PK.vx > 4 && PK.x > 6 && Math.hypot(PK.vx, PK.vz) > 6 && MATE.st !== 'hold' && (d.id !== 'give' || DR.passStage >= 2) && (d.id !== 'breakout' || DR.bo.exitT != null)) { const tg = (GX - PK.x) / PK.vx, zAt = PK.z + PK.vz * tg; if (tg > 0 && Math.abs(zAt) < 2.5) DR.shot = true; }   // a shot: heading for the net
   let end = null;
-  if (goal) { DR.goals++; end = 'Goal!'; }
-  else if (save && DR.shot) { DR.saves++; end = 'Saved'; }
-  else if (DR.shot && ((PK.x > GX + 0.3 && !PK.inNet) || Math.hypot(PK.vx, PK.vz) < 0.8 || PK.out > 0)) { DR.miss++; end = 'Missed the net'; }
-  else if (PK.out > 0) end = 'Puck out of play';
-  if (!end && d.id === 'oneone') {
-    if (DR.defHas || (DR.poked && pClock - DR.poked < 0.05 && !DR.shot)) { if (DR.defHas) { DR.steals++; end = 'He took it off you'; } }
-    if (!end && DFN.on && Math.hypot(PK.x - DFN.x, PK.z - DFN.z) < 1.2 && Math.hypot(PK.vx - DFN.vx, PK.vz - DFN.vz) < 1.5 && !(stickOn && PK.cr > 0.3)) { DR.steals++; end = 'He took it off you'; }
+  if (d.id === 'defend') {
+    const A = DR.atk, V = DR.dv, outside = V.from && (Math.hypot(-GX - V.from[0], V.from[1]) > 11 || Math.abs(V.from[1]) > 7);
+    if (goalN) { DR.against++; end = 'He scored'; }
+    else if (saveN && DR.shot) { if (outside) { DR.stops++; end = 'Kept him outside. Saved'; } else end = 'He got a shot from the slot. Saved'; }
+    else if (DR.shot && !A.has && (PK.x < -GX - 0.3 || Math.hypot(PK.vx, PK.vz) < 0.8 || PK.out > 0)) { if (outside) { DR.stops++; end = 'Kept him outside. Missed'; } else end = 'He missed from the slot'; }
+    else if (!A.has && !DR.shot && V.lostT != null && (humanHas() || (DR.t - V.lostT > 1.2 && Math.hypot(PK.x - A.x, PK.z - A.z) > 2.5))) { DR.stops++; end = 'Stopped him!'; }
+    else if (PK.out > 0) { DR.stops++; end = 'Puck out of play'; }
+    else if (DR.t > 14) { DR.stops++; end = 'Held him up'; }
+    if (end && V.gap != null) { DR.gaps.push(V.gap); end += '   gap ' + V.gap.toFixed(1) + ' m'; }
+  } else {
+    if (goalF) { DR.goals++; end = 'Goal!'; }
+    else if (goalN) end = 'Into your own net';
+    else if (saveF && DR.shot) { DR.saves++; end = 'Saved'; }
+    else if (DR.shot && !mateHas && ((PK.x > GX + 0.3 && !PK.inNet) || Math.hypot(PK.vx, PK.vz) < 0.8 || PK.out > 0)) { DR.miss++; end = 'Missed the net'; }
+    else if (PK.out > 0) end = 'Puck out of play';
+    if (!end && (d.id === 'oneone' || d.id === 'twoone')) {
+      if (DR.defHas) { DR.steals++; end = 'The D took it'; }
+      else if (DFN.on && !mateHas && Math.hypot(PK.x - DFN.x, PK.z - DFN.z) < 1.2 && Math.hypot(PK.vx - DFN.vx, PK.vz - DFN.vz) < 1.5 && !humanHas()) { DR.steals++; end = 'The D took it'; }
+    }
+    if (!end && d.id === 'breakout') {
+      const B = DR.bo;
+      if (DR.fc.has) end = 'Turnover: their forechecker got it';
+      else if (B.exitT == null && PK.x > -BLUEL + 0.5 && (humanHas() || mateHas)) { B.exitT = DR.t; DR.exits++; DR.msg = 'Clean breakout! Now attack'; toast('Clean breakout! Now attack', 1.6); }
+      else if (B.exitT == null && DR.t > 15) end = 'Too slow out of your end';
+      else if (B.exitT != null && DR.t - B.exitT > 13) end = 'Out of time';
+    }
+    if (!end && d.id === 'give') {
+      if (DR.passStage === 0 && MATE.st === 'hold') { DR.passStage = 1; DR.passes++; DR.msg = 'Now skate to the slot cone'; }
+      if (DR.passStage === 0 && DR.t > 1 && Math.hypot(PK.vx, PK.vz) < 0.5 && !humanHas() && Math.hypot(PK.x - H.x, PK.z - H.z) > 2.5) { DR.pmiss++; end = 'The pass missed him'; }
+      if (DR.passStage === 1) { if (MATE.drill) MATE.drill.gate = Math.hypot(H.x - DR.spot[0], H.z - DR.spot[1]) < 3.2 || MATE.t > 3 || called(); if (MATE.st === 'free' && MATE.cool > 0) { DR.passStage = 2; DR.msg = 'Shoot!'; } }
+    }
+    if (!end && DR.t > (d.id === 'shoot' ? 16 : d.id === 'breakout' ? 30 : 18)) end = 'Out of time';
   }
-  if (!end && d.id === 'give') {
-    if (DR.passStage === 0 && MATE.st === 'hold') { DR.passStage = 1; DR.passes++; DR.msg = 'Now skate to the slot cone'; }
-    if (DR.passStage === 0 && DR.t > 1 && Math.hypot(PK.vx, PK.vz) < 0.5 && !(stickOn && PK.cr > 0.3) && Math.hypot(PK.x - H.x, PK.z - H.z) > 2.5) { DR.pmiss++; end = 'The pass missed him'; }
-    if (DR.passStage === 1) { if (MATE.drill) MATE.drill.gate = Math.hypot(H.x - DR.spot[0], H.z - DR.spot[1]) < 3.2 || MATE.t > 3; if (MATE.st === 'free' && MATE.cool > 0) { DR.passStage = 2; DR.msg = 'Shoot!'; } }
+  if (end) {
+    const sc = d.score ? DR[d.score] : DR.goals;
+    DR.shots += DR.shot ? 1 : 0; DR.msg = end; toast(end + '   ' + sc + ' of ' + DR.rep, 2); DR.phase = 'next'; DR.t = 0; lightSpot(null);
+    for (const s of DR.sk || []) { s.has = false; s.act = ''; }
   }
-  if (!end && DR.t > (d.id === 'shoot' ? 16 : 18)) end = 'Out of time';
-  if (end) { DR.shots += DR.shot ? 1 : 0; DR.msg = end; toast(end + '   ' + DR.goals + ' of ' + DR.rep); DR.phase = 'next'; DR.t = 0; lightSpot(null); if (end === 'Goal!' && audio) { } }
   if (DFN.on) defFrame(dt);
 }
 function drillBoard() {
-  const d = DR.d;
-  return { spd: String(DR.goals), l2: d.name + '   ' + Math.min(DR.rep, d.reps) + ' of ' + d.reps, l3: 'Goals ' + DR.goals + '   Saves ' + DR.saves + '   Missed ' + DR.miss + (d.id === 'give' ? '   Passes ' + DR.passes : '') + (d.id === 'oneone' ? '   Lost it ' + DR.steals : ''),
-    l4: DR.msg, l5: 'Best ' + (DR.best[d.id] || 0) + ' of ' + d.reps + '     X: menu, Drills tab to stop' };
+  const d = DR.d, sc = d.score ? DR[d.score] : DR.goals;
+  const l3 = d.id === 'defend' ? 'Stops ' + DR.stops + '   He scored ' + DR.against + (DR.gaps.length ? '   Gap ' + (DR.gaps.reduce((a, b) => a + b, 0) / DR.gaps.length).toFixed(1) + ' m' : '')
+    : d.id === 'breakout' ? 'Clean exits ' + DR.exits + '   Goals ' + DR.goals + '   Saves ' + DR.saves
+    : 'Goals ' + DR.goals + '   Saves ' + DR.saves + '   Missed ' + DR.miss + (d.id === 'give' ? '   Passes ' + DR.passes : '') + (d.id === 'oneone' || d.id === 'twoone' ? '   Lost it ' + DR.steals : '');
+  return { spd: String(sc), l2: d.name + '   ' + Math.min(DR.rep, d.reps) + ' of ' + d.reps + '   (' + OPP_NAMES[st.oppP] + ')', l3, l4: DR.msg, l5: 'Best ' + (DR.best[d.id] || 0) + ' of ' + d.reps + '     Call for it: top-hand grip or two stick taps' };
 }
-// ---------------------------------------------------------------- Stage C: skaters who play by position (3 on 3 scrimmage)
-// Ravens attack +x (the far net), Visitors attack -x. Each AI skater decides a few times a second: with the puck he carries, passes or shoots; without it he
-// supports the carrier (forwards get open ahead, the defenceman holds the point), or defends (the nearest one pressures and poke checks, the rest mark).
-const OPPS = [{ spd: 5.4, acc: 4.2, poke: 0.22, pass: 0.1, shot: 0.16, read: 0.42, dec: 0.45 }, { spd: 6.2, acc: 5.2, poke: 0.32, pass: 0.06, shot: 0.11, read: 0.28, dec: 0.32 }, { spd: 6.9, acc: 6.2, poke: 0.42, pass: 0.035, shot: 0.07, read: 0.17, dec: 0.22 }], OPP_NAMES = ['Rec', 'Good', 'Pro'];
-const SC = { on: false, sk: [], score: [0, 0], t: 0, pause: 0, msg: '', g2: null, shots: [0, 0] };
+// ---------------------------------------------------------------- Stage C: skaters who play a position (3 on 3 scrimmage)
+// Ravens attack +x (the far net), Visitors attack -x. Each side has a centre, a winger and a defenceman (you are the Ravens left wing).
+// Where a player goes comes from his position, which zone the puck is in and who has it: a breakout (the winger on the wall at the hash
+// marks, the centre low in the middle, the D behind the play), lanes through the neutral zone, the D on the point and a forward at the net in
+// their end; without the puck one player pressures and the others hold the slot, the net front and the point. The puck carrier shoots,
+// passes or carries; a teammate who is open taps his stick, and so can you (grip on your top hand, or two quick taps of your blade on the ice).
+const OPPS = [
+  { spd: 5.4, acc: 4.2, poke: 0.22, pass: 0.1, shot: 0.16, read: 0.42, dec: 0.45, prot: 0.3, fo: 0.4 },
+  { spd: 6.2, acc: 5.2, poke: 0.32, pass: 0.06, shot: 0.11, read: 0.28, dec: 0.32, prot: 0.45, fo: 0.5 },
+  { spd: 6.9, acc: 6.2, poke: 0.42, pass: 0.035, shot: 0.07, read: 0.17, dec: 0.22, prot: 0.6, fo: 0.6 }
+], OPP_NAMES = ['Rec', 'Good', 'Pro'];
+const BLUEL = 7.62, DOTS = [[0, 0], [6.1, 6.71], [6.1, -6.71], [-6.1, 6.71], [-6.1, -6.71], [GX - 6.1, 6.71], [GX - 6.1, -6.71], [-(GX - 6.1), 6.71], [-(GX - 6.1), -6.71]];
+const PERLENS = [3, 5, 8, 12, 15], PER_NAMES = PERLENS.map(m => '3 x ' + m + ' min');
+const SC = { on: false, sk: [], score: [0, 0], t: 0, pause: 0, after: 0, inter: 0, over: false, per: 1, clk: 300, msg: '', g2: null, shots: [0, 0], dot: [0, 0], chase: {}, press: {}, shotT: [-9, -9] };
 const teamDir = t => t === 'ravens' ? 1 : -1;
+const ordN = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n + 'th';
+function clockStr(t) { t = Math.max(0, Math.ceil(t)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+// ---- calling for the puck
+const CALL = { t: -9, taps: [], hi: false };
+function callForPuck(how) {
+  if (pClock - CALL.t < 0.9) return;
+  CALL.t = pClock; run.calls = (run.calls || 0) + 1;
+  if (audio && how !== 'tap') { const b = humanBlade(); audio.hit(1.5, { x: b[0], y: 0.02, z: b[1] }); setTimeout(() => { if (audio) audio.hit(1.5, { x: b[0], y: 0.02, z: b[1] }); }, 150); }
+  toast(how === 'tap' ? 'Stick tap: you want it' : 'Calling for the puck', 1.1);
+}
+const called = w => pClock - CALL.t < (w || 1.8);
+// two quick taps of the blade on the ice, while you do not have the puck: the blade's low point drops 6 cm or more in a moment and comes back up
+const TAPB = [];
+function tapWatch() {
+  if (!stickOn || !STK.ok) return;
+  const y = STK.ym0, T = CALL; TAPB.push([pClock, y]); while (TAPB.length && pClock - TAPB[0][0] > 0.3) TAPB.shift();
+  if (humanHas() || Math.hypot(PK.x - STK.F.Ox, PK.z - STK.F.Oz) < 0.8) { T.mode = ''; return; }
+  if (T.mode !== 'down') { let m = -9; for (const q of TAPB) m = Math.max(m, q[1]); if (y < m - 0.06 && (y < 0.12 || STK.wg > 0.5)) { T.mode = 'down'; T.lo = y; T.dT = pClock; } return; }
+  T.lo = Math.min(T.lo, y);
+  if (pClock - T.dT > 0.5) { T.mode = ''; return; }
+  if (y > T.lo + 0.03) {
+    T.mode = ''; TAPB.length = 0; if (audio) audio.hit(1.0, { x: STK.F.Ox, y: 0.02, z: STK.F.Oz });
+    T.taps = T.taps.filter(t => pClock - t < 1.1); T.taps.push(pClock); if (T.taps.length >= 2) { T.taps.length = 0; callForPuck('tap'); }
+  }
+}
+// ---- the skaters: one pool, used by the scrimmage and the drills
+const SKP = {};
+function skGet(team, num, shoots, role, ln) {
+  const k = team + num; let s = SKP[k];
+  if (!s) { s = SKP[k] = { p: makePlayer(team, num, shoots, false), team, num, x: 0, z: 0, vx: 0, vz: 0, fx: 1, fz: 0, has: false, cool: 0, poke: 0, dec: 0, act: '', aim: null, actT: 0, tx: 0, tz: 0, gx: null, gz: 0, prot: 0, tap: 0, vis: false }; s.box = scBox(s); }
+  s.role = role; s.ln = ln || 0; return s;
+}
+function skShow(s, v) {
+  s.vis = v; s.p.root.visible = v; if (!v) { s.has = false; s.act = ''; } s.box.on = v;
+  const i = OBST.indexOf(s.box); if (v && i < 0) OBST.push(s.box); if (!v && i >= 0) OBST.splice(i, 1);
+}
+function skPlace(s, x, z, fx, fz) { s.x = x; s.z = z; s.vx = s.vz = 0; s.fx = fx; s.fz = fz; s.gx = null; s.has = false; s.act = ''; s.cool = 0.4; s.poke = 0; s.dec = 0; s.prot = 0; }
+const skVis = () => { const a = []; for (const k in SKP) if (SKP[k].vis) a.push(SKP[k]); return a; };
+const skAnyHas = () => { for (const k in SKP) if (SKP[k].vis && SKP[k].has) return true; return false; };
 function skBlade(s, lat) { const sd = s.p.side, l = lat == null ? 0.36 * sd : lat; return [s.x + s.fx * 0.85 + s.fz * l, s.z + s.fz * 0.85 - s.fx * l]; }
 function scBox(s) { return { kind: 'skater', part: 'legs', on: true, x: s.x, z: s.z, ax: s.fx, az: s.fz, hw: 0.24, hd: 0.13, y0: 0, h: 0.8, e: 0.2, vx: 0, vz: 0 }; }
 function humanHas() { return stickOn && (PK.cr > 0.4 || PK.sh); }
 function humanBlade() { if (stickOn && STK.ok) { const o = [0, 0, 0]; bpt(STK.F, STK.bp.Lb * 0.5, PUCK.HH, -STK.bp.c[Math.round(STK.bp.n / 2)] + PUCK.R + 0.02, o); return [o[0], o[2]]; } return [H.x + H.fx * 0.9, H.z + H.fz * 0.9]; }
-function scStart() {
-  if (!st.inVR) return;
-  if (DR.on) drillStop(true);
-  SC.on = true; SC.score = [0, 0]; SC.shots = [0, 0]; SC.t = 0;
-  if (MATE.p) MATE.p.root.visible = false; MATE.drillHide = true;
-  if (!GOAL.on) { st.others = 'both'; othersInit(); }
-  if (!SC.g2) { SC.g2 = { on: true, sg: -1, p: makePlayer('ravens', '1', 'left', true), x: -GX + 0.45, z: 0, vx: 0, vz: 0, ax: 1, az: 0, hold: 0, threat: 0, held: '' }; SC.g2.p.root.scale.setScalar(GSC);
-    SC.g2.boxes = ['padL', 'padR', 'body', 'glove', 'blocker', 'stick'].map(part => ({ kind: 'goalie', part, x: 0, z: 0, ax: 1, az: 0, hw: 0.1, hd: 0.1, y0: 0, h: 0.1, e: part === 'glove' ? 0.03 : part === 'body' ? 0.12 : 0.25, vx: 0, vz: 0 })); }
-  SC.g2.p.root.visible = true; for (const b of SC.g2.boxes) { b.on = true; if (!OBST.includes(b)) OBST.push(b); }
-  if (!SC.sk.length) {
-    const mk = (team, num, shoots, role) => { const s = { p: makePlayer(team, num, shoots, false), team, role, num, x: 0, z: 0, vx: 0, vz: 0, fx: 1, fz: 0, has: false, cool: 0, poke: 0, dec: 0, act: '', tx: 0, tz: 0, off: 0 }; s.box = scBox(s); return s; };
-    SC.sk = [mk('ravens', '17', 'left', 'F'), mk('ravens', '44', 'right', 'D'), mk('visitors', '9', 'right', 'F'), mk('visitors', '21', 'left', 'F'), mk('visitors', '4', 'left', 'D')];
+// keep a point inside the rink, rounded corners included
+function inRink(x, z, m) {
+  m = m || 1; const hx = 30.48 - m, hz = 12.95 - m, r = 8.5 - m;
+  x = clamp(x, -hx, hx); z = clamp(z, -hz, hz);
+  const cx = Math.sign(x) * (hx - r), cz = Math.sign(z) * (hz - r);
+  if (Math.abs(x) > hx - r && Math.abs(z) > hz - r) { const dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz); if (d > r) { x = cx + dx / d * r; z = cz + dz / d * r; } }
+  return [x, z];
+}
+// skate toward a point like a skater: quick to stop, slower to turn at speed, facing the puck (or the way he is going)
+function skMove(s, tx, tz, dt, Q, o) {
+  o = o || {}; const all = o.all || skVis();
+  const vmax = (o.vmax || Q.spd) * (s.poke > 0.45 ? 0.6 : 1) * (s.has ? 0.92 : 1);
+  const dx = tx - s.x, dz = tz - s.z, d = Math.hypot(dx, dz), want = Math.min(vmax, Math.sqrt(2 * Q.acc * 1.3 * Math.max(0, d - 0.15)));
+  let wx = d > 0.05 ? dx / d * want : 0, wz = d > 0.05 ? dz / d * want : 0;
+  for (const q of all) if (q !== s) { const ex = s.x - q.x, ez = s.z - q.z, e = Math.hypot(ex, ez); if (e < 1.2 && e > 0.01) { wx += ex / e * (1.2 - e) * 5; wz += ez / e * (1.2 - e) * 5; } }
+  { const ex = s.x - H.x, ez = s.z - H.z, e = Math.hypot(ex, ez); if (e < 1.1 && e > 0.01 && !o.hit) { wx += ex / e * (1.1 - e) * 7; wz += ez / e * (1.1 - e) * 7; } }
+  const sp0 = Math.hypot(s.vx, s.vz), ax = wx - s.vx, az = wz - s.vz;
+  if (sp0 > 0.6) {
+    const ux = s.vx / sp0, uz = s.vz / sp0, al = ax * ux + az * uz, px = ax - al * ux, pz = az - al * uz, pl = Math.hypot(px, pz);
+    const aAl = clamp(al, -Q.acc * 1.6 * dt, Q.acc * dt), pLim = Q.acc * (1.3 - 0.5 * clamp(sp0 / Q.spd, 0, 1)) * dt, pk = pl > pLim ? pLim / pl : 1;
+    s.vx += ux * aAl + px * pk; s.vz += uz * aAl + pz * pk;
+  } else { const al = Math.hypot(ax, az), lim = Q.acc * dt, k = al > lim ? lim / al : 1; s.vx += ax * k; s.vz += az * k; }
+  const nx = s.x + s.vx * dt, nz = s.z + s.vz * dt, [rx, rz] = inRink(nx, nz, 0.7);
+  if (rx !== nx) s.vx *= 0.3; if (rz !== nz) s.vz *= 0.3; s.x = rx; s.z = rz;
+  // facing
+  const sp = Math.hypot(s.vx, s.vz); let lx, lz;
+  if (s.has) { if ((s.act === 'shoot' || s.act === 'pass') && s.aim) { lx = s.aim[0] - s.x; lz = s.aim[1] - s.z; } else if (sp > 0.8) { lx = s.vx; lz = s.vz; } else { lx = s.fx; lz = s.fz; } }
+  else {
+    const L = o.look || [PK.x, PK.z]; lx = L[0] - s.x; lz = L[1] - s.z; const ll = Math.hypot(lx, lz) || 1;
+    if (sp > 3 && !o.back) { const c = (lx * s.vx + lz * s.vz) / ll / sp; if (c < 0.2) { lx = s.vx / sp * 0.8 + lx / ll * 0.2; lz = s.vz / sp * 0.8 + lz / ll * 0.2; } }   // skating hard away from the puck: he turns and goes
   }
-  for (const s of SC.sk) { s.p.root.visible = true; if (!OBST.includes(s.box)) OBST.push(s.box); }
-  scFaceoff('3 on 3: Ravens attack the far net. First to the puck.');
+  const ll = Math.hypot(lx, lz) || 1, a0 = Math.atan2(s.fz, s.fx), a1 = Math.atan2(lz / ll, lx / ll);
+  let da = Math.atan2(Math.sin(a1 - a0), Math.cos(a1 - a0)); da = clamp(da, -7 * dt, 7 * dt);
+  const y0 = Math.atan2(s.fx, s.fz); s.fx = Math.cos(a0 + da); s.fz = Math.sin(a0 + da);
+  let dy = Math.atan2(s.fx, s.fz) - y0; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+  s.box.x = s.x; s.box.z = s.z; s.box.ax = s.fx; s.box.az = s.fz; s.box.vx = s.vx; s.box.vz = s.vz;
+  const ps = s.p.s; ps.x = s.x; ps.z = s.z; ps.fx = s.fx; ps.fz = s.fz; ps.speed = sp; ps.turn = dt > 0 ? dy / dt : 0; ps.lookX = PK.x; ps.lookZ = PK.z;
+  const near = Math.hypot(PK.x - s.x, PK.z - s.z) < 1.6; ps.bx = s.has || near ? PK.x : null; ps.bz = s.has || near ? PK.z : null;
+  if (ps.shotT >= 0) { ps.shotT += dt; if (ps.shotT > 0.85) ps.shotT = -1; }
+  posePlayer(s.p, dt);
 }
-function scStop(quiet) {
-  if (!SC.on) return;
-  SC.on = false; for (const s of SC.sk) { s.p.root.visible = false; s.has = false; const i = OBST.indexOf(s.box); if (i >= 0) OBST.splice(i, 1); }
-  if (SC.g2) { SC.g2.p.root.visible = false; for (const b of SC.g2.boxes) { const i = OBST.indexOf(b); if (i >= 0) OBST.splice(i, 1); } }
-  MATE.drillHide = false; if (MATE.p) MATE.p.root.visible = MATE.on;
-  if (!quiet) toast('Scrimmage over: Ravens ' + SC.score[0] + ', Visitors ' + SC.score[1]);
-  run.scrims = run.scrims || []; run.scrims.push('Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ' (shots ' + SC.shots[0] + ' to ' + SC.shots[1] + ', ' + Math.round(SC.t) + ' s)');
+// ---- the puck and an AI skater
+function skCanPick(s) {
+  const [bx, bz] = skBlade(s);
+  return s.cool <= 0 && PK.y < PUCK.HH + 0.06 && !PK.sh && !(PK.hopT > pClock) && Math.hypot(PK.x - bx, PK.z - bz) < 0.8 && Math.hypot(PK.vx - s.vx, PK.vz - s.vz) < 22;
 }
-function scFaceoff(msg) {
-  const spots = { '17': [-1.4, 3.2], '44': [-9, 0], '9': [1.4, -3.2], '21': [1.4, 3.2], '4': [9, 0] };
-  for (const s of SC.sk) { const p = spots[s.num]; s.x = p[0]; s.z = p[1]; s.vx = s.vz = 0; s.fx = -teamDir(s.team) * -1; s.fz = 0; s.has = false; s.cool = 0.6; s.dec = 0; }
-  teleportTo(-1.6, -0.8, 0); resetPuck(0, 0); SC.pause = 1.2; SC.msg = msg || 'Faceoff'; toast(SC.msg);
-  if (GOAL.on) { GOAL.hold = 0; GOAL.x = GX - 0.45; GOAL.z = 0; } if (SC.g2) { SC.g2.hold = 0; SC.g2.x = -GX + 0.45; SC.g2.z = 0; }
+function skPick(s) { const [bx, bz] = skBlade(s); s.has = true; s.dec = 0.18; s.act = ''; s.prot = 0.25; EV.push({ k: 'mpass', v: 2, x: bx, y: PUCK.HH, z: bz }); }
+function skGlue(s) { const dr = Math.sin(pClock * 8 + s.x) * 0.1, [qx, qz] = skBlade(s, s.p.side * 0.36 + dr); PK.x = qx; PK.z = qz; PK.y = PUCK.HH; PK.vx = s.vx; PK.vz = s.vz; PK.vy = 0; PK.cr = 0; }
+function skRelease(s, tx, tz, spd, vy, err) {          // puck off his blade toward a point
+  const [bx, bz] = skBlade(s), a = Math.atan2(tz - bz, tx - bx) + (Math.random() - 0.5) * 2 * err;
+  PK.x = bx; PK.z = bz; PK.y = PUCK.HH + (vy > 0 ? 0.002 : 0); PK.vx = Math.cos(a) * spd; PK.vz = Math.sin(a) * spd; PK.vy = vy; PK.cr = 0; PK.sh = 0; PK.touch = pClock; PK.soft = false; PK.rel = pClock + 0.08;
+  s.has = false; s.cool = 0.45; s.act = ''; PK.lastT = s.team; EV.push({ k: 'mpass', v: spd, x: bx, y: PUCK.HH, z: bz });
 }
-function scGoal(xSide) {
-  const ravens = xSide > 0; SC.score[ravens ? 0 : 1]++;
-  SC.msg = (ravens ? 'Ravens' : 'Visitors') + ' score!  ' + SC.score[0] + ' - ' + SC.score[1]; toast(SC.msg);
-  SC.after = 2.5;
+function skShoot(s, nx, G, Q) {                          // wind up, then a shot at the corner away from the goalie
+  const gz = G ? G.z : 0, side = Math.abs(s.z) > 1.5 ? -Math.sign(s.z) : (gz > 0 ? -1 : 1), tz = side * (0.35 + Math.random() * 0.4), ty = 0.12 + Math.random() * 0.8;
+  s.act = 'shoot'; s.p.s.shotT = 0.1; s.aim = [nx, tz, ty, 18 + Math.random() * 7]; s.actT = 0.3;
+}
+function skPass(s, m) {                                 // m: { bl: [x, z], vx, vz }
+  const d = Math.hypot(m.bl[0] - s.x, m.bl[1] - s.z), spd = clamp(6 + d * 0.45, 8, 14), t = d / spd;
+  s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [m.bl[0] + m.vx * t, m.bl[1] + m.vz * t, 0, spd]; s.actT = 0.2;
+}
+// the wind-up has finished: let it go
+function skAct(s, dt, Q) {
+  if (s.act !== 'shoot' && s.act !== 'pass') return false;
+  s.actT -= dt; if (s.actT > 0) return false;
+  const a = s.aim;
+  if (s.act === 'shoot') { const d = Math.hypot(a[0] - s.x, a[1] - s.z), t = d / a[3]; skRelease(s, a[0], a[1], a[3], (a[2] + 0.5 * GRAV * t * t) / t, Q.shot); }
+  else skRelease(s, a[0], a[1], a[3], 0, Q.pass);
+  return true;
+}
+// your stick reached the puck he is carrying: he may lose it (better players protect it more)
+function skStolen(s, Q) {
+  if (!s.has) return false;
+  if (!((PK.htouch || -9) > pClock - 0.06 || humanHas())) return false;
+  if (s.prot > 0) { PK.cr = 0; PK.rel = pClock + 0.2; return false; }
+  s.prot = 0.35;
+  if (Math.random() < 1 - Q.prot) { s.has = false; s.act = ''; s.cool = 0.8; s.poke = 0.6; run.steals = (run.steals || 0) + 1; PK.lastT = 'ravens'; return true; }
+  PK.cr = 0; PK.rel = pClock + 0.3; return false;            // he protected it
+}
+// his stick reaches for a puck someone else is carrying
+function skPoke(s, Q, onHuman, carrier) {
+  const [bx, bz] = skBlade(s);
+  if (s.poke > 0 || Math.hypot(PK.x - bx, PK.z - bz) > 0.55 || PK.y > PUCK.HH + 0.05) return false;
+  s.poke = 0.8;
+  if (Math.random() < Q.poke * (onHuman ? 1.1 : 1)) {
+    const a = Math.atan2(s.fz, s.fx) + (Math.random() - 0.5) * 1.4, v = 2.5 + Math.random() * 3;
+    if (carrier && carrier !== 'human') { carrier.has = false; carrier.act = ''; carrier.cool = 0.6; }
+    PK.vx = Math.cos(a) * v + s.vx * 0.4; PK.vz = Math.sin(a) * v + s.vz * 0.4; PK.cr = 0; PK.sh = 0; PK.rel = pClock + 0.45; PK.touch = pClock; PK.soft = false; PK.lastT = s.team;
+    EV.push({ k: 'mpass', v: 4, x: PK.x, y: PK.y, z: PK.z }); return true;
+  }
+  s.poke = 0.5 + Q.read; return false;                 // missed: a moment off balance
+}
+// a pass on its way to him: where will it pass his blade?
+function skIncoming(s) {
+  const v2 = PK.vx * PK.vx + PK.vz * PK.vz; if (v2 < 12 || PK.sh || PK.cr > 0.3 || s.cool > 0) return null;
+  const [bx, bz] = skBlade(s), t = ((bx - PK.x) * PK.vx + (bz - PK.z) * PK.vz) / v2;
+  if (t <= 0 || t > 2.2) return null;
+  const cx = PK.x + PK.vx * t, cz = PK.z + PK.vz * t; if (Math.hypot(cx - bx, cz - bz) > 3) return null;
+  return [cx - (bx - s.x), cz - (bz - s.z)];
+}
+// the ice taps of an open teammate who wants the puck from you
+function skTapCall(s, dt) {
+  s.tap -= dt; if (s.tap > 0 || !humanHas()) return;
+  const [bx, bz] = skBlade(s), hb = humanBlade(), d = Math.hypot(bx - hb[0], bz - hb[1]);
+  if (d > 5 && d < 24 && laneOpen(hb[0], hb[1], bx, bz, 'ravens') > 1.6) { s.tap = 3.5; if (audio) { audio.hit(1.2, { x: bx, y: 0.02, z: bz }); setTimeout(() => { if (audio) audio.hit(1.2, { x: bx, y: 0.02, z: bz }); }, 160); } }
 }
 // how open is a pass from a to b: the closest any opponent of team gets to the line
 function laneOpen(ax, az, bx, bz, team) {
   let m = 9; const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1;
-  const opp = SC.sk.filter(o => o.team !== team).map(o => [o.x, o.z]); if (team !== 'ravens') opp.push([H.x, H.z]);
+  const opp = skVis().filter(o => o.team !== team).map(o => [o.x, o.z]); if (team !== 'ravens') opp.push([H.x, H.z]);
   for (const [ox, oz] of opp) { const t = clamp(((ox - ax) * dx + (oz - az) * dz) / L2, 0, 1), d = Math.hypot(ax + dx * t - ox, az + dz * t - oz); if (d < m) m = d; }
   return m;
 }
-function nearestOpp(s) { let best = null, bd = 99; for (const o of SC.sk) if (o.team !== s.team) { const d = Math.hypot(o.x - s.x, o.z - s.z); if (d < bd) { bd = d; best = o; } } if (s.team !== 'ravens') { const d = Math.hypot(H.x - s.x, H.z - s.z); if (d < bd) { bd = d; best = 'human'; } } return [best, bd]; }
-function scRelease(s, tx, tz, spd, vy, err) {          // puck off his blade toward a point
-  const [bx, bz] = skBlade(s), a = Math.atan2(tz - bz, tx - bx) + (Math.random() - 0.5) * 2 * err;
-  PK.x = bx; PK.z = bz; PK.y = PUCK.HH + (vy > 0 ? 0.002 : 0); PK.vx = Math.cos(a) * spd; PK.vz = Math.sin(a) * spd; PK.vy = vy; PK.cr = 0; PK.sh = 0; PK.touch = pClock; PK.soft = false; PK.rel = pClock + 0.08;
-  s.has = false; s.cool = 0.45; EV.push({ k: 'mpass', v: spd, x: bx, y: PUCK.HH, z: bz });
+function nearestOpp(s) { let best = null, bd = 99; for (const o of skVis()) if (o.team !== s.team) { const d = Math.hypot(o.x - s.x, o.z - s.z); if (d < bd) { bd = d; best = o; } } if (s.team !== 'ravens') { const d = Math.hypot(H.x - s.x, H.z - s.z); if (d < bd) { bd = d; best = 'human'; } } return [best, bd]; }
+// ---- the goalie in the near net (Ravens), for the scrimmage and the drills in your own end
+function g2Show(v) {
+  if (v && !SC.g2) {
+    SC.g2 = { on: true, sg: -1, p: makePlayer('ravens', '1', 'left', true), x: -GX + 0.45, z: 0, vx: 0, vz: 0, ax: 1, az: 0, hold: 0, threat: 0, held: '' }; SC.g2.p.root.scale.setScalar(GSC);
+    SC.g2.boxes = ['padL', 'padR', 'body', 'glove', 'blocker', 'stick'].map(part => ({ kind: 'goalie', part, x: 0, z: 0, ax: 1, az: 0, hw: 0.1, hd: 0.1, y0: 0, h: 0.1, e: part === 'glove' ? 0.03 : part === 'body' ? 0.12 : 0.25, vx: 0, vz: 0 }));
+  }
+  if (!SC.g2) return;
+  SC.g2.on = v; SC.g2.p.root.visible = v;
+  for (const b of SC.g2.boxes) { b.on = v; const i = OBST.indexOf(b); if (v && i < 0) OBST.push(b); if (!v && i >= 0) OBST.splice(i, 1); }
+  if (v) { SC.g2.hold = 0; SC.g2.x = -GX + 0.45; SC.g2.z = 0; }
+}
+// ---- the scrimmage
+function scStart() {
+  if (!st.inVR) return;
+  if (DR.on) drillStop(true);
+  if (MATE.p) MATE.p.root.visible = false; MATE.drillHide = true;
+  if (!GOAL.on) { st.others = 'both'; othersInit(); }
+  g2Show(true);
+  SC.sk = [skGet('ravens', '17', 'left', 'C', 0), skGet('ravens', '44', 'right', 'D', 0), skGet('visitors', '9', 'right', 'C', 0), skGet('visitors', '21', 'left', 'W', -1), skGet('visitors', '4', 'left', 'D', 0)];
+  for (const s of SC.sk) skShow(s, true);
+  Object.assign(SC, { on: true, score: [0, 0], shots: [0, 0], t: 0, per: 1, clk: PERLENS[st.perP] * 60, over: false, after: 0, inter: 0, chase: {}, press: {}, shotT: [-9, -9] });
+  scFaceoff('3 on 3: Ravens attack the far net. You are left wing', [0, 0]);
+}
+function scStop(quiet) {
+  if (!SC.on) return;
+  SC.on = false; for (const s of SC.sk) skShow(s, false); g2Show(false);
+  MATE.drillHide = false; if (MATE.p) MATE.p.root.visible = MATE.on;
+  if (!quiet) toast('Scrimmage stopped: Ravens ' + SC.score[0] + ', Visitors ' + SC.score[1]);
+  if (!SC.over) { run.scrims = run.scrims || []; run.scrims.push('Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ' (stopped in the ' + ordN(SC.per) + ', shots ' + SC.shots[0] + ' to ' + SC.shots[1] + ')'); }
+  hudDraw();
+}
+// line up for a faceoff at a dot: centres on the dot, wingers on the hash marks on their side, the D back (or on the point in an end zone)
+function scFaceoff(msg, dot) {
+  dot = dot || [0, 0]; const [fx0, fz0] = dot;
+  for (const s of SC.sk) {
+    const dir = teamDir(s.team); let x, z;
+    if (s.role === 'C') { x = fx0 - dir * 1.0; z = fz0; }
+    else if (s.role === 'W') { x = fx0 - dir * 1.5; z = fz0 + s.ln * 4.6; }
+    else { const u = dir * fx0; x = u > BLUEL + 2 ? dir * (BLUEL + 1.8) : u < -BLUEL - 2 ? fx0 - dir * 3.5 : fx0 - dir * 7.5; z = u > BLUEL + 2 ? fz0 * 0.3 : fz0 * 0.5; }
+    [x, z] = inRink(x, z, 1.5); skPlace(s, x, z, dir, 0); s.cool = 0.2;
+  }
+  { let [x, z] = inRink(fx0 - 1.6, fz0 - 4.6, 1.5); teleportTo(x, z, 0); }
+  resetPuck(fx0, fz0); SC.pause = 1.5; SC.dot = dot; SC.msg = msg || 'Faceoff'; SC.chase = {}; SC.press = {}; toast(SC.msg, 2);
+  if (GOAL.on) { GOAL.hold = 0; GOAL.x = GX - 0.45; GOAL.z = 0; } if (SC.g2) { SC.g2.hold = 0; SC.g2.x = -GX + 0.45; SC.g2.z = 0; }
+  boardText();
+}
+const nearestDot = (x, z) => DOTS.reduce((b, d) => Math.hypot(d[0] - x, d[1] - z) < Math.hypot(b[0] - x, b[1] - z) ? d : b, DOTS[0]);
+// the puck is dropped: a centre wins it back to his D (or you win it if you get your stick on it first)
+function scDrop(Q) {
+  const cs = SC.sk.filter(s => s.role === 'C'), r = cs.find(s => s.team === 'ravens'), v = cs.find(s => s.team === 'visitors');
+  const win = Math.random() < Q.fo ? v : r; if (!win) return;
+  const d = SC.sk.find(s => s.team === win.team && s.role === 'D'), tx = d ? d.x : SC.dot[0] - teamDir(win.team) * 6, tz = d ? d.z : SC.dot[1];
+  const a = Math.atan2(tz - SC.dot[1], tx - SC.dot[0]) + (Math.random() - 0.5) * 0.5, spd = 5 + Math.random() * 2;
+  PK.vx = Math.cos(a) * spd; PK.vz = Math.sin(a) * spd; PK.touch = pClock; PK.rel = pClock + 0.2; win.cool = 0.5; PK.lastT = win.team;
+  EV.push({ k: 'mpass', v: 3, x: PK.x, y: PK.y, z: PK.z }); SC.msg = (win.team === 'ravens' ? '#17' : 'Visitors') + ' won the draw'; SC.msgT = pClock + 3;
+}
+function scGoal(xSide) {
+  if (SC.over || SC.after > 0) return;
+  const ravens = xSide > 0, k = ravens ? 0 : 1; SC.score[k]++; if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; }
+  SC.msg = (ravens ? 'Ravens' : 'Visitors') + ' score!  ' + SC.score[0] + ' - ' + SC.score[1]; toast(SC.msg, 2.5);
+  SC.after = 3; for (const s of SC.sk) { s.has = false; s.act = ''; }
+  boardText();
+}
+function scPeriodEnd() {
+  if (audio) audio.horn({ x: 0, y: 6, z: 0 });
+  for (const s of SC.sk) { s.has = false; s.act = ''; }
+  if (SC.per >= 3) {
+    SC.over = true; SC.msg = 'Final: Ravens ' + SC.score[0] + ', Visitors ' + SC.score[1]; toast(SC.msg, 4);
+    run.scrims = run.scrims || []; run.scrims.push('Final: Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ' (3 x ' + PERLENS[st.perP] + ' min, shots ' + SC.shots[0] + ' to ' + SC.shots[1] + ')');
+  } else { SC.inter = 6; SC.msg = 'End of the ' + ordN(SC.per) + ' period'; toast(SC.msg, 3); }
+  boardText();
 }
 function scDecide(s, Q) {
-  const dir = teamDir(s.team), nx = dir * GX, [, pd] = nearestOpp(s), dN = Math.hypot(nx - s.x, s.z);
-  // shoot?
-  if (dN < 14 && Math.abs(s.z) < 9 && dir * (nx - s.x) > 1.5 && (dN < 8 || pd > 2.2)) {
-    const gz = (s.team === 'ravens' ? GOAL.z : SC.g2.z), tz = (gz > 0 ? -1 : 1) * (0.45 + Math.random() * 0.35), ty = 0.15 + Math.random() * 0.8;
-    if (laneOpen(s.x, s.z, nx, tz, s.team) > 0.5 || dN < 6) { s.act = 'shoot'; s.p.s.shotT = 0.1; s.aim = [nx, tz, ty, 18 + Math.random() * 7]; s.actT = 0.3; SC.shots[s.team === 'ravens' ? 0 : 1]++; return; }
+  const dir = teamDir(s.team), u = dir * s.x, nx = dir * GX, [, pd] = nearestOpp(s), dN = Math.hypot(nx - s.x, s.z), G = s.team === 'ravens' ? GOAL : SC.g2;
+  // shoot: in their end, with a lane or close in (the D shoots from the point)
+  if (u > GX - 15.5 && u < GX - 0.6 && Math.abs(s.z) < 8.5 && (dN < 9 || pd > 2.4 || (s.role === 'D' && u < BLUEL + 4))) {
+    if (laneOpen(s.x, s.z, nx, 0, s.team) > 0.5 || dN < 6) { skShoot(s, nx, G, Q); return; }
   }
-  // pass?
+  // pass: someone further up the ice and open, more so in front of their net; you, if you called for it
   let best = null, bs = -9;
   const mates = SC.sk.filter(o => o !== s && o.team === s.team).map(o => ({ o, x: o.x, z: o.z, vx: o.vx, vz: o.vz, bl: skBlade(o) }));
-  if (s.team === 'ravens') { const hb = humanBlade(); mates.push({ o: 'human', x: H.x, z: H.z, vx: S.vx, vz: S.vz, bl: hb }); }
+  if (s.team === 'ravens') mates.push({ o: 'human', x: H.x, z: H.z, vx: S.vx, vz: S.vz, bl: humanBlade() });
+  const call = s.team === 'ravens' && called();
   for (const m of mates) {
-    const d = Math.hypot(m.bl[0] - s.x, m.bl[1] - s.z); if (d < 3 || d > 26) continue;
-    const op = laneOpen(s.x, s.z, m.bl[0], m.bl[1], s.team); if (op < 1.2) continue;
-    const sc = dir * (m.x - s.x) * 0.25 + Math.min(op, 4) - d * 0.05 + (m.o === 'human' ? 0.6 : 0);
+    const d = Math.hypot(m.bl[0] - s.x, m.bl[1] - s.z); if (d < 3 || d > 28) continue;
+    const op = laneOpen(s.x, s.z, m.bl[0], m.bl[1], s.team); if (op < (m.o === 'human' && call ? 0.6 : 1.1)) continue;
+    if (u < -GX + 12 && dir * m.x < -GX + 12 && Math.abs(s.z) > 1 && Math.sign(m.z) !== Math.sign(s.z)) continue;   // never across the front of our own net
+    const mu = dir * m.x, sc = (mu - u) * 0.22 + Math.min(op, 4) * 0.8 - d * 0.04 + (mu > GX - 12 && Math.abs(m.z) < 5 ? 1.5 : 0) + (m.o === 'human' ? (call ? 8 : 0.5) : 0);
     if (sc > bs) { bs = sc; best = m; }
   }
-  if (best && (pd < 2.6 || bs > 3.2) && Math.random() < 0.85) {
-    const d = Math.hypot(best.bl[0] - s.x, best.bl[1] - s.z), spd = clamp(6 + d * 0.45, 8, 14), t = d / spd;
-    s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [best.bl[0] + best.vx * t, best.bl[1] + best.vz * t, 0, spd]; s.actT = 0.22; return;
-  }
+  if (best && (bs > 6 || pd < 2.4 || (bs > 3.4 && Math.random() < 0.6))) { skPass(s, best); return; }
+  if (!best && pd < 1.7 && u < -BLUEL) { s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [s.x + dir * 14, (Math.sign(s.z) || 1) * 11.5, 0, 13]; s.actT = 0.2; return; }   // nothing on: chip it up the wall
   s.act = 'carry';
 }
-function scTargets(s, Q, carrier, carrierTeam) {
-  const dir = teamDir(s.team), ownN = -dir * GX;
-  if (s.has) {                                                       // carry: toward the net, sliding away from whoever is closest
-    const [o, od] = nearestOpp(s); let tx = dir * (GX - 4), tz = clamp(s.z * 0.6, -6, 6);
-    if (o && od < 4) { const ox = o === 'human' ? H.x : o.x, oz = o === 'human' ? H.z : o.z; tz += (s.z - oz) / (od || 1) * 3.5; tx = s.x + dir * 4; }
-    return [tx, tz];
+// where to carry it: up the wall in our end, up his lane through the middle, to the net in theirs, stepping away from whoever is closest
+function scCarry(s) {
+  const dir = teamDir(s.team), u = dir * s.x, lane = s.role === 'W' ? s.ln * 6 : s.z * 0.6;
+  let tx, tz;
+  if (u < -BLUEL) { tx = s.x + dir * 7; tz = (Math.abs(s.z) > 2 ? Math.sign(s.z) : (s.ln || 1)) * 8.5; }
+  else if (u < BLUEL) { tx = s.x + dir * 7; tz = lane; }
+  else { tx = dir * (GX - 5); tz = s.z * 0.45; }
+  const [o, od] = nearestOpp(s);
+  if (o && od < 3.5) { const ox = o === 'human' ? H.x : o.x, oz = o === 'human' ? H.z : o.z; if (dir * (ox - s.x) > -0.5) { tz = s.z + (s.z - oz >= 0 ? 1 : -1) * 3.5; tx = s.x + dir * 3.5; } }
+  if (dir * tx > GX - 3.5) tx = dir * (GX - 3.5);
+  return inRink(tx, tz, 1.2);
+}
+// where a player without the puck goes
+function scTargets(s, carrier, carrierTeam) {
+  const dir = teamDir(s.team), W = (u, z) => [dir * u, z];
+  const cx = carrier ? (carrier === 'human' ? H.x : carrier.x) : PK.x, cz = carrier ? (carrier === 'human' ? H.z : carrier.z) : PK.z, pu = dir * cx;
+  const side = Math.abs(cz) > 1 ? Math.sign(cz) : (s.ln || 1);
+  if (!carrier && SC.chase[s.team] === s) return [PK.x + PK.vx * 0.35 - s.fx * 0.7, PK.z + PK.vz * 0.35 - s.fz * 0.7];
+  const mode = !carrier ? (pu > -2 ? 'O' : 'D') : carrierTeam === s.team ? 'O' : 'D';
+  if (mode === 'O') {
+    if (pu < -BLUEL) {                                                 // breakout
+      if (s.role === 'D') return W(clamp(pu - 5, -GX + 4, -BLUEL - 6), cz * 0.3);
+      if (s.role === 'W') return side === s.ln ? W(-GX + 9.5, s.ln * 10.2) : W(-BLUEL + 1.5, s.ln * 8);
+      return W(clamp(pu + 5, -GX + 7, -BLUEL - 1), clamp(cz * 0.2 - side * 1.5, -4, 4));
+    }
+    if (pu < BLUEL) {                                                  // through the neutral zone in lanes
+      if (s.role === 'D') return W(pu - 7, cz * 0.35);
+      if (s.role === 'W') return W(Math.min(pu + 5, GX - 12), s.ln * 8);
+      return W(Math.min(pu + 3, GX - 12), clamp(-cz * 0.3, -3, 3));
+    }
+    if (s.role === 'D') return W(BLUEL + 1.6, clamp(cz * 0.55, -7, 7));  // their end: the D on the point
+    const carrierD = carrier && carrier !== 'human' && carrier.role === 'D';
+    if (carrierD) return s.role === 'W' ? W(GX - 6, s.ln * 5.5) : W(GX - 3.2, -side * 0.8);
+    return pu > GX - 4 ? W(GX - 7, -side * 1.6) : W(GX - 3.3, -side * 2.2);   // the other forward at the net, back door
   }
-  const loose = !carrier;
-  const cx = carrier ? (carrier === 'human' ? H.x : carrier.x) : PK.x, cz = carrier ? (carrier === 'human' ? H.z : carrier.z) : PK.z;
-  if (loose) {                                                       // a loose puck: the closest on each team goes for it
-    const mine = SC.sk.filter(o => o.team === s.team), dme = Math.hypot(PK.x - s.x, PK.z - s.z);
-    const closer = mine.some(o => o !== s && Math.hypot(PK.x - o.x, PK.z - o.z) < dme) || (s.team === 'ravens' && Math.hypot(PK.x - H.x, PK.z - H.z) < dme);
-    if (!closer) return [PK.x + PK.vx * 0.3 - s.fx * 0.8, PK.z + PK.vz * 0.3 - s.fz * 0.8];
-    return s.role === 'D' ? [clamp(PK.x - dir * 9, -24, 24), clamp(PK.z * 0.3, -4, 4)] : [clamp(PK.x + dir * 3, -24, 24), PK.z > 0 ? -5 : 5];
+  const inZone = pu < -BLUEL;
+  if (SC.press[s.team] === s) {                                       // pressure: goal side of the carrier, closing the gap
+    const ox = -dir * GX, toN = Math.hypot(ox - cx, cz) || 1, gap = inZone ? 0.9 : 1.6;
+    return [cx + (ox - cx) / toN * gap, cz - cz / toN * gap];
   }
-  if (carrierTeam === s.team) {                                       // support
-    if (s.role === 'D') return [clamp(cx - dir * 9, -25, 25), clamp(cz * 0.3, -5, 5)];
-    if (dir * cx > 16) return [dir * (GX - 6), (cz > 0 ? -1 : 1) * 2.2];   // deep in their end: back door
-    return [clamp(cx + dir * 5, -24, 24), cz > 1 ? -5.5 : cz < -1 ? 5.5 : (s.off > 0 ? 5.5 : -5.5)];
+  if (inZone) {
+    if (s.role === 'D') return W(-GX + 3, clamp(cz * 0.25, -1.6, 1.6));    // net front
+    if (s.role === 'W') return W(-BLUEL - 2.5, (s.ln || -side) * 5);      // the point on his side
+    return W(-GX + 8, cz * 0.3);                                         // the slot
   }
-  // defend: the closest one pressures the carrier; the rest mark the others, between them and our net
-  const mine = SC.sk.filter(o => o.team === s.team), dme = Math.hypot(cx - s.x, cz - s.z);
-  const presser = !mine.some(o => o !== s && Math.hypot(cx - o.x, cz - o.z) < dme - 0.5) && !(s.team === 'ravens' && Math.hypot(cx - H.x, cz - H.z) < dme - 0.5);
-  if (presser) { const toN = Math.hypot(ownN - cx, cz) || 1, gap = clamp(toN * 0.12, 1.0, 3.0); return [cx + (ownN - cx) / toN * gap, cz - cz / toN * gap]; }
-  if (s.role === 'D') { const toN = Math.hypot(ownN - cx, cz) || 1; return [ownN + (cx - ownN) / toN * Math.min(7, toN * 0.4), cz / toN * Math.min(7, toN * 0.4)]; }
-  let mk = null, md = 99;
-  const opps = SC.sk.filter(o => o.team !== s.team && o !== carrier).map(o => [o.x, o.z]); if (s.team !== 'ravens' && carrier !== 'human') opps.push([H.x, H.z]);
-  for (const [ox, oz] of opps) { const d = Math.hypot(ox - s.x, oz - s.z); if (d < md) { md = d; mk = [ox, oz]; } }
-  if (!mk) return [cx - dir * 6, 0];
-  const toN = Math.hypot(ownN - mk[0], mk[1]) || 1; return [mk[0] + (ownN - mk[0]) / toN * 1.8, mk[1] - mk[1] / toN * 1.8];
+  if (s.role === 'D') return W(clamp(pu - 9, -GX + 8, -2), cz * 0.45);   // backing up, keeping a gap
+  if (s.role === 'W') return W(clamp(pu - 4, -GX + 8, GX - 8), s.ln * 6);
+  return W(clamp(pu - 5, -GX + 8, GX - 8), cz * 0.3);
+}
+// who chases a loose puck, and who pressures the carrier, on each team (sticking with a choice unless someone else is clearly better)
+function scRoles(carrier, carrierTeam) {
+  for (const team of ['ravens', 'visitors']) {
+    const mine = SC.sk.filter(s => s.team === team), dir = teamDir(team);
+    if (!carrier) {
+      const px = PK.x + PK.vx * 0.35, pz = PK.z + PK.vz * 0.35, cost = s => Math.hypot(px - s.x, pz - s.z) + (s.role === 'D' && dir * px > 0 ? 3 : 0);
+      let b = null, bc = 99; for (const s of mine) { const c = cost(s) - (SC.chase[team] === s ? 1.5 : 0); if (c < bc) { bc = c; b = s; } }
+      if (team === 'ravens' && Math.hypot(px - H.x, pz - H.z) < bc - 1) b = null;
+      SC.chase[team] = b; SC.press[team] = null;
+    } else if (carrierTeam !== team) {
+      const cx = carrier === 'human' ? H.x : carrier.x, cz = carrier === 'human' ? H.z : carrier.z, cu = dir * cx, inZone = cu < -BLUEL;
+      const netFront = inZone && cu < -GX + 9 && Math.abs(cz) < 5;
+      let b = null, bc = 99;
+      for (const s of mine) {
+        if (s.role === 'D' && !netFront && !(inZone && Math.hypot(cx - s.x, cz - s.z) < 2.5) && Math.hypot(cx - s.x, cz - s.z) > 2.5) continue;
+        const c = Math.hypot(cx - s.x, cz - s.z) - (SC.press[team] === s ? 2 : 0) - (netFront && s.role === 'D' ? 3 : 0); if (c < bc) { bc = c; b = s; }
+      }
+      SC.press[team] = b; SC.chase[team] = null;
+    } else { SC.press[team] = null; SC.chase[team] = null; }
+  }
 }
 function scFrame(dt) {
   if (!SC.on) return;
   const Q = OPPS[st.oppP] || OPPS[1]; SC.t += dt;
-  if (SC.after > 0) { SC.after -= dt; if (SC.after <= 0) scFaceoff('Faceoff  ' + SC.score[0] + ' - ' + SC.score[1]); }
-  if (SC.pause > 0) { SC.pause -= dt; PK.x = 0; PK.z = 0; PK.vx = PK.vz = 0; if (SC.pause <= 0) { SC.msg = 'Play on'; boardText(); } }
+  // stoppages and the clock
+  if (SC.after > 0) { SC.after -= dt; if (SC.after <= 0) scFaceoff('Faceoff at centre  ' + SC.score[0] + ' - ' + SC.score[1], [0, 0]); }
+  if (SC.inter > 0) { SC.inter -= dt; if (SC.inter <= 0) { SC.per++; SC.clk = PERLENS[st.perP] * 60; scFaceoff(ordN(SC.per) + ' period', [0, 0]); } }
+  if (SC.pause > 0) { SC.pause -= dt; PK.x = SC.dot[0]; PK.z = SC.dot[1]; PK.vx = PK.vz = 0; if (SC.pause <= 0) { scDrop(Q); boardText(); } }
+  if (SC.msgT && pClock > SC.msgT) { SC.msgT = 0; SC.msg = ''; boardText(); }
+  const stopped = SC.pause > 0 || SC.after > 0 || SC.inter > 0 || SC.over;
+  if (!stopped) { SC.clk -= dt; if (SC.clk <= 0) { SC.clk = 0; scPeriodEnd(); } }
+  // shots on goal: a goalie stopping it
+  for (const e of EV) if (e.k === 'block' && e.kind === 'goalie') { const k = (e.x != null ? e.x : PK.x) > 0 ? 0 : 1; if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; } }
+  for (const s of SC.sk) { s.cool -= dt; s.poke -= dt; s.dec -= dt; s.prot -= dt; if (s.has && !stopped) skStolen(s, Q); }
   const hum = humanHas();
-  if (hum) for (const s of SC.sk) s.has = false;
+  if (hum) for (const s of SC.sk) if (s.has) { s.has = false; s.act = ''; s.cool = 0.7; }
   let carrier = hum ? 'human' : SC.sk.find(s => s.has) || null;
-  const carrierTeam = carrier === 'human' ? 'ravens' : carrier ? carrier.team : null;
   for (const s of SC.sk) {
-    s.cool -= dt; s.poke -= dt; s.dec -= dt; s.off = s.off || (Math.random() < 0.5 ? 1 : -1);
-    // pick up a loose puck that reaches his stick (opponents have to be closer to read a pass)
-    const [bx, bz] = skBlade(s);
-    if (!carrier && SC.pause <= 0 && s.cool <= 0 && PK.y < PUCK.HH + 0.06 && Math.hypot(PK.x - bx, PK.z - bz) < 0.8 && Math.hypot(PK.vx - s.vx, PK.vz - s.vz) < 20 && !PK.sh && !(PK.hopT > pClock)) {
-      s.has = true; carrier = s; s.dec = 0.2; EV.push({ k: 'mpass', v: 2, x: bx, y: PUCK.HH, z: bz });
-    }
-    // with the puck: decide, then carry it on the blade, pass or shoot
+    if (stopped) continue;
+    if (!carrier && SC.pause <= 0 && skCanPick(s)) { skPick(s); carrier = s; }
     if (s.has) {
-      if (s.act === 'shoot' || s.act === 'pass') { s.actT -= dt; if (s.actT <= 0) { const a = s.aim; if (s.act === 'shoot') { const d = Math.hypot(a[0] - s.x, a[1] - s.z), t = d / a[3]; scRelease(s, a[0], a[1], a[3], (a[2] + 0.5 * GRAV * t * t) / t, Q.shot); } else scRelease(s, a[0], a[1], a[3], 0, Q.pass); s.act = ''; carrier = null; } }
-      else if (s.dec <= 0) { s.dec = Q.dec * (0.7 + Math.random() * 0.6); scDecide(s, Q); }
-      if (s.has) { const dr = Math.sin(SC.t * 8 + s.x) * 0.1, [qx, qz] = skBlade(s, s.p.side * 0.36 + dr); PK.x = qx; PK.z = qz; PK.y = PUCK.HH; PK.vx = s.vx; PK.vz = s.vz; PK.vy = 0; PK.cr = 0; }
-    }
-    // poke check: an opponent's puck within reach of his stick
-    if (carrier && carrierTeam !== s.team && s.poke <= 0 && Math.hypot(PK.x - bx, PK.z - bz) < 0.5 && PK.y < PUCK.HH + 0.05) {
-      s.poke = 0.8;
-      if (Math.random() < Q.poke * (carrier === 'human' ? 1.1 : 1)) {
-        const a = Math.atan2(s.fz, s.fx) + (Math.random() - 0.5) * 1.4, v = 2.5 + Math.random() * 3;
-        if (carrier !== 'human') { carrier.has = false; carrier.cool = 0.6; }
-        PK.vx = Math.cos(a) * v; PK.vz = Math.sin(a) * v; PK.cr = 0; PK.sh = 0; PK.rel = pClock + 0.45; PK.touch = pClock; carrier = null;
-        EV.push({ k: 'mpass', v: 4, x: PK.x, y: PK.y, z: PK.z });
-      } else s.poke = 0.5 + Q.read;                                   // missed: a moment off balance
+      if (skAct(s, dt, Q)) carrier = null;
+      else if (s.act !== 'shoot' && s.act !== 'pass' && s.dec <= 0) { s.dec = Q.dec * (0.7 + Math.random() * 0.6); scDecide(s, Q); if (s.act === 'pass' && s.team === 'ravens' && called()) s.actT = 0.12; }
+      if (s.has) skGlue(s);
     }
   }
-  // move everyone: steer to a target, keep apart, face the play
+  const carrierTeam = carrier === 'human' ? 'ravens' : carrier ? carrier.team : null;
+  if (!stopped) for (const s of SC.sk) if (carrier && carrierTeam !== s.team) { if (skPoke(s, Q, carrier === 'human', carrier)) carrier = null; }
+  scRoles(carrier, carrierTeam);
+  // move: a smoothed target from the structure, or straight to a pass coming to him
+  const all = skVis();
   for (const s of SC.sk) {
-    s.tT = (s.tT || 0) - dt; if (s.tT <= 0) { s.tT = Q.read * (0.6 + Math.random() * 0.6); const t = scTargets(s, Q, carrier, carrierTeam); s.tx = clamp(t[0], -28.5, 28.5); s.tz = clamp(t[1], -11.5, 11.5); }
-    const dx = s.tx - s.x, dz = s.tz - s.z, d = Math.hypot(dx, dz), vmax = Q.spd * (s.poke > 0.5 ? 0.6 : 1) * (s.has ? 0.9 : 1), want = Math.min(vmax, d * 1.6);
-    let wx = d > 0.01 ? dx / d * want : 0, wz = d > 0.01 ? dz / d * want : 0;
-    for (const o of SC.sk) if (o !== s) { const ex = s.x - o.x, ez = s.z - o.z, e = Math.hypot(ex, ez); if (e < 1.0 && e > 0.01) { wx += ex / e * (1.0 - e) * 6; wz += ez / e * (1.0 - e) * 6; } }
-    { const ex = s.x - H.x, ez = s.z - H.z, e = Math.hypot(ex, ez); if (e < 1.0 && e > 0.01) { wx += ex / e * (1.0 - e) * 8; wz += ez / e * (1.0 - e) * 8; } }
-    s.vx += clamp(wx - s.vx, -Q.acc * dt, Q.acc * dt); s.vz += clamp(wz - s.vz, -Q.acc * dt, Q.acc * dt);
-    s.x = clamp(s.x + s.vx * dt, -29, 29); s.z = clamp(s.z + s.vz * dt, -12, 12);
-    const sp = Math.hypot(s.vx, s.vz); let lx = PK.x - s.x, lz = PK.z - s.z;
-    if (s.has) { if (s.act === 'shoot' || s.act === 'pass') { lx = s.aim[0] - s.x; lz = s.aim[1] - s.z; } else if (sp > 1) { lx = s.vx; lz = s.vz; } }
-    const ll = Math.hypot(lx, lz) || 1, k = 1 - Math.exp(-dt * 6), y0 = Math.atan2(s.fx, s.fz); s.fx += (lx / ll - s.fx) * k; s.fz += (lz / ll - s.fz) * k; const fl = Math.hypot(s.fx, s.fz) || 1; s.fx /= fl; s.fz /= fl;
-    let dy = Math.atan2(s.fx, s.fz) - y0; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-    s.box.x = s.x; s.box.z = s.z; s.box.ax = s.fx; s.box.az = s.fz; s.box.vx = s.vx; s.box.vz = s.vz;
-    const ps = s.p.s; ps.x = s.x; ps.z = s.z; ps.fx = s.fx; ps.fz = s.fz; ps.speed = sp; ps.turn = dt > 0 ? dy / dt : 0; ps.lookX = PK.x; ps.lookZ = PK.z;
-    const near = Math.hypot(PK.x - s.x, PK.z - s.z) < 1.6; ps.bx = s.has || near ? PK.x : null; ps.bz = s.has || near ? PK.z : null;
-    if (ps.shotT >= 0) { ps.shotT += dt; if (ps.shotT > 0.85) ps.shotT = -1; }
-    posePlayer(s.p, dt);
+    let t;
+    if (stopped && SC.pause <= 0) t = [s.x - s.vx * 0.3, s.z - s.vz * 0.3];
+    else if (SC.pause > 0) t = [s.x, s.z];
+    else if (s.has && s.act === 'carry') t = scCarry(s);
+    else if (s.has) t = [s.x, s.z];
+    else t = skIncoming(s) || scTargets(s, carrier, carrierTeam);
+    t = inRink(t[0], t[1], 1.0);
+    const k = s.has || SC.chase[s.team] === s ? 1 : 1 - Math.exp(-dt / 0.35);
+    if (s.gx == null) { s.gx = t[0]; s.gz = t[1]; } else { s.gx += (t[0] - s.gx) * k; s.gz += (t[1] - s.gz) * k; }
+    const defending = carrier && carrierTeam !== s.team && SC.press[s.team] !== s;
+    skMove(s, s.gx, s.gz, dt, Q, { all, back: defending || (s.role === 'D' && !s.has && carrierTeam !== s.team), vmax: SC.chase[s.team] === s || SC.press[s.team] === s ? Q.spd : Q.spd * 0.9 });
+    if (s.team === 'ravens' && !stopped) skTapCall(s, dt);
   }
   if (SC.g2) goalFrame(dt, SC.g2);
 }
-function scBoard() {
-  return { spd: SC.score[0] + '-' + SC.score[1], l2: 'Ravens ' + SC.score[0] + '   Visitors ' + SC.score[1] + '     ' + Math.floor(SC.t / 60) + ':' + String(Math.floor(SC.t % 60)).padStart(2, '0'),
-    l3: 'Shots  ' + SC.shots[0] + ' - ' + SC.shots[1] + '     Opponents ' + OPP_NAMES[st.oppP], l4: SC.msg, l5: '3 on 3 scrimmage.  X: menu, Drills tab to stop' };
+// ---- what the scoreboard and the score in view show
+function drawScore() {
+  bx.fillStyle = '#0d131a'; bx.fillRect(0, 0, 1024, 512); bx.textAlign = 'center';
+  bx.fillStyle = '#e0a928'; bx.font = '700 46px sans-serif'; bx.fillText('RAVENS', 180, 66);
+  bx.fillStyle = '#e6edf3'; bx.fillText('VISITORS', 844, 66);
+  bx.font = '700 190px sans-serif'; bx.fillStyle = '#e0a928'; bx.fillText(String(SC.score[0]), 180, 260);
+  bx.fillStyle = '#e6edf3'; bx.fillText(String(SC.score[1]), 844, 260);
+  bx.fillStyle = SC.over ? '#93a2b0' : '#ff5a4a'; bx.font = '700 128px monospace'; bx.fillText(clockStr(SC.clk), 512, 200);
+  bx.fillStyle = '#93a2b0'; bx.font = '600 42px sans-serif'; bx.fillText(SC.over ? 'FINAL' : SC.inter > 0 ? 'INTERMISSION' : 'PERIOD ' + SC.per, 512, 268);
+  bx.font = '500 36px sans-serif'; bx.fillText('SHOTS  ' + SC.shots[0], 180, 330); bx.fillText('SHOTS  ' + SC.shots[1], 844, 330);
+  bx.fillStyle = '#e6edf3'; bx.font = '500 38px sans-serif'; bx.fillText(SC.msg, 512, 410);
+  bx.fillStyle = '#93a2b0'; bx.font = '500 26px sans-serif'; bx.fillText('Call for the puck: top-hand grip or two stick taps   ·   opponents ' + OPP_NAMES[st.oppP], 512, 466);
+  bx.textAlign = 'left'; btex.needsUpdate = true;
 }
+const hudCv = document.createElement('canvas'); hudCv.width = 640; hudCv.height = 72;
+const hudX = hudCv.getContext('2d'), hudTex = new THREE.CanvasTexture(hudCv); if ('colorSpace' in hudTex) hudTex.colorSpace = THREE.SRGBColorSpace;
+const hudM = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.045), new THREE.MeshBasicMaterial({ map: hudTex, transparent: true, depthTest: false, depthWrite: false, fog: false, opacity: 0.92 }));
+hudM.position.set(0, 0.29, -0.95); hudM.rotation.x = 0.28; hudM.renderOrder = 1000; hudM.visible = false; hudM.frustumCulled = false; camera.add(hudM);
+// a small score bug at the top of your view: score, period and clock in the scrimmage; the rep and score in a drill
+function hudDraw() {
+  const on = st.hudOn && st.inVR && (SC.on || DR.on); hudM.visible = on; if (!on) return;
+  const g = hudX; g.clearRect(0, 0, 640, 72); g.fillStyle = 'rgba(10,14,20,0.82)'; g.fillRect(0, 0, 640, 72); g.textBaseline = 'middle';
+  if (SC.on) {
+    g.fillStyle = '#4a1d8c'; g.fillRect(0, 0, 210, 72); g.fillStyle = '#b3202a'; g.fillRect(210, 0, 210, 72);
+    g.font = '700 34px sans-serif'; g.textAlign = 'left'; g.fillStyle = '#e0a928'; g.fillText('RAV', 16, 37); g.fillStyle = '#ffffff'; g.fillText('VIS', 226, 37);
+    g.textAlign = 'right'; g.font = '800 44px sans-serif'; g.fillStyle = '#ffffff'; g.fillText(String(SC.score[0]), 194, 38); g.fillText(String(SC.score[1]), 404, 38);
+    g.textAlign = 'center'; g.font = '700 32px sans-serif'; g.fillStyle = '#e6edf3';
+    g.fillText(SC.over ? 'FINAL' : SC.inter > 0 ? 'INT' : ordN(SC.per), 470, 37); g.fillStyle = '#ff7a6a'; g.font = '700 34px monospace'; g.fillText(SC.over ? '' : clockStr(SC.clk), 576, 38);
+  } else {
+    const d = DR.d, sc = d.score ? DR[d.score] : DR.goals;
+    g.textAlign = 'left'; g.font = '700 30px sans-serif'; g.fillStyle = '#e0a928'; g.fillText(d.name, 16, 37);
+    g.textAlign = 'right'; g.fillStyle = '#ffffff'; g.fillText(Math.min(DR.rep, d.reps) + ' of ' + d.reps + '   ' + (d.unit || 'Goals') + ' ' + sc, 624, 37);
+  }
+  hudTex.needsUpdate = true;
+}
+function scBoard() { return null; }
+
 function puckFrame(dt) {
   pClock += dt;
-  if (PK.out > 1.2) { EV.length = 0; run.pk.outs++; if (SC.on) scFaceoff('Puck out of play. Faceoff'); else { placePuck(); toast('Puck out of play'); } }
+  if (PK.out > 1.2) { EV.length = 0; run.pk.outs++; if (SC.on) scFaceoff('Puck out of play. Faceoff', nearestDot(clamp(PK.x, -25, 25), clamp(PK.z, -9, 9))); else { placePuck(); toast('Puck out of play'); } }
   PA.s = ASSISTS[st.assistP] || 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz; PA.aim = AIMS[st.aimP] || 0;
   puckAdvance(dt, stickOn, POWERS[st.power], pClock);
   othersFrame(dt);
   if (DR.autoT > 0) { DR.autoT -= dt; if (DR.autoT <= 0) { if (st.startDrill === 'scrim') scStart(); else drillStart(st.startDrill); } }
+  if (SC.on || DR.on) tapWatch();
   drillFrame(dt);
   scFrame(dt);
   puck.position.set(PK.x, PK.y, PK.z); puck.rotation.y = PK.rot; puck.material.emissive.setHex(keepOn && stickOn ? 0x4a3000 : 0x000000);
@@ -2656,7 +3076,6 @@ function pkEffects(dt) {
           if (Math.abs(zAt) < 4) { kp.shots++; kp.errSum += Math.abs(zAt); if (Math.abs(zAt) < NETW - POST_R && yAt < FRAME_H - POST_R) kp.onT++; }
         }
       }
-      if (SC.on && e.v > 10 && PK.vx > 4) SC.shots[0]++;
       if (e.v > 10 && pClock - lastHitToast > 1.2 && !SC.on) { lastHitToast = pClock; toast('Hit ' + Math.round(k) + ' km/h'); }
     } else if (e.k === 'goal') {
       if (SC.on) scGoal(e.x);
@@ -2687,8 +3106,9 @@ function pkEffects(dt) {
   if (audio) audio.scrape(scr ? clamp(bladeSp / 8, 0.1, 1) * clamp(0.3 + STK.depth / 0.03, 0.3, 1) : 0);
 }
 function boardText() {
+  hudDraw();
   if (DR.on) { drawBoard(drillBoard()); return; }
-  if (SC.on) { drawBoard(scBoard()); return; }
+  if (SC.on) { drawScore(); return; }
   const lv = run.frames[st.level], recent = lv.slice(-120);
   const fps = recent.length > 10 ? Math.round(1000 / (recent.reduce((a, b) => a + b, 0) / recent.length)) : 0;
   const hz = run.hz || 0, period = hz ? 1000 / hz : 14;
@@ -2779,7 +3199,8 @@ function menuRows(tab) {
   if (tab === 4) return [
     { l: 'Drill', v: () => DRILLS[st.drillI].name, s: d => setSetting('drillI', cyc(DRILLS.length, st.drillI, d)) },
     { l: DR.on ? 'Stop the drill' : 'Start it (the menu closes)', v: () => DR.on ? 'Stop' : 'Start', s: () => { if (DR.on) drillStop(); else { closeMenu(); drillStart(DRILLS[st.drillI].id); } } },
-    { l: '3 on 3 scrimmage', v: () => SC.on ? 'Stop' : 'Start', s: () => { if (SC.on) scStop(); else { closeMenu(); scStart(); } } },
+    { l: '3 on 3 scrimmage', v: () => SC.on ? (SC.over ? 'New game' : 'Stop') : 'Start', s: () => { if (SC.on && !SC.over) scStop(); else { if (SC.on) scStop(true); closeMenu(); scStart(); } } },
+    { l: 'Scrimmage length', v: () => PER_NAMES[st.perP], s: d => setSetting('perP', cyc(PERLENS.length, st.perP, d)) },
     { l: 'Opponents and defender', v: () => OPP_NAMES[st.oppP], s: d => setSetting('oppP', cyc(3, st.oppP, d)) },
     { l: 'Goalie', v: () => GOALIE_NAMES[st.goalP], s: d => setSetting('goalP', cyc(3, st.goalP, d)) },
     { l: 'Net size', v: () => NET_NAMES[st.netP].split(' (')[0], s: d => setSetting('netP', cyc(3, st.netP, d)) }
@@ -2798,7 +3219,8 @@ function menuRows(tab) {
     { l: 'Which way you shoot', v: () => st.shot === 'right' ? 'Right' : 'Left', s: () => setSetting('shot', st.shot === 'right' ? 'left' : 'right') },
     { l: 'On the ice with you', v: () => OTHER_NAMES[st.others], s: d => setSetting('others', OTHERS[cyc(4, OTHERS.indexOf(st.others), d)]) },
     { l: 'Goalie', v: () => GOALIE_NAMES[st.goalP], s: d => setSetting('goalP', cyc(3, st.goalP, d)) },
-    { l: 'Net size', v: () => NET_NAMES[st.netP].split(' (')[0], s: d => setSetting('netP', cyc(3, st.netP, d)) }
+    { l: 'Net size', v: () => NET_NAMES[st.netP].split(' (')[0], s: d => setSetting('netP', cyc(3, st.netP, d)) },
+    { l: 'Score in view (drills, scrimmage)', v: () => st.hudOn ? 'On' : 'Off', s: () => { setSetting('hudOn', !st.hudOn); hudDraw(); } }
   ];
 }
 function rrect(x, y, w, h, r) { mg.beginPath(); mg.moveTo(x + r, y); mg.arcTo(x + w, y, x + w, y + h, r); mg.arcTo(x + w, y + h, x, y + h, r); mg.arcTo(x, y + h, x, y, r); mg.arcTo(x, y, x + w, y, r); mg.closePath(); }
@@ -3146,7 +3568,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
