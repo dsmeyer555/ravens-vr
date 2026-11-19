@@ -107,6 +107,7 @@ details.rate[open]>summary{margin-bottom:10px}
   <section class="actions" aria-label="Start">
     <div class="row">
       <button class="btn" id="enterCareer" disabled>Career mode</button>
+      <button class="btn" id="resetCareer" style="background:#5b5468">Reset career</button>
       <button class="btn" id="enter" disabled>Sandbox</button>
       <span class="note" id="enter-note"></span>
     </div>
@@ -2553,12 +2554,19 @@ function goalFrame(dt, G) {
 }
 // ---------------------------------------------------------------- drills (Stage B): shooting from spots, give-and-go, 1 on 1
 const DRILLS = [
-  { id: 'shoot', name: 'Shooting from spots', reps: 10, how: 'Skate to the puck at the lit cone and shoot. Ten shots from five spots.' },
+  { id: 'shoot', name: 'Shooting from spots', reps: 10, how: 'Skate to the puck at the lit cone and shoot. Ten shots from five spots.',
+    board: { zone: 'Offensive zone', tp: [GX - 16, 0, 0], cast: {}, me: { at: [36, 0] }, points: ['Pick your spot before you shoot', 'Head up: look at the net, not the puck'],
+      beats: [{ do: 'skate', path: [[52, 3]], cue: 'Skate to the lit cone', on: [{ t: 0, spawn: [55, 0] }] }, { do: 'get', cue: 'Pick up the puck' }, { do: 'shoot', cue: 'Shoot!' },
+        { do: 'skate', path: [[63, 19]], cue: 'Next cone', on: [{ t: 0, spawn: [66, 22] }] }, { do: 'get', cue: 'Pick it up' }, { do: 'shoot', cue: 'Shoot! Ten shots, five spots' }] } },
   { id: 'give', name: 'Give-and-go', reps: 8, how: 'Pass to #17 on the wall, skate to the slot cone, take his pass back and shoot. Call for it to get it sooner.' },
-  { id: 'oneone', name: '1 on 1', reps: 6, how: 'Beat the defender and score. He backs off, closes the gap, then comes at you.' },
+  { id: 'oneone', name: '1 on 1', reps: 6, how: 'Beat the defender and score. He backs off, closes the gap, then comes at you.',
+    board: { zone: 'Neutral zone', tp: [-4, 0, 0], cast: { X1: { at: [52, 0], team: 'V', label: 'D' } }, me: { at: [-13, 0], puck: true }, points: ['Attack with speed, make him turn', 'Protect the puck on your far side'],
+      beats: [{ do: 'carry', path: [[20, 3], [44, 6]], cue: 'Attack the D with speed', on: [{ t: 0, who: 'X1', move: [[64, 3]], spd: 3.4 }] }, { do: 'carry', path: [[62, -6], [74, -5]], cue: 'Beat him: cut inside or go wide' }, { do: 'shoot', cue: 'Shoot!' }] } },
   { id: 'twoone', name: '2 on 1', reps: 8, how: 'You and #17 against one D. Shoot, or pass to #17 and call for it back.' },
   { id: 'breakout', name: 'Breakout', reps: 8, score: 'exits', unit: 'Clean', how: 'You start on your blue line at left wing. The puck goes to a D and his partner calls it: same side or D to D. Curl to that side: on the left, get to the wall for the pass from the centre; on the right, curl through the middle.' },
-  { id: 'defend', name: 'Defending 1 on 1', reps: 8, score: 'stops', unit: 'Stops', how: 'You are the D. Keep a tight gap, stay between him and the net, and take the puck off him.' }
+  { id: 'defend', name: 'Defending 1 on 1', reps: 8, score: 'stops', unit: 'Stops', how: 'You are the D. Keep a tight gap, stay between him and the net, and take the puck off him.',
+    board: { zone: 'Defensive zone', tp: [-8.5, 0, 0], cast: { X1: { at: [14, 0], puck: true, team: 'V', label: 'Him' } }, me: { at: [-24, 0] }, points: ['Tight gap: a stick length away', 'Stick on the puck, body between him and the net'],
+      beats: [{ do: 'wait', t: 0.6, cue: 'Here he comes' }, { do: 'skate', back: true, path: [[-46, 1]], cue: 'Skate backwards, keep a tight gap', on: [{ t: 0, who: 'X1', move: [[-30, 2], [-60, 4]], spd: 4.6 }] }, { do: 'steal', who: 'X1', cue: 'Close in and take the puck' }] } }
 ];
 const DR = { on: false, id: null, d: null, rep: 0, phase: '', t: 0, goals: 0, saves: 0, shots: 0, miss: 0, steals: 0, passes: 0, pmiss: 0, msg: '', spot: null, k0: null, best: {} };
 try { DR.best = JSON.parse(localStorage.getItem('ravens-vr3-drills') || '{}') || {}; } catch (e) { DR.best = {}; }
@@ -2652,6 +2660,13 @@ function defFrame(dt) {
 }
 function drillStart(id) {
   const d = DRILLS.find(q => q.id === id); if (!d || !st.inVR) return;
+  if (d.board && !d.fd && !DR.noBoard && !DR.boardGo) {                    // the drill board first: go to the rink, see it drawn, then start
+    if (SC.on) scStop(true); if (DR.on) drillStop(true);
+    if (CAR.place === 'pub') { CAR.place = null; for (const o of PUBP) o.p.root.visible = false; }
+    const [x, z, yaw] = d.board.tp; teleportTo(x, z, yaw);
+    pvOpen(Object.assign({ name: d.name, reps: d.reps, how: d.how }, d.board), () => { DR.boardGo = true; drillStart(id); DR.boardGo = false; }, () => { if (CAR.step === 'train') { carAbort(); setTimeout(carHub, 600); } });
+    return;
+  }
   voxLoad();
   if (SC.on) scStop(true);
   if (DR.on) drillStop(true);
@@ -4120,6 +4135,9 @@ function carSave() {
   try { localStorage.setItem('ravens-vr3-career', JSON.stringify(vc)); } catch (e) { }
   clearTimeout(CAR.saveT); CAR.saveT = setTimeout(() => { if (brainOK()) fetch(st.brainUrl.replace(/\/+$/, '') + '/vrcareer', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Ravens-Key': st.brainKey }, body: JSON.stringify(CAR.vc) }).catch(() => { }); }, 1500);
 }
+function carReset() {                                                   // a fresh career: season 1, week 1, no stats, no texts
+  CAR.vc = carNew(1); CAR.ths = {}; CAR.step = null; CAR.train = null; PH.th = null; PH.scr = 'home'; PH.note = 'New career: season 1, week 1.'; carSave(); toast('Career reset: season 1, week 1', 2.5);
+}
 async function carLoad() {
   let loc = null; try { loc = JSON.parse(localStorage.getItem('ravens-vr3-career') || 'null'); } catch (e) { }
   let rem = null; if (brainOK()) { try { const j = await brainFetch('/vrcareer', null, 6000); rem = j && j.career; } catch (e) { } }
@@ -4978,7 +4996,7 @@ function fdRep() {
   const d = FD.d; FD.rep++; DR.rep = FD.rep;
   Object.assign(FD, { bi: -1, b: null, T: 0, bt: 0, hold: null, fly: null, q: [], ev: [], shot: null, endT: null, wait: 0.7, ok: true, miss: 0, tgt: null, prog: 0, feedT: 0 });
   for (const id in FD.ents) { const e = FD.ents[id], [x, z] = fP(e.c.at), f = e.c.face || [x > 0 ? -1 : 1, 0]; skPlace(e.sk, x, z, f[0], -f[1]); e.sk.has = false; e.seg = e.glide = e.chase = null; }
-  const [mx, mz] = fP(d.me.at), b0 = d.beats.find(b => b.path), p0 = b0 ? fP(b0.path[0]) : [mx + 1, mz], yaw = Math.atan2(p0[1] - mz, p0[0] - mx);
+  const [mx, mz] = fP(d.me.at), yaw = fdFace(d, mx, mz);
   teleportTo(mx, mz, yaw); resetPuck(0, -40);
   for (const id in FD.ents) if (FD.ents[id].c.puck) fdGive(id);
   if (d.me.puck) { FD.placeMe = 3; FD.hold = 'me'; }
@@ -4986,6 +5004,13 @@ function fdRep() {
   if (SC.g2 && SC.g2.on) { SC.g2.hold = 0; SC.g2.x = -GX + 0.45; SC.g2.z = 0; }
   DR.msg = d.how; SDG.dots.count = 0; SDG.ring.visible = false; hudDraw();
   if (FD.rep === 1) { if (!FD.preview) toast(d.name + ': ' + d.how, 4); } else toast('Rep ' + FD.rep + ' of ' + d.reps, 0.9);
+}
+function fdFace(d, mx, mz) {                                             // which way you face at the start: where the play comes from or where you're going
+  if (d.me.face) return Math.atan2(-d.me.face[1], d.me.face[0]);
+  const b0 = d.beats[0], at = id => d.cast[id] && fP(d.cast[id].at);
+  if (b0.do === 'steal') { const m = (b0.on || []).find(a => a.who === b0.who && a.move), a0 = at(b0.who); if (m && a0) { const q = fP(m.move[0]); return Math.atan2(q[1] - a0[1], q[0] - a0[0]); } }
+  if (b0.do === 'get') { const m = (b0.on || []).find(a => a.pass === 'me' || a.dump), a0 = m && at(m.who); if (a0) return Math.atan2(a0[1] - mz, a0[0] - mx); }
+  const bp = d.beats.find(b => b.path), p0 = bp ? fP(bp.path[0]) : [mx + 1, mz]; return Math.atan2(p0[1] - mz, p0[0] - mx);
 }
 const fdNear = (x, z, not) => { let bd = 1e9, f = null; for (const id in FD.ents) { const e = FD.ents[id]; if (e.sk.team !== 'ravens' || id === not) continue; const dd = Math.hypot(e.sk.x - x, e.sk.z - z); if (dd > 3 && dd < bd) { bd = dd; f = id; } } return f; };
 function fdGive(id) {                                                    // he has a puck (a spare off the pile, the way practice works)
@@ -5101,10 +5126,11 @@ function fdEnd(why) {
 }
 function fdBeat(dt) {
   const b = FD.b; if (!b) return; FD.bt += dt;
-  const has = humanHas(); if (has) FD.had = true;
+  const has = humanHas(); if (has) { FD.had = true; FD.hasT = pClock; }
+  const justHad = pClock - (FD.hasT || -9) < 1.5;                           // it was on your stick a moment ago (you've just passed or shot)
   const needPk = b.do === 'carry' || b.do === 'pass' || b.do === 'shoot' || b.do === 'finish';
   const coming = (FD.fly && FD.fly.to === 'me') || FD.ev.some(a => !a.done && a.pass === 'me');
-  if (needPk && !has && !coming && !(b.do === 'carry' && FD.had)) { FD.feedT += dt; if (FD.feedT > (b.do === 'carry' ? 0.5 : 0.8)) { FD.feedT = 0; fdBad(2); fdFeed(); } } else FD.feedT = 0;
+  if (needPk && !has && !coming && !(b.do === 'carry' && FD.had) && !(b.do !== 'carry' && justHad)) { FD.feedT += dt; if (FD.feedT > (b.do === 'carry' ? 0.5 : 0.8)) { FD.feedT = 0; fdBad(2); fdFeed(); } } else FD.feedT = 0;
   if (b.do === 'carry' && !has) {                                       // carrying, but the puck's not on your stick: go and get it first
     if (FD.fly && FD.fly.to === 'me' || (!FD.hold && Math.hypot(PK.x - S.x, PK.z - S.z) < 12)) { SDG.ring.visible = true; SDG.ring.position.set(PK.x, 0.014, PK.z); }
     if (FD.bt > (b.max || FD.len / 3.2 + 10)) { fdBad(4); return fdNext(); }
@@ -5134,7 +5160,7 @@ function fdBeat(dt) {
     const te = b.to && FD.ents[b.to];
     if (te) { const bl = skBlade(te.sk); AIM_T.length = 0; AIM_T.push(bl); if (b.do === 'pass') { SDG.ring.visible = true; SDG.ring.position.set(te.sk.x, 0.014, te.sk.z); } }
     const sp = Math.hypot(PK.vx, PK.vz), rel = Math.hypot(PK.vx - S.vx, PK.vz - S.vz), hb = humanBlade(), away = Math.hypot(PK.x - hb[0], PK.z - hb[1]) > 0.3;
-    const gone = FD.had && !has && away && pClock - (PK.htouch || -9) < 0.5;          // it's left your stick (not just a wobble while you carry it)
+    const gone = FD.had && !has && away && (pClock - (FD.hasT || -9) < 0.6 || pClock - (PK.htouch || -9) < 0.5) && !(FD.hold && FD.hold !== 'me');   // it's left your stick (not just a wobble while you carry it)
     const tip = b.do === 'shoot' && !has && pClock - (PK.htouch || -9) < 0.12 && sp > 3.5 && FD.bt > 0.15;
     if ((gone && sp > (b.do === 'shoot' ? 4 : 2.2) && rel > (b.do === 'shoot' ? 3.5 : 2)) || tip) {
       let asPass = b.do === 'pass';
@@ -5149,11 +5175,12 @@ function fdBeat(dt) {
   if (b.do === 'steal') {                                               // catch him and get your stick on the puck
     const e = FD.ents[b.who]; if (!e) return fdNext();
     FD.tgt = [PK.x, PK.z]; SDG.ring.visible = true; SDG.ring.position.set(PK.x, 0.014, PK.z);
-    const hb = humanBlade(), d = Math.hypot(PK.x - hb[0], PK.z - hb[1]);
-    if (FD.hold === b.who && d < 0.6) { e.sk.has = false; FD.hold = null; PK.vx = e.sk.vx * 0.3 + (Math.random() - 0.5) * 2; PK.vz = e.sk.vz * 0.3 + (Math.random() - 0.5) * 2; e.sk.cool = 1.5; say(e.sk.p, pick(['Argh!', 'Ach!']), { gap: 1 }); toast('Got it!', 0.9); buzz('right', 0.5, 40); return fdNext(); }
+    const hb = humanBlade(), d = Math.hypot(PK.x - hb[0], PK.z - hb[1]), body = Math.hypot(S.x - e.sk.x, S.z - e.sk.z);
+    // stick on the puck, or you've caught him and lift his stick
+    if (FD.hold === b.who && (d < 0.85 || body < 1.1)) { e.sk.has = false; FD.hold = null; PK.vx = e.sk.vx * 0.3 + (Math.random() - 0.5) * 2; PK.vz = e.sk.vz * 0.3 + (Math.random() - 0.5) * 2; e.sk.cool = 1.5; say(e.sk.p, pick(['Argh!', 'Ach!']), { gap: 1 }); toast('Got it!', 0.9); buzz('right', 0.5, 40); return fdNext(); }
     if (FD.hold !== b.who && !has) { if (FD.bt > 0.3 && !FD.fly) return fdNext(); }
     if (has) return fdNext();
-    if ((!e.seg && FD.bt > 0.6) || FD.bt > (b.max || 14)) { fdBad(7); fdShoot(b.who); FD.bi = FD.d.beats.length; FD.b = null; SDG.ring.visible = false; return; }
+    if ((!e.seg && FD.bt > 1.2) || FD.bt > (b.max || 16)) { fdBad(7); fdShoot(b.who); FD.bi = FD.d.beats.length; FD.b = null; SDG.ring.visible = false; return; }
     return;
   }
   if (b.do === 'wait') { if (FD.bt >= (b.t || 1)) return fdNext(); return; }
@@ -5170,6 +5197,7 @@ function fdFrame(dt) {
   fdFly(dt);
   // shots: goal, save, or it went wide
   let goal = PK.goalLatch || PK.inNet, save = false; for (const e of EV) { if (e.k === 'goal') goal = true; if (e.k === 'block' && e.kind === 'goalie') save = true; }
+  if (!FD.shot && FD.b && (FD.b.do === 'shoot' || FD.b.do === 'finish') && (goal || save) && FD.endT == null) { FD.shot = { t: 0, by: 'me' }; FD.b = null; FD.bi = FD.d.beats.length; SDG.ring.visible = false; SDG.dots.count = 0; }
   if (FD.shot && FD.endT == null) {
     FD.shot.t += dt;
     if (goal) { FD.shot.goal = true; fdEnd(FD.shot.against ? 'against' : 'goal'); }
@@ -5277,8 +5305,8 @@ const FDRILLS = [
       { do: 'get', cue: 'Loose puck! Win it', on: [{ t: 0.4, who: 'X3', dump: [-72, 2] }] },
       { do: 'carry', path: [[-44, 30], [-20, 32]], by: 7, cue: 'Get it out of the zone' }] },
   { id: 'fd-backcheck', zone: 'Defensive zone', name: 'Backcheck', reps: 6, unit: 'Clean', how: 'They break up ice with the puck. Chase him down, get your stick on the puck before he shoots, then hit the centre to go the other way.', points: ['Skate through his hands, stick on the puck', 'Head up after the steal: find the outlet'],
-    cast: { X1: { at: [8, 22], puck: true, team: 'V', pos: 'F', face: [-1, 0] }, C: { at: [-64, -22], pos: 'F' } }, me: { at: [16, 12] },
-    beats: [{ do: 'steal', who: 'X1', cue: 'Backcheck! Get your stick on the puck', on: [{ t: 0, who: 'X1', move: [[-26, 24], [-58, 18], [-72, 8]], spd: 4.4 }] },
+    cast: { X1: { at: [4, 24], puck: true, team: 'V', pos: 'F', face: [-1, 0] }, C: { at: [-64, -22], pos: 'F' } }, me: { at: [12, 16], face: [-1, 0] },
+    beats: [{ do: 'steal', who: 'X1', cue: 'Backcheck! Get your stick on the puck', on: [{ t: 0.6, who: 'X1', move: [[-24, 25], [-56, 19], [-72, 8]], spd: 3.5 }] },
       { do: 'get', cue: 'Pick it up' },
       { do: 'pass', to: 'C', cue: 'Find the centre', on: [{ t: 0, who: 'C', move: [[-46, -12], [-22, -12]], spd: 5 }] }] }
 ];
@@ -5310,6 +5338,7 @@ function pvSim(d) {
     if (a.pass) { if (a.pass === 'me' && (hold === 'me' || (fly && fly.to === 'me'))) return true; if (fly && fly.to === w) return false; if (hold !== w && !give(w)) return false; passTo(w, a.pass); return true; }
     if (a.shoot) { if (fly && fly.to === w) return false; if (hold !== w && !give(w)) return false; shootFrom(w); return true; }
     if (a.dump) { if (hold !== w && !give(w)) return false; const p = pos(w); pk.x = p.x; pk.y = p.y; hold = null; fly = { spot: a.dump.slice(), chaser: a.to && a.to !== 'me' ? a.to : null }; return true; }
+    if (a.spawn) { pk.x = a.spawn[0]; pk.y = a.spawn[1]; hold = null; fly = null; return true; }
     if (a.give) give(w);
     if (a.move && ents[w]) { ents[w].path = a.move.map(q => q.slice()); ents[w].spd = (a.spd || 5.5) / FT; }
     return true;
@@ -5319,7 +5348,7 @@ function pvSim(d) {
     bi++; b = d.beats[bi] || null; bt = 0;
     const left = ev.filter(a => !a.done && (a.pass || a.shoot)).map(a => Object.assign({}, a, { at: null, t: 0 }));
     ev = b ? (b.on || []).map(a => Object.assign({ done: false }, a)).concat(left) : left;
-    if (b && b.path) { me.path = b.path.map(q => q.slice()); me.spd = b.do === 'carry' ? 16 : ME; len0 = plen(me, me.path); }
+    if (b && b.path) { me.path = b.path.map(q => q.slice()); me.spd = b.back ? 11 : b.do === 'carry' ? 16 : ME; len0 = plen(me, me.path); }
   };
   const W = 1.2;
   for (let fr = 0; fr < 15 * 45; fr++) {
@@ -5350,7 +5379,8 @@ function pvSim(d) {
   }
   return F;
 }
-function pvOpen(d) {
+function pvOpen(d, onGo, onBack) {
+  DBD.onGo = onGo || (() => { FD.preview = false; }); DBD.onBack = onBack || (() => drillStop(true));
   DBD.open = true; DBD.d = d; DBD.F = pvSim(d); DBD.t = 0; DBD.place = true; DBD.hov = -1; DBD.drawT = 0;
   stickOn = false; showStick(false); for (const k of ['left', 'right']) { const g0 = hands[k] && hands[k].grip.children[0]; if (g0) g0.visible = true; }
   S.vx = S.vz = 0; fdMoveAll(0.016); pvDraw();
@@ -5358,7 +5388,7 @@ function pvOpen(d) {
 function pvClose(go) {
   if (!DBD.open) return; DBD.open = false; pvM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
   run.skip = Math.max(run.skip, 20); run.last = 0; if (audio) audio.click(true);
-  if (go) { FD.preview = false; toast('Grab your stick. Here we go', 1.5); } else drillStop(true);
+  if (go) { toast('Grab your stick. Here we go', 1.5); DBD.onGo(); } else DBD.onBack();
 }
 function pvDraw() {
   const g = pvg, d = DBD.d, F = DBD.F, W = PVW; DBD.hits = [];
@@ -5381,7 +5411,7 @@ function pvDraw() {
   trail(f => f.me, '#e0a928', 5);
   g.strokeStyle = '#26303d'; g.lineWidth = 2.5; g.setLineDash([3, 7]); g.beginPath(); for (let k = 1; k <= i; k++) { if (!F[k].fly) continue; g.moveTo(X(F[k - 1].pk[0]), Y(F[k - 1].pk[1])); g.lineTo(X(F[k].pk[0]), Y(F[k].pk[1])); } g.stroke(); g.setLineDash([]);
   const dot = (p, fill, label, big) => { g.fillStyle = fill; g.beginPath(); g.arc(X(p[0]), Y(p[1]), big ? 15 : 12, 0, 7); g.fill(); g.strokeStyle = '#ffffff'; g.lineWidth = 2.5; g.stroke(); if (label) { g.fillStyle = '#1a1a22'; g.font = '700 19px system-ui, sans-serif'; g.textAlign = 'center'; g.fillText(label, X(p[0]), Y(p[1]) - (big ? 26 : 22)); } };
-  for (const id in cast) { const e = FD.ents[id], nm = cast[id].team === 'V' ? 'X' : firstN(e && e.sk.p.name || cast[id].name || id); dot(fr.e[id], cast[id].team === 'V' ? '#b3202a' : '#5a2bb0', nm); }
+  for (const id in cast) { const e = FD.on && FD.ents[id], nm = cast[id].team === 'V' ? (cast[id].label || 'X') : firstN(e && e.sk.p.name || cast[id].name || cast[id].label || id); dot(fr.e[id], cast[id].team === 'V' ? '#b3202a' : '#5a2bb0', nm); }
   dot(fr.me, '#e0a928', 'YOU', true);
   g.fillStyle = '#111111'; g.beginPath(); g.arc(X(fr.pk[0]), Y(fr.pk[1]), 6, 0, 7); g.fill();
   // the steps
@@ -5694,7 +5724,8 @@ function menuRows(tab) {
     { l: 'Scrimmage length', v: () => PER_NAMES[st.perP], s: d => setSetting('perP', cyc(PERLENS.length, st.perP, d)) },
     { l: 'Offside and icing', v: () => st.rulesOn ? 'On' : 'Off', s: () => setSetting('rulesOn', !st.rulesOn) },
     { l: 'Opponents and defender', v: () => OPP_NAMES[st.oppP], s: d => setSetting('oppP', cyc(4, st.oppP, d)) },
-    { l: 'Goalie', v: () => GOALIE_NAMES[st.goalP], s: d => setSetting('goalP', cyc(4, st.goalP, d)) }
+    { l: 'Goalie', v: () => GOALIE_NAMES[st.goalP], s: d => setSetting('goalP', cyc(4, st.goalP, d)) },
+    { l: 'Reset career (start again at season 1)', v: () => performance.now() < (CAR.rsT || 0) ? 'Press again to confirm' : 'Reset', s: () => { if (performance.now() < (CAR.rsT || 0)) { CAR.rsT = 0; carReset(); if (CAR.mode === 'career') { closeMenu(); carHub(); } } else { CAR.rsT = performance.now() + 5000; toast('Press it again to wipe your career and start over', 2.5); } MENU.dirty = true; } }
   ];
   if (tab === 2) return [
     { l: 'Top speed', v: () => SPEED_NAMES[st.speed] + '  ' + Math.round(kmh(SPEEDS[st.speed])) + ' km/h', s: d => setSetting('speed', cyc(3, st.speed, d)) },
@@ -6075,6 +6106,7 @@ syncUI(); applyLevel(st.level); drawCurve();
 loadResult();
 probe();
 if (navigator.xr && navigator.xr.addEventListener) navigator.xr.addEventListener('devicechange', probe);
+$('resetCareer').addEventListener('click', () => { if (!confirm('Wipe your VR career and start again at season 1, week 1? Your stats, results and texts go.')) return; carReset(); $('resetCareer').textContent = 'Career reset'; });
 $('enter').addEventListener('click', () => enterVR('sandbox')); $('enterCareer').addEventListener('click', () => enterVR('career'));
 document.querySelectorAll('#lvl button').forEach(b => b.addEventListener('click', () => { applyLevel(+b.dataset.l); saveSettings(); }));
 const bind = (id, key, conv) => $(id).addEventListener('change', e => { st[key] = conv ? conv(e.target.value) : e.target.value; saveSettings(); });
@@ -6122,7 +6154,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
