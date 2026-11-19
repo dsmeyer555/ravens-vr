@@ -151,6 +151,7 @@ details.rate[open]>summary{margin-bottom:10px}
       </label>
     </div>
     <div class="row" style="margin-top:10px"><button class="btn" type="button" id="btest">Test the server and allow the mic</button><span class="note" id="bnote" role="status"></span></div>
+    <p class="note" id="fxnote" hidden style="margin-top:10px"></p>
     <div id="lineup" hidden style="margin-top:14px"><h3 style="margin:0 0 4px">Your lines</h3><p class="note" style="margin:0 0 8px">You play left wing on line 1. Pick your three forward lines and three D pairs. Picking someone already in another spot swaps the two.</p><div class="grid2" id="lineup-g"></div></div>
   </details>
 
@@ -279,6 +280,7 @@ details.rate[open]>summary{margin-bottom:10px}
           <option value="defend">Drill: defending 1 on 1</option>
           <option value="scrim">5 on 5 scrimmage</option>
           <option value="scrim3">3 on 3 scrimmage</option>
+          <option value="fixture">This week's game (from your career game)</option>
         </select>
       </label>
       <label class="f">On the ice with you
@@ -539,7 +541,7 @@ function loadSettings() {
       if (ok(j.speed, [0, 1, 2])) o.speed = j.speed; if (ok(j.steer, ['body', 'head'])) o.steer = j.steer; if (ok(j.turn, ['snap30', 'snap45', 'smooth', 'off'])) o.turn = j.turn;
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
-      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['hold', 'btn', 'grip', 'off'])) o.oneM = j.oneM; if (typeof j.arcade === 'boolean') o.arcade = j.arcade; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2, 3])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone', 'twoone', 'breakout', 'defend', 'scrim', 'scrim3'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2, 3])) o.oppP = j.oppP;
+      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['hold', 'btn', 'grip', 'off'])) o.oneM = j.oneM; if (typeof j.arcade === 'boolean') o.arcade = j.arcade; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2, 3])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone', 'twoone', 'breakout', 'defend', 'scrim', 'scrim3', 'fixture'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2, 3])) o.oppP = j.oppP;
       if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM; if (typeof j.voices === 'boolean') o.voices = j.voices; if (typeof j.brainUrl === 'string') o.brainUrl = j.brainUrl.trim().slice(0, 200); if (typeof j.brainKey === 'string') o.brainKey = j.brainKey.trim().slice(0, 200); if (ok(j.talk, ['off', 'free', 'hold'])) o.talk = j.talk; o.lineup = {}; if (j.lineup && typeof j.lineup === 'object') for (const [k, v] of Object.entries(j.lineup).slice(0, 12)) if (typeof v === 'string' && v.length < 40) o.lineup[k] = v;
       if (ok(j.mountH, ['off', 'right', 'left'])) o.mountH = j.mountH; if (typeof j.mD === 'number' && j.mD > 0.2 && j.mD < 1.8) o.mD = j.mD;
       if (Array.isArray(j.mAx) && j.mAx.length === 3 && j.mAx.every(v => typeof v === 'number' && isFinite(v)) && Math.abs(Math.hypot(...j.mAx) - 1) < 0.05) o.mAx = j.mAx;
@@ -3123,8 +3125,9 @@ function goalHomes() {
   if (GOAL.on) { GOAL.sg = sr; GOAL.x = sr * (GX - 0.45); GOAL.z = 0; GOAL.vx = GOAL.vz = 0; GOAL.ax = -sr; GOAL.az = 0; GOAL.hold = 0; }
   if (SC.g2) { SC.g2.sg = -sr; SC.g2.x = -sr * (GX - 0.45); SC.g2.z = 0; SC.g2.vx = SC.g2.vz = 0; SC.g2.ax = sr; SC.g2.hold = 0; }
 }
-function scStart(mode) {
+function scStart(mode, fx) {
   if (!st.inVR) return;
+  if (fx && !fx.opp) fx = null;
   voxLoad();
   if (DR.on) drillStop(true);
   if (SC.on) scStop(true);
@@ -3137,23 +3140,25 @@ function scStart(mode) {
     SC.grp = {}; for (const t of ['ravens', 'visitors']) SC.grp[t] = { F: R[t].F.map(L => mkLine(t, L)), D: R[t].D.map(L => mkLine(t, L)) };
     SC.lines = { ravens: [...SC.grp.ravens.F, ...SC.grp.ravens.D], visitors: [...SC.grp.visitors.F, ...SC.grp.visitors.D] };
   } else { SC.grp = null; SC.lines = { ravens: R.ravens.map(L => mkLine('ravens', L)), visitors: R.visitors.map(L => mkLine('visitors', L)) }; }
-  SC.fPrev = 2; SC.fChgT = -99;
+  SC.fPrev = 2; SC.fChgT = -99; SC.goals = [];
+  SC.fx = SC.mode === '5' ? (fx || null) : null; SC.Qopp = fxSkill(SC.fx); if (SC.fx) fxLineup(SC.fx);
   for (const L of [...SC.lines.ravens, ...SC.lines.visitors]) for (const q of L) skShow(q, false);   // everyone starts on the bench
   SC.sk = SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0], ...SC.grp.visitors.F[0], ...SC.grp.visitors.D[0]] : [...SC.lines.ravens[0], ...SC.lines.visitors[0]];
   for (const s of SC.sk) { skShow(s, true); s.shift = 0; s.chg = false; }
   Object.assign(SC, { my: { g: 0, a: 0, sh: 0, tk: 0 }, tc: { last: null, prev: null }, code: null, flip: 1, changes: 0, dOff: null, calls: {}, rpx: null, lastTeam: null, lastU: 0, on: true, score: [0, 0], shots: [0, 0], t: 0, per: 1, clk: PERLENS[st.perP] * 60, over: false, after: 0, inter: 0, chase: {}, press: {}, shotT: [-9, -9] });
   goalHomes();
-  Object.assign(BN, { on: false, t: 0, shift: 0, shift2: 0, called: false, callT: -99, zoneT: 0, upT: 0 });
+  Object.assign(BN, { on: false, t: 0, shift: 0, shift2: 0, called: false, upCalled: false, callT: -99, zoneT: 0, upT: 0 });
   if (SC.mode === '5') { benchRefresh(); croftyShow(true); croftyPrefetch(); } else croftyShow(false);
-  scFaceoff((SC.mode === '5' ? '5 on 5' : '3 on 3') + ': Ravens attack the far net. You are left wing' + (SC.mode === '5' ? '. Crofty calls the changes' : ''), [0, 0]);
+  scFaceoff(SC.fx ? 'Ravens vs ' + SC.fx.opp + (SC.fx.cup ? ', Talon Cup' : '') + '. Ravens attack the far net' : (SC.mode === '5' ? '5 on 5' : '3 on 3') + ': Ravens attack the far net. You are left wing' + (SC.mode === '5' ? '. Crofty calls the changes' : ''), [0, 0]);
+  if (SC.fx) setTimeout(() => { if (SC.on && SC.fx) croftySay(pick(['Right lads, ' + SC.fx.opp.replace(/^The /, '') + '. Big one.', 'Heads up, lads. Here we go.'])); }, 2500);
 }
 function scStop(quiet) {
   if (!SC.on) return;
-  benchLeave(); benchClear();
+  benchLeave(); benchClear(); if (SC.fx) fxLineupOff();
   SC.on = false; for (const t in SKP) if (SKP[t].vis) skShow(SKP[t], false); g2Show(false);
   SC.flip = 1; goalHomes();
   MATE.drillHide = false; if (MATE.p) MATE.p.root.visible = MATE.on;
-  if (!quiet) toast('Scrimmage stopped: Ravens ' + SC.score[0] + ', Visitors ' + SC.score[1]);
+  if (!quiet) toast('Scrimmage stopped: Ravens ' + SC.score[0] + ', ' + oppN() + ' ' + SC.score[1]);
   if (!SC.over) { run.scrims = run.scrims || []; run.scrims.push((SC.mode === '5' ? '5 on 5' : '3 on 3') + ': Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ' (stopped in the ' + ordN(SC.per) + ', shots ' + SC.shots[0] + ' to ' + SC.shots[1] + ')'); }
   hudDraw();
 }
@@ -3161,6 +3166,10 @@ function scStop(quiet) {
 // the circle in their own). At a stoppage, a line that has been out a while changes.
 function scFaceoff(msg, dot) {
   dot = dot || [0, 0]; const [fx0, fz0] = dot;
+  if (SC.grp && st.inVR && SC.on && !SC.over && SC.t > 1) {             // Crofty's call stands at a stoppage: off you go, or on you go
+    if (!BN.on && BN.called) benchGo(true);
+    else if (BN.on && BN.t > 1.5 && BN.upCalled) benchGo(false);
+  }
   if (SC.grp) for (const team of ['ravens', 'visitors']) for (const k of ['F', 'D']) {
     const on = SC.sk.filter(s => s.team === team && isK(s, k)), avg = on.reduce((a, s) => a + (s.shift || 0), 0) / Math.max(1, on.length);
     if (avg > 38) scSwapLine(team, k);
@@ -3303,12 +3312,12 @@ function benchSwapRavens(drewOff) {
 function benchGo(off) {
   const door = BNG.ravens.door;
   if (off) {
-    teleportTo(door, BNG.z0 + 0.6, -Math.PI / 2); BN.on = true; BN.t = 0; BN.shift2 = 0; BN.called = false; BN.upT = 0; BN.zoneT = 0;
+    teleportTo(door, BNG.z0 + 0.6, -Math.PI / 2); BN.on = true; BN.t = 0; BN.shift2 = 0; BN.called = false; BN.upCalled = false; BN.upT = 0; BN.zoneT = 0;
     benchSwapRavens(true); run.benchOff = (run.benchOff || 0) + 1;
     toast(BN.hint++ < 2 ? 'On the bench. Push the left stick forward to go back on' : 'On the bench', 2.5);
     const m = SC.grp.ravens.F[0][Math.floor(Math.random() * SC.grp.ravens.F[0].length)]; if (m && Math.random() < 0.6) setTimeout(() => { if (BN.on) say(m.p, pick(['Nice!', 'Lovely!', 'Yes boys!'])); }, 900);
   } else {
-    teleportTo(door, BNG.z0 - 1.25, -Math.PI / 2); BN.on = false; BN.shift = 0; BN.called = false; BN.zoneT = 0;
+    teleportTo(door, BNG.z0 - 1.25, -Math.PI / 2); BN.on = false; BN.shift = 0; BN.called = false; BN.upCalled = false; BN.zoneT = 0;
     benchSwapRavens(false); run.benchOn = (run.benchOn || 0) + 1; toast('Over the boards. Go!', 1.4);
   }
   MENU.dirty = true;
@@ -3342,7 +3351,7 @@ function benchFrame(dt) {
   } else {
     BN.t += dt; if (!stopped) BN.shift2 += dt;
     const fOn = SC.sk.filter(s => s.team === 'ravens' && s.role !== 'D'), fSh = fOn.reduce((a, s) => a + (s.shift || 0), 0) / Math.max(1, fOn.length);
-    if (grpOn('ravens', 'F') === 2 && fSh > SHIFT_D2 && pClock - BN.callT > 15) { croftySay(pClock - BN.callT > 40 ? "Drew's line, you're up!" : "Up you go, Drew."); BN.callT = pClock; }
+    if (grpOn('ravens', 'F') === 2 && fSh > SHIFT_D2 && pClock - BN.callT > 15) { croftySay(!BN.upCalled ? "Drew's line, you're up!" : "Up you go, Drew."); BN.callT = pClock; BN.upCalled = true; }
     const want = BN.sy < -0.6 || HEADW.z < BNG.z0 - 0.15;
     BN.upT = want ? BN.upT + dt : 0;
     if (BN.t > 2 && BN.upT > 0.25) benchGo(false);
@@ -3363,7 +3372,10 @@ function scGoal(xSide) {
   if (SC.over || SC.after > 0) return;
   const ravens = xSide * teamDir('ravens') > 0, k = ravens ? 0 : 1; SC.score[k]++;
   if (ravens) { if (SC.tc.last === 'you') { SC.my.g++; SC.my.sh++; } else if (SC.tc.last && SC.tc.last[0] === 'r' && SC.tc.prev === 'you') SC.my.a++; } if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; }
-  SC.msg = (ravens ? 'Ravens' : 'Visitors') + ' score!  ' + SC.score[0] + ' - ' + SC.score[1]; toast(SC.msg, 2.5);
+  SC.msg = (ravens ? 'Ravens' : oppN()) + ' score!  ' + SC.score[0] + ' - ' + SC.score[1]; toast(SC.msg, 2.5);
+  { const nm = w => w === 'you' ? 'Drew' : w && w[0] === 'r' ? ((RN.map && RN.map[w.slice(1)] || {}).n || '') : '';
+    const scn = ravens ? nm(SC.tc.last) : '', asn = ravens && SC.tc.prev && SC.tc.prev !== SC.tc.last ? nm(SC.tc.prev) : '';
+    SC.goals.push({ t: ravens ? 'R' : 'O', sc: scn, as: asn ? [asn] : [], per: SC.per, clk: Math.round(SC.clk) }); }
   { const sc = SC.tc.last === 'you' ? 'Drew' : SC.tc.last && SC.tc.last[0] === 'r' ? ((RN.map && RN.map[SC.tc.last.slice(1)] || {}).n || 'a teammate') : ''; (SC.log = SC.log || []).push(ordN(SC.per) + ' ' + clockStr(SC.clk) + ' ' + (ravens ? 'Ravens goal' + (sc ? ' by ' + sc : '') + (SC.tc.prev === 'you' && sc !== 'Drew' ? ', Drew assist' : '') : 'Visitors goal') + ' (' + SC.score[0] + '-' + SC.score[1] + ')'); }
   SC.after = 3; for (const s of SC.sk) { s.has = false; s.act = ''; }
   { const mate = SC.sk.find(q => q.team === 'ravens'); if (mate) say(mate.p, ravens ? (PK.lastT === 'ravens' && pClock - (PK.htouch || -9) < 3 ? pick(['Get in, Drew!', 'What a finish!', 'Yes, Drew!']) : pick(['Get in!', 'Yes boys!', 'Lovely!'])) : pick(['Unlucky. Next one.', 'Heads up, lads.', 'Come on, Ravens!']), { force: true }); }
@@ -3373,8 +3385,8 @@ function scPeriodEnd() {
   if (audio) audio.horn({ x: 0, y: 6, z: 0 });
   for (const s of SC.sk) { s.has = false; s.act = ''; }
   if (SC.per >= 3) {
-    SC.over = true; SC.msg = 'Final: Ravens ' + SC.score[0] + ', Visitors ' + SC.score[1]; toast(SC.msg, 4);
-    showCode(careerDone({ mode: SC.mode === '5' ? '5v5' : '3v3', lvl: st.oppP, rs: SC.score[0], vs: SC.score[1], g: SC.my.g, a: SC.my.a, sh: SC.my.sh, tk: SC.my.tk, per: 3 }, (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final', { level: OPP_NAMES[st.oppP], shots: SC.shots.slice(), minutes: PERLENS[st.perP], events: (SC.log || []).slice(-8), mates: (SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0]] : talkMates().filter(q => !q.coach)).map(q => q.p && q.p.name).filter(Boolean) }), (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final');
+    SC.over = true; SC.msg = 'Final: Ravens ' + SC.score[0] + ', ' + oppN() + ' ' + SC.score[1]; toast(SC.msg, 4);
+    showCode(careerDone({ mode: SC.mode === '5' ? '5v5' : '3v3', lvl: st.oppP, rs: SC.score[0], vs: SC.score[1], g: SC.my.g, a: SC.my.a, sh: SC.my.sh, tk: SC.my.tk, per: 3 }, (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final', { level: OPP_NAMES[st.oppP], shots: SC.shots.slice(), shotsAg: SC.shots[1], minutes: PERLENS[st.perP], events: (SC.log || []).slice(-8), goals: (SC.goals || []).slice(0, 30), fx: SC.fx ? SC.fx.id : null, opp: SC.fx ? SC.fx.opp : null, home: SC.fx ? !!SC.fx.home : null, cup: SC.fx ? !!SC.fx.cup : null, mates: (SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0]] : talkMates().filter(q => !q.coach)).map(q => q.p && q.p.name).filter(Boolean) }), (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final');
     run.scrims = run.scrims || []; run.scrims.push('Final: Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ' (3 x ' + PERLENS[st.perP] + ' min, shots ' + SC.shots[0] + ' to ' + SC.shots[1] + (Object.keys(SC.calls).length ? ', whistles: ' + Object.entries(SC.calls).map(([k, n]) => k.split(':')[0].toLowerCase() + ' ' + n).join(', ') : '') + ')');
   } else { SC.inter = 6; SC.msg = 'End of the ' + ordN(SC.per) + ' period'; toast(SC.msg, 3); }
   boardText();
@@ -3495,7 +3507,7 @@ function scRules(carrier, carrierTeam) {
     if (dir * px <= line && dir * x > line) {                                 // the puck has just gone over this team's attacking blue line
       const ahead = SC.sk.filter(q => q.team === team && q !== carrier && dir * q.x > BLUEL + 0.35).map(q => '#' + q.num);
       if (team === 'ravens' && !BN.on && carrier !== 'human' && dir * H.x > BLUEL + 0.35) ahead.unshift('you');
-      if (ahead.length) { SC.dOff = { team, who: ahead[0] }; SC.msg = 'Delayed offside: ' + (team === 'ravens' ? 'Ravens' : 'Visitors') + ' clear the zone'; toast(ahead[0] === 'you' ? 'Delayed offside: get out of the zone' : SC.msg, 1.6); boardText(); }
+      if (ahead.length) { SC.dOff = { team, who: ahead[0] }; SC.msg = 'Delayed offside: ' + (team === 'ravens' ? 'Ravens' : oppN()) + ' clear the zone'; toast(ahead[0] === 'you' ? 'Delayed offside: get out of the zone' : SC.msg, 1.6); boardText(); }
     }
   }
   // delayed offside: the attackers must all get back over the line before one of them plays the puck in the zone
@@ -3507,7 +3519,7 @@ function scRules(carrier, carrierTeam) {
   }
   if (!carrier && SC.lastTeam && SC.lastTeam !== 'goalie' && !PK.inNet && !PK.goalLatch && !(Math.abs(PK.z) < 1.2 && PK.y < 1.3)) {
     const dir = teamDir(SC.lastTeam);
-    if (dir * x > GX + 0.15 && dir * SC.lastU < 0) { const t = SC.lastTeam; SC.lastTeam = null; scWhistle('Icing: ' + (t === 'ravens' ? 'Ravens' : 'Visitors'), [-dir * (GX - 6.1), (PK.z >= 0 ? 1 : -1) * 6.71]); return true; }
+    if (dir * x > GX + 0.15 && dir * SC.lastU < 0) { const t = SC.lastTeam; SC.lastTeam = null; scWhistle('Icing: ' + (t === 'ravens' ? 'Ravens' : oppN()), [-dir * (GX - 6.1), (PK.z >= 0 ? 1 : -1) * 6.71]); return true; }
   }
   return false;
 }
@@ -3518,13 +3530,14 @@ function scFrame(dt) {
   // stoppages and the clock
   if (SC.after > 0) { SC.after -= dt; if (SC.after <= 0) scFaceoff('Faceoff at centre  ' + SC.score[0] + ' - ' + SC.score[1], [0, 0]); }
   if (SC.inter > 0) { SC.inter -= dt; if (SC.inter <= 0) { SC.per++; SC.clk = PERLENS[st.perP] * 60; SC.flip = SC.per === 2 ? -1 : 1; scFaceoff(ordN(SC.per) + ' period: ends changed, Ravens attack the ' + (teamDir('ravens') > 0 ? 'far' : 'near') + ' net now', [0, 0]); } }
-  if (SC.pause > 0) { SC.pause -= dt; PK.x = SC.dot[0]; PK.z = SC.dot[1]; PK.vx = PK.vz = 0; if (SC.pause <= 0) { scDrop(Q); boardText(); } }
+  if (SC.pause > 0) { SC.pause -= dt; PK.x = SC.dot[0]; PK.z = SC.dot[1]; PK.vx = PK.vz = 0; if (SC.pause <= 0) { scDrop(SC.Qopp || Q); boardText(); } }
   if (SC.msgT && pClock > SC.msgT) { SC.msgT = 0; SC.msg = ''; boardText(); }
   const stopped = SC.pause > 0 || SC.after > 0 || SC.inter > 0 || SC.over;
   if (!stopped) { SC.clk -= dt; if (SC.clk <= 0) { SC.clk = 0; scPeriodEnd(); } }
   // shots on goal: a goalie stopping it
   for (const e of EV) if (e.k === 'block' && e.kind === 'goalie') { const k = (e.x != null ? e.x : PK.x) * teamDir('ravens') > 0 ? 0 : 1; if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; if (k === 0 && SC.tc.last === 'you') SC.my.sh++; } }
-  for (const s of SC.sk) { s.cool -= dt; s.poke -= dt; s.dec -= dt; s.prot -= dt; if (s.has && !stopped) skStolen(s, Q); }
+  const qf = s => s.team === 'visitors' && SC.Qopp ? SC.Qopp : Q;
+  for (const s of SC.sk) { s.cool -= dt; s.poke -= dt; s.dec -= dt; s.prot -= dt; if (s.has && !stopped) skStolen(s, qf(s)); }
   const hum = humanHas();
   if (hum) for (const s of SC.sk) if (s.has) { s.has = false; s.act = ''; s.cool = 0.7; }
   let carrier = hum ? 'human' : SC.sk.find(s => s.has) || null;
@@ -3532,14 +3545,14 @@ function scFrame(dt) {
     if (stopped) continue;
     if (!carrier && SC.pause <= 0 && !s.chg && skCanPick(s)) { skPick(s); carrier = s; }
     if (s.has) {
-      if (skAct(s, dt, Q)) carrier = null;
-      else if (s.act !== 'shoot' && s.act !== 'pass' && s.dec <= 0) { s.dec = Q.dec * (0.7 + Math.random() * 0.6); scDecide(s, Q); if (s.act === 'pass' && s.team === 'ravens' && called()) s.actT = 0.12; }
+      if (skAct(s, dt, qf(s))) carrier = null;
+      else if (s.act !== 'shoot' && s.act !== 'pass' && s.dec <= 0) { s.dec = qf(s).dec * (0.7 + Math.random() * 0.6); scDecide(s, qf(s)); if (s.act === 'pass' && s.team === 'ravens' && called()) s.actT = 0.12; }
       if (s.has) skGlue(s);
     }
   }
   const carrierTeam = carrier === 'human' ? 'ravens' : carrier ? carrier.team : null;
   { const who = carrier === 'human' || pClock - (PK.htouch || -9) < 0.08 ? 'you' : carrier ? carrier.team[0] + carrier.num : null; if (who && who !== SC.tc.last) { SC.tc.prev = SC.tc.last; SC.tc.last = who; } }   // who touched it last (for goals and assists)
-  if (!stopped) for (const s of SC.sk) if (carrier && carrierTeam !== s.team && !s.chg) { if (skPoke(s, Q, carrier === 'human', carrier)) carrier = null; }
+  if (!stopped) for (const s of SC.sk) if (carrier && carrierTeam !== s.team && !s.chg) { if (skPoke(s, qf(s), carrier === 'human', carrier)) carrier = null; }
   if (!stopped && scRules(carrier, carrierTeam)) return;
   scLines(dt, carrierTeam, stopped);
   scRoles(carrier, carrierTeam);
@@ -3556,7 +3569,7 @@ function scFrame(dt) {
     const k = s.has || SC.chase[s.team] === s || s.urg ? 1 : 1 - Math.exp(-dt / 0.5);
     if (s.gx == null) { s.gx = t[0]; s.gz = t[1]; } else { s.gx += (t[0] - s.gx) * k; s.gz += (t[1] - s.gz) * k; }
     const defending = carrier && carrierTeam !== s.team && SC.press[s.team] !== s;
-    skMove(s, s.gx, s.gz, dt, Q, { all, hit: SC.press[s.team] === s, back: defending || (s.role === 'D' && !s.has && carrierTeam !== s.team), vmax: SC.chase[s.team] === s || SC.press[s.team] === s || s.urg ? Q.spd : Q.spd * 0.9 });
+    const qs = qf(s); skMove(s, s.gx, s.gz, dt, qs, { all, hit: SC.press[s.team] === s, back: defending || (s.role === 'D' && !s.has && carrierTeam !== s.team), vmax: SC.chase[s.team] === s || SC.press[s.team] === s || s.urg ? qs.spd : qs.spd * 0.9 });
     if (s.team === 'ravens' && !stopped) skTapCall(s, dt);
   }
   bodyAI();
@@ -3566,7 +3579,7 @@ function scFrame(dt) {
 function drawScore() {
   bx.fillStyle = '#0d131a'; bx.fillRect(0, 0, 1024, 512); bx.textAlign = 'center';
   bx.fillStyle = '#e0a928'; bx.font = '700 46px sans-serif'; bx.fillText('RAVENS', 180, 66);
-  bx.fillStyle = '#e6edf3'; bx.fillText('VISITORS', 844, 66);
+  bx.fillStyle = '#e6edf3'; bx.fillText(oppShort(), 844, 66, 330);
   bx.font = '700 190px sans-serif'; bx.fillStyle = '#e0a928'; bx.fillText(String(SC.score[0]), 180, 260);
   bx.fillStyle = '#e6edf3'; bx.fillText(String(SC.score[1]), 844, 260);
   bx.fillStyle = SC.over ? '#93a2b0' : '#ff5a4a'; bx.font = '700 128px monospace'; bx.fillText(clockStr(SC.clk), 512, 200);
@@ -3586,7 +3599,7 @@ function hudDraw() {
   const g = hudX; g.clearRect(0, 0, 640, 72); g.fillStyle = 'rgba(10,14,20,0.82)'; g.fillRect(0, 0, 640, 72); g.textBaseline = 'middle';
   if (SC.on) {
     g.fillStyle = '#4a1d8c'; g.fillRect(0, 0, 210, 72); g.fillStyle = '#b3202a'; g.fillRect(210, 0, 210, 72);
-    g.font = '700 34px sans-serif'; g.textAlign = 'left'; g.fillStyle = '#e0a928'; g.fillText('RAV', 16, 37); g.fillStyle = '#ffffff'; g.fillText('VIS', 226, 37);
+    g.font = '700 34px sans-serif'; g.textAlign = 'left'; g.fillStyle = '#e0a928'; g.fillText('RAV', 16, 37); g.fillStyle = '#ffffff'; g.fillText(oppAbbr(), 226, 37);
     g.textAlign = 'right'; g.font = '800 44px sans-serif'; g.fillStyle = '#ffffff'; g.fillText(String(SC.score[0]), 194, 38); g.fillText(String(SC.score[1]), 404, 38);
     g.textAlign = 'center'; g.font = '700 32px sans-serif'; g.fillStyle = '#e6edf3';
     g.fillText(SC.over ? 'FINAL' : SC.inter > 0 ? 'INT' : ordN(SC.per), 470, 37); g.fillStyle = '#ff7a6a'; g.font = '700 34px monospace'; g.fillText(SC.over ? '' : clockStr(SC.clk), 576, 38);
@@ -3696,12 +3709,50 @@ function rosterApply(j) {
 }
 function rosterLabel(P, slot) {
   const R = RN.map && RN.map[slot]; if (!R || P.goalie || P.team !== 'ravens') return;
-  P.name = R.n; if (P.shown === R.num) return; P.shown = R.num;
+  P.name = R.n; if (P.shown === R.num || !R.num) return; P.shown = R.num;
   const t = P.m.torso; if (t && t.material && t.material.map) { const old = t.material.map; t.material.map = jerseyTex('ravens', String(R.num), false); t.material.needsUpdate = true; try { old.dispose(); } catch (e) { } }
 }
+// this week's game in the career game (opponent, how they play, how strong, home or away, your lines there), through your server
+let FX = null;
+function fxLoad() {
+  try { const c = JSON.parse(localStorage.getItem('ravens-vr3-fixture') || 'null'); if (c && c.opp) FX = c; } catch (e) { }
+  if (!brainOK()) return Promise.resolve(FX);
+  return brainFetch('/fixture', null, 8000).then(j => { FX = j && j.fixture && j.fixture.opp ? j.fixture : null; try { localStorage.setItem('ravens-vr3-fixture', JSON.stringify(FX)); } catch (e) { } fxNote(); MENU.dirty = true; return FX; }).catch(() => FX);
+}
+const STYLE_TXT = { rush: 'quick up the ice and love a rush', cycle: 'work it low and protect the puck', forecheck: 'forecheck hard and press you', patient: 'patient, wait for your mistakes' };
+function fxNote() { const e = $('fxnote'); if (!e) return; e.textContent = FX ? 'This week in your career game: Ravens vs ' + FX.opp + ' (' + (FX.home ? 'home' : 'away') + (FX.cup ? ', Talon Cup' : '') + '). They ' + (STYLE_TXT[FX.style] || 'play their own way') + '.' + (FX.done ? ' Game night is already played there, so this one would count as practice.' : ' Play it from Start with, or from the Drills tab in the menu, and the result can count as game night.') : ''; e.hidden = !FX; }
+const oppN = () => SC.fx ? SC.fx.opp : 'Visitors';
+const oppShort = () => { const n = oppN(); if (n.length <= 12) return n.toUpperCase(); const w = n.split(' '); return w[w.length - 1].toUpperCase().slice(0, 12); };
+const oppAbbr = () => oppShort().replace(/^THE /, '').slice(0, 3);
+// their level from the career game: stronger clubs are quicker and sharper, and each plays its own way
+function fxSkill(fx) {
+  const b = Object.assign({}, OPPS[st.oppP] || OPPS[1]); if (!fx) return null;
+  const k = clamp(1 + ((+fx.r || 0.52) - 0.52) * 2.5, 0.75, 1.3);
+  b.spd *= 1 + (k - 1) * 0.25; b.acc *= 1 + (k - 1) * 0.25; b.poke = Math.min(0.6, b.poke * k); b.prot = Math.min(0.85, b.prot * (0.6 + 0.4 * k)); b.fo = clamp(b.fo * (0.7 + 0.3 * k), 0.25, 0.75);
+  b.pass /= k; b.shot /= k; b.read /= k; b.dec /= k; b.wind /= k;
+  if (fx.style === 'rush') { b.spd *= 1.04; b.acc *= 1.06; b.dec *= 0.85; }
+  else if (fx.style === 'cycle') { b.prot = Math.min(0.88, b.prot + 0.1); b.dec *= 1.15; b.spd *= 0.98; }
+  else if (fx.style === 'forecheck') { b.poke = Math.min(0.65, b.poke * 1.15); b.read *= 0.85; b.spd *= 1.02; }
+  else if (fx.style === 'patient') { b.dec *= 1.3; b.pass *= 0.85; b.spd *= 0.97; }
+  return b;
+}
+// your lines from the career game: your line there is your line here
+function fxLineup(fx) {
+  const L = fx && fx.lineup; if (!L || !Array.isArray(L.F) || !Array.isArray(L.D)) return false;
+  const li = clamp(L.line | 0, 0, L.F.length - 1), oth = L.F.map((_, i) => i).filter(i => i !== li), m = {};
+  const put = (slot, e) => { if (Array.isArray(e) && e[0] && e[0] !== 'Drew') m[slot] = { n: String(e[0]).slice(0, 30), num: e[1] || '' }; };
+  const F0 = L.F[li] || [], F1 = L.F[oth[0]] || [], F2 = L.F[oth[1]] || [], Dp = L.D;
+  put('17', F0[1]); put('12', F0[2]); put('27', F1[0]); put('19', F1[1]); put('22', F1[2]); put('14', F2[0]); put('16', F2[1]); put('10', F2[2]);
+  [['44', '5'], ['2', '8'], ['3', '6']].forEach(([a, b], i) => { if (Dp[i]) { put(a, Dp[i][0]); put(b, Dp[i][1]); } });
+  RN.saved = RN.map; RN.map = Object.assign({}, RN.map || {}, m);
+  for (const k in SKP) { const q = SKP[k]; if (q.team === 'ravens') rosterLabel(q.p, q.num); }
+  return true;
+}
+function fxLineupOff() { if (!RN.saved) return; RN.map = RN.saved; RN.saved = null; for (const k in SKP) { const q = SKP[k]; if (q.team === 'ravens') rosterLabel(q.p, q.num); } }
 function rosterLoad() {
   try { const c = JSON.parse(localStorage.getItem('ravens-vr3-roster') || 'null'); if (c) rosterApply(c); } catch (e) { }
   if (!brainOK()) return Promise.resolve(false);
+  fxLoad();
   return brainFetch('/roster', null, 8000).then(j => { rosterApply(j); try { localStorage.setItem('ravens-vr3-roster', JSON.stringify(j)); } catch (e) { } return true; }).catch(() => false);
 }
 // finished games and drills go to the server; if it can't be reached they wait on the headset and go next time
@@ -3829,7 +3880,7 @@ function playLive() { return SC.on ? (!SC.over && !(SC.pause > 0) && !(SC.after 
 function talkCtx() {
   const live = playLive();
   let now = 'Free skate at the rink with the puck.';
-  if (SC.on) now = (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' scrimmage against the Visitors, ' + (SC.over ? 'just finished' : ordN(SC.per) + ' period, ' + clockStr(SC.clk) + ' left') + ', Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ', shots ' + SC.shots[0] + ' to ' + SC.shots[1] + '. Drew so far: ' + SC.my.g + ' goals, ' + SC.my.a + ' assists, ' + SC.my.sh + ' shots.' + (SC.msg ? ' Last thing that happened: ' + SC.msg + '.' : '');
+  if (SC.on) now = (SC.fx ? 'This week\'s league game, played in VR, against ' + SC.fx.opp + (SC.fx.cup ? ' (Talon Cup)' : '') + ', ' : (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' scrimmage against the Visitors, ') + (SC.over ? 'just finished' : ordN(SC.per) + ' period, ' + clockStr(SC.clk) + ' left') + ', Ravens ' + SC.score[0] + ' ' + oppN() + ' ' + SC.score[1] + ', shots ' + SC.shots[0] + ' to ' + SC.shots[1] + '. Drew so far: ' + SC.my.g + ' goals, ' + SC.my.a + ' assists, ' + SC.my.sh + ' shots.' + (SC.msg ? ' Last thing that happened: ' + SC.msg + '.' : '');
   else if (DR.on && DR.d) now = 'Training, the ' + DR.d.name + ' drill' + (DR.rep ? ', rep ' + DR.rep + ' of ' + DR.d.reps : '') + '. ' + (DR.msg || '');
   return { where: SC.on && BN.on ? 'on the bench during the game, watching the play from behind the boards, so there is time for a proper chat' : SC.on ? (live ? 'on the ice in the middle of play, so only a few words' : 'on the ice at a stoppage in the game') : DR.on ? 'on the ice at training, between reps' : 'on the ice', now };
 }
@@ -3919,7 +3970,7 @@ function puckFrame(dt) {
   PA.s = ASSISTS[st.assistP] || 0; if (st.arcade) PA.s = Math.max(PA.s, 2.2); PA.arc = st.arcade ? 1 : 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz; PA.aim = AIMS[st.aimP] || 0;
   puckAdvance(dt, stickOn && !BN.on, POWERS[st.power], pClock);
   othersFrame(dt);
-  if (DR.autoT > 0) { DR.autoT -= dt; if (DR.autoT <= 0) { if (st.startDrill === 'scrim') scStart('5'); else if (st.startDrill === 'scrim3') scStart('3'); else drillStart(st.startDrill); } }
+  if (DR.autoT > 0) { DR.autoT -= dt; if (DR.autoT <= 0) { if (st.startDrill === 'fixture') scStart('5', FX); else if (st.startDrill === 'scrim') scStart('5'); else if (st.startDrill === 'scrim3') scStart('3'); else drillStart(st.startDrill); } }
   if ((SC.on || DR.on) && !BN.on) tapWatch();
   drillFrame(dt);
   scFrame(dt);
@@ -4088,6 +4139,7 @@ function menuRows(tab) {
     { l: 'Drill', v: () => DRILLS[st.drillI].name, s: d => setSetting('drillI', cyc(DRILLS.length, st.drillI, d)) },
     { l: DR.on ? 'Stop the drill' : 'Start it (the menu closes)', v: () => DR.on ? 'Stop' : 'Start', s: () => { if (DR.on) drillStop(); else { closeMenu(); drillStart(DRILLS[st.drillI].id); } } },
     { l: 'Scrimmage', v: () => SC.on ? (SC.over ? 'New game' : 'Stop') : 'Start', s: () => { if (SC.on && !SC.over) scStop(); else { if (SC.on) scStop(true); closeMenu(); scStart(); } } },
+    { l: "This week's game", v: () => FX ? 'vs ' + FX.opp + (SC.on && SC.fx ? '  (playing)' : '') : brainOK() ? 'None from your career game yet' : 'Needs your server', s: () => { if (!FX) { toast(brainOK() ? 'Open your career game once so it can send this week\'s fixture' : 'Set up your server on the start page', 3); fxLoad(); return; } if (SC.on) scStop(true); closeMenu(); scStart('5', FX); } },
     { l: 'Scrimmage size', v: () => st.scrimM === '3' ? '3 on 3' : '5 on 5', s: () => setSetting('scrimM', st.scrimM === '3' ? '5' : '3') },
     { l: 'Scrimmage length', v: () => PER_NAMES[st.perP], s: d => setSetting('perP', cyc(PERLENS.length, st.perP, d)) },
     { l: 'Offside and icing', v: () => st.rulesOn ? 'On' : 'Off', s: () => setSetting('rulesOn', !st.rulesOn) },
@@ -4494,7 +4546,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
