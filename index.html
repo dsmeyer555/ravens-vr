@@ -4101,7 +4101,7 @@ async function carLoad() {
   let loc = null; try { loc = JSON.parse(localStorage.getItem('ravens-vr3-career') || 'null'); } catch (e) { }
   let rem = null; if (brainOK()) { try { const j = await brainFetch('/vrcareer', null, 6000); rem = j && j.career; } catch (e) { } }
   const ok = c => c && c.v === 2 && Array.isArray(c.fx) && c.fx.length === CWEEKS && c.tab;
-  CAR.vc = ok(rem) && (!ok(loc) || (rem.ts || 0) > (loc.ts || 0)) ? rem : ok(loc) ? loc : carNew(1);
+  CAR.vc = ok(rem) && (!ok(loc) || (rem.ts || 0) > (loc.ts || 0)) ? rem : ok(loc) ? loc : carNew(1); CAR.ths = {};
   return CAR.vc;
 }
 const fxNow = () => { const vc = CAR.vc; return vc && vc.fx[vc.week - 1]; };
@@ -4153,14 +4153,16 @@ function drawPhone() {
   if (!vc) { pg.fillStyle = '#fff'; pg.textAlign = 'center'; pg.fillText('Loading...', W / 2, 400); }
   else if (PH.scr === 'home') phHome(y0);
   else if (PH.scr === 'thread') phThread(y0);
+  else if (PH.scr === 'contacts') phContacts(y0);
   else if (PH.scr === 'train') phTrain(y0);
   else if (PH.scr === 'game') phGame(y0);
   else if (PH.scr === 'table') phTable(y0);
   else if (PH.scr === 'stats') phStats(y0);
   else if (PH.scr === 'season') phSeason(y0);
   if (PH.scr !== 'thread') {                                            // bottom bar
-    const nb = [['Home', () => { PH.scr = 'home'; }], ['Talon', () => { PH.scr = 'table'; }], ['Stats', () => { PH.scr = 'stats'; PH.scroll = 0; }], ['Lines', () => { MENU.tab = TABS.indexOf('Lines'); openMenu(); }], ['Settings', () => { openMenu(); }]];
-    nb.forEach(([l, a], i) => pBtn(30 + i * 109, PHH - 100, 102, 64, l, PH.scr === ['home', 'table', 'stats'][i] ? '#5a2bb0' : '#2a1a44', () => { if (PH.th && PH.th.busy) return; a(); }, 22));
+    const un = Object.keys(vc && vc.unread || {}).length;
+    const nb = [['Home', () => { PH.scr = 'home'; }], [un ? 'Texts (' + un + ')' : 'Texts', () => { PH.scr = 'contacts'; PH.scroll = 0; }], ['Talon', () => { PH.scr = 'table'; }], ['Stats', () => { PH.scr = 'stats'; PH.scroll = 0; }], ['Lines', () => { MENU.tab = TABS.indexOf('Lines'); openMenu(); }], ['Settings', () => { openMenu(); }]];
+    nb.forEach(([l, a], i) => pBtn(28 + i * 91, PHH - 100, 87, 64, l, PH.scr === ['home', 'contacts', 'table', 'stats'][i] ? '#5a2bb0' : i === 1 && un ? '#3d1778' : '#2a1a44', a, 19));
   }
   phTex.needsUpdate = true; PH.dirty = false;
 }
@@ -4230,7 +4232,8 @@ function phThread(y) {
   key(x0 + 438, 94, rowY[3], '?', () => kbType('?'));
   // finish, or text someone else
   const done = th.n >= 1 || th.had;
-  if (th.kind === 'chat') { pBtn(34, 948, 300, 58, done ? th.doneLabel : 'Skip', done ? '#5a2bb0' : '#2a1a44', () => carThreadDone(), 22); pBtn(344, 948, W - 378, 58, 'Text someone else', '#2a1a44', () => carThreadOther(), 22); }
+  if (th.kind === 'free') pBtn(34, 948, W - 68, 58, '‹ All texts', '#2a1a44', () => { PH.th = null; PH.scr = 'contacts'; PH.scroll = 0; }, 24);
+  else if (th.kind === 'chat') { pBtn(34, 948, 300, 58, done ? th.doneLabel : 'Skip', done ? '#5a2bb0' : '#2a1a44', () => carThreadDone(), 22); pBtn(344, 948, W - 378, 58, 'Text someone else', '#2a1a44', () => carThreadOther(), 22); }
   else pBtn(34, 948, W - 68, 58, done ? th.doneLabel : 'Skip', done ? '#5a2bb0' : '#2a1a44', () => carThreadDone(), 24);
 }
 function phTrain(y) {
@@ -4312,9 +4315,56 @@ function phSeason(y) {
   pBtn(34, y + 640, W - 68, 92, 'Start season ' + (vc.season + 1), '#5a2bb0', () => {
     const old = CAR.vc, top = psRows(old, 'season').filter(r => r.n !== 'Drew')[0], ps = {};
     for (const [n, r] of Object.entries(old.ps || {})) ps[n] = { agp: (r.agp || 0) + (r.gp || 0), ag: (r.ag || 0) + (r.g || 0), aa: (r.aa || 0) + (r.a || 0) };      // all-time numbers carry over
-    CAR.vc = carNew(old.season + 1); CAR.vc.ps = ps; CAR.vc.chatI = old.chatI || 0;
+    CAR.vc = carNew(old.season + 1); CAR.vc.ps = ps; CAR.vc.chatI = old.chatI || 0; CAR.vc.threads = old.threads; CAR.vc.thT = old.thT;
     CAR.vc.past = (old.past || []).concat([{ season: old.season, pos, rec: old.rec, me: old.me, top: top ? top.n + ' (' + top.g + 'G ' + top.a + 'A)' : '' }]).slice(-10); carSave(); PH.scr = 'home';
   }, 32);
+}
+// ---- your texts: the group chat and everyone in the squad, most recent first. Pick anyone and text them.
+const GRPK = '#group';
+function contactsList() {
+  const vc = CAR.vc, seen = new Set(['Drew']), L = [], add = n => { if (n && !seen.has(n)) { seen.add(n); L.push(n); } };
+  lineMates().forEach(add); add('Crofty'); (RN.players || []).forEach(p => add(p.n));
+  const T = vc.thT || {}; return [GRPK].concat(L).map((k, i) => ({ k, i, t: T[k] || 0 })).sort((a, b) => b.t - a.t || a.i - b.i).map(r => r.k);
+}
+function thGroup() { const pool = lineMates().slice(0, 8), g = []; while (g.length < 3 && pool.length) g.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return g.length ? g : ['Crofty']; }
+function thGet(k) {                                                      // the live thread with someone (kept between visits, and saved)
+  CAR.ths = CAR.ths || {}; if (CAR.ths[k]) return CAR.ths[k];
+  const vc = CAR.vc, grp = k === GRPK, msgs = ((vc.threads || {})[k] || []).map(m => Object.assign({}, m));
+  return CAR.ths[k] = { kind: 'free', key: k, to: grp ? null : k, group: grp ? thGroup() : null, title: grp ? 'Ravens group chat' : k, sub: grp ? 'The lads' : '', msgs, options: [], n: 0, busy: false, topic: '', doneLabel: 'Back' };
+}
+function thSave(th) {
+  const vc = CAR.vc; if (!th || !th.key || !vc) return;
+  vc.threads = vc.threads || {}; vc.thT = vc.thT || {};
+  vc.threads[th.key] = th.msgs.slice(-14).map(m => m.me ? { me: true, t: m.t } : { n: m.n, t: m.t }); vc.thT[th.key] = Date.now();
+  const keep = Object.keys(vc.thT).sort((a, b) => vc.thT[b] - vc.thT[a]).slice(0, 14);     // the 14 most recent conversations are kept
+  for (const k of Object.keys(vc.threads)) if (!keep.includes(k)) delete vc.threads[k];
+  carSave();
+}
+function carOpenThread(k) {
+  const th = thGet(k), vc = CAR.vc; if (vc.unread) delete vc.unread[k];
+  if (th.group && !th.busy) th.group = thGroup();
+  const news = carNews(); th.topic = news.length ? 'What everyone is talking about: ' + news.slice(0, 2).join('; ') + '. Only bring it up if it fits; follow what Drew says' : '';
+  PH.th = th; PH.scr = 'thread'; PH.scroll = 0; PH.dirty = true;
+}
+function phContacts(y) {
+  const vc = CAR.vc, W = PHW, rows = contactsList(), un = vc.unread || {};
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText('Texts', 44, y + 22);
+  pg.fillStyle = '#9a8fb3'; pg.font = '500 20px system-ui, sans-serif'; pg.fillText('Pick anyone. Right stick scrolls.', 44, y + 54);
+  const wkTxt = carNext() === 'chat', top = y + 78, bot = PHH - (wkTxt ? 200 : 120), rh = 78;
+  const off = PH.scroll = clamp(PH.scroll, 0, Math.max(0, rows.length * rh - (bot - top)));
+  pg.save(); pg.beginPath(); pg.rect(20, top, W - 40, bot - top); pg.clip();
+  rows.forEach((k, i) => {
+    const yy = top + i * rh - off; if (yy + rh < top || yy > bot) return;
+    const th = CAR.ths && CAR.ths[k], msgs = th ? th.msgs : (vc.threads || {})[k] || [], last = msgs[msgs.length - 1];
+    const hi = PH.hits.length; if (yy >= top - 10 && yy + rh - 6 <= bot + 10) PH.hits.push({ x: 34, y: Math.max(yy, top), w: W - 68, h: Math.min(yy + rh - 6, bot) - Math.max(yy, top), act: () => carOpenThread(k) });
+    pRect(34, yy, W - 68, rh - 6, 16, un[k] ? '#2f1c52' : '#1c1430'); if (PH.hov === hi && PH.hits[hi] && PH.hits[hi].act) { pg.lineWidth = 4; pg.strokeStyle = '#e0a928'; pg.stroke(); }
+    pg.fillStyle = un[k] ? '#ffffff' : '#e6ddf5'; pg.font = '700 27px system-ui, sans-serif'; pg.fillText(k === GRPK ? 'Ravens group chat' : k, 58, yy + 27);
+    let pv = th && th.busy ? 'typing...' : last ? (last.me ? 'You: ' : k === GRPK && last.n ? firstN(last.n) + ': ' : '') + last.t : k === GRPK ? 'The whole team' : 'No messages yet';
+    pg.fillStyle = un[k] ? '#e0a928' : '#8f83ad'; pg.font = '500 20px system-ui, sans-serif'; while (pv.length > 4 && pg.measureText(pv).width > W - 150) pv = pv.slice(0, -2).trim() + '…'; pg.fillText(pv, 58, yy + 55);
+    if (un[k]) { pg.beginPath(); pg.arc(W - 64, yy + 36, 9, 0, 7); pg.fillStyle = '#e0a928'; pg.fill(); }
+  });
+  pg.restore();
+  if (wkTxt) pBtn(34, PHH - 190, W - 68, 70, vc.wk.chat ? 'Done texting' : 'Put the phone down', '#5a2bb0', () => { vc.wk.chat = vc.wk.chat || 2; PH.scr = 'home'; carSave(); }, 26);
 }
 // ---- texting: one teammate, or the group chat, through your server (or a few stock lines without it)
 function thHist(th) { return th.msgs.map(m => m.me ? { role: 'user', content: 'Drew: ' + m.t } : { role: 'assistant', content: th.group ? m.n + ': ' + m.t : m.t }); }
@@ -4330,11 +4380,14 @@ async function thFetch(th, typed) {
   if (options.length < 2) options = th.kind === 'after' ? ['Cheers lads', 'Great game', 'See you next week'] : ['Sounds good', 'Ha, brilliant', 'See you Thursday'];
   for (const m of msgs) th.msgs.push({ n: m.n, t: m.t });
   th.options = options.slice(0, 3); th.busy = false; PH.scroll = 0; PH.dirty = true;
+  if (th.key) { if (!(PH.open && PH.th === th && PH.scr === 'thread')) { const vc = CAR.vc; vc.unread = vc.unread || {}; vc.unread[th.key] = 1; } thSave(th); }
   if (audio && st.sound) audio.click(true); buzz('left', 0.25, 30);
 }
 function phoneSend(text) {
   const th = PH.th; if (!th || th.busy || !text) return;
   th.msgs.push({ me: true, t: text }); th.n++; th.options = []; PH.scroll = 0; PH.dirty = true;
+  const vc = CAR.vc; if (th.kind === 'free' && vc && vc.week <= CWEEKS && vc.wk.chat !== 1) { vc.wk.chat = 1; vc.vibe = clamp(vc.vibe + 3, 0, 100); }   // texting someone counts as the week's chat
+  if (th.key) thSave(th);
   thFetch(th, text);
 }
 async function phoneVoice(pcm) {
@@ -4359,6 +4412,7 @@ function carThreadOther() {                                              // midw
 }
 function carThreadDone() {
   const th = PH.th, vc = CAR.vc; if (!th || th.busy) return;
+  if (th.kind === 'free') { PH.th = null; PH.scr = 'contacts'; PH.dirty = true; return; }
   const k = th.kind === 'chat' ? 'chat' : 'after', talked = th.n || th.had; vc.wk[k] = talked ? 1 : 2;
   if (talked) { if (k === 'chat') vc.vibe = clamp(vc.vibe + 3, 0, 100); else vc.vibe = clamp(vc.vibe + 5, 0, 100); }
   PH.th = null; PH.scr = 'home'; PH.note = ''; carSave(); PH.dirty = true;
@@ -4369,7 +4423,14 @@ const TRAIN_WHY = { defend: "We gave them too much room on Saturday, so we're wo
 function carGo(k) {
   const vc = CAR.vc; PH.note = '';
   if (k === 'after') return carPub();
-  if (k === 'chat') return carThread(k);
+  if (k === 'chat') {
+    if (!vc.wk.inT) {                                                    // someone texts you about what's going on; reply to him, or text anyone
+      const mates = lineMates(), to = mates.length ? mates[vc.chatI % mates.length] : 'Crofty'; vc.chatI++; vc.wk.inT = 1;
+      const th = thGet(to), news = carNews(); th.topic = (news.length ? news[(vc.chatI - 1) % Math.min(2, news.length)] : 'Thursday training') + '. Text Drew about it the way you would, naturally';
+      thFetch(th);
+    }
+    PH.scr = 'contacts'; PH.scroll = 0; return;
+  }
   if (k === 'train') {
     const L = vc.last, rot = DRILLS.map(x => x.id).filter(x => x !== 'shoot' && x !== 'defend');
     const id = L && L.ga - L.gf >= 2 ? 'defend' : L && (L.sh || 0) < 2 ? 'shoot' : rot[(vc.week - 1 + vc.season * 7) % rot.length], d = DRILLS.find(x => x.id === id);
@@ -4516,7 +4577,7 @@ function carHub() {
 async function carEnter() {
   CAR.mode = 'career'; PH.note = brainOK() ? '' : 'No server set up: teammates have numbers, not names, and texts are stock lines. Set it up on the start page.';
   await carLoad(); carHub(); PH.dirty = true;
-  if (brainOK()) brainFetch('/hello', null, 6000).then(h => { if (!h || !(h.version >= 6)) { PH.note = 'Your server is running old code. Paste the new ravens-brain.js into Cloudflare and Deploy.'; PH.dirty = true; } }).catch(() => { });
+  if (brainOK()) brainFetch('/hello', null, 6000).then(h => { if (!h || !(h.version >= 7)) { PH.note = 'Your server is running old code. Paste the new ravens-brain.js into Cloudflare and Deploy.'; PH.dirty = true; } }).catch(() => { });
 }
 function phoneOpen() { PH.open = true; PH.dirty = true; PH.hov = -1; setKeep(false); stickOn = false; showStick(false); S.vx = S.vz = 0; for (const k of ['left', 'right']) { const g0 = hands[k] && hands[k].grip.children[0]; if (g0) g0.visible = true; } }
 function phoneClose() { PH.open = false; phoneM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; } }
@@ -4571,12 +4632,13 @@ function sdSmooth(raw) {
 }
 function sdPoly(pts) { const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])); return { pts, cum, len: cum[cum.length - 1] }; }
 function sdAt(p, s) { s = clamp(s, 0, p.len); let i = 1; while (i < p.pts.length - 1 && p.cum[i] < s) i++; const a = p.pts[i - 1], b = p.pts[i] || a, seg = (p.cum[i] - p.cum[i - 1]) || 1, u = clamp((s - p.cum[i - 1]) / seg, 0, 1); return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; }
-const sdEase = u => { u = clamp(u, 0, 1); return .75 * u + .25 * (u * u * (3 - 2 * u)); };
+const sdEase = u => { u = clamp(u, 0, 1); return .9 * u + .1 * (u * u * (3 - 2 * u)); };
 // which part you play: the team A skater most involved with the puck
 function sdPickMe(d) {
   const sc = {}; for (const p of d.players) if (p.team !== 'B' && p.role !== 'goalie' && p.role !== 'coach') sc[p.id] = 0;
-  for (const p of d.pucks || []) if (p.heldBy in sc) sc[p.heldBy] += 4;
-  for (const st0 of d.steps) for (const a of st0.actions) { if (a.actor in sc) sc[a.actor] += a.type === 'pass' || a.type === 'shoot' || a.type === 'carry' ? 4 : 1; if (a.to in sc) sc[a.to] += 5; }
+  for (const p of d.pucks || []) if (p.heldBy in sc) sc[p.heldBy] -= 2;
+  const W = { shoot: 7, carry: 4, skate: 3, backskate: 3, pass: 2 };
+  for (const st0 of d.steps) for (const a of st0.actions) { if (a.actor in sc) sc[a.actor] += W[a.type] || 0; if (a.to in sc) sc[a.to] += 4; }
   let best = null, bs = -1; for (const p of d.players) if (p.id in sc && sc[p.id] > bs) { bs = sc[p.id]; best = p.id; }
   return d.me || best;
 }
@@ -4621,8 +4683,8 @@ function sdStart(def) {
 function sdRep(first) {
   if (!first) for (const Q of SD.queues || []) { const sks = Q.map(id => SD.ents[id].sk); Q.forEach((id, i) => { SD.ents[id].sk = sks[(i + 1) % sks.length]; }); }   // next one up; the one who went goes to the back
   for (const id in SD.ents) { const e = SD.ents[id]; e.chase = null; }
-  SD.si = -1; SD.t = 0; SD.variant = null; SD.callT = -9; SD.steps = SD.d.steps.slice();
-  for (const id in SD.ents) { const e = SD.ents[id]; if (e.sk) { skPlace(e.sk, e.x0, e.z0, e.x0 > 0 ? -1 : 1, 0); e.sk.has = false; e.seg = null; } }
+  SD.si = -1; SD.t = 0; SD.T = 0; SD.variant = null; SD.callT = -9; SD.steps = SD.d.steps.slice();
+  for (const id in SD.ents) { const e = SD.ents[id]; if (e.sk) { skPlace(e.sk, e.x0, e.z0, e.x0 > 0 ? -1 : 1, 0); e.sk.has = false; e.seg = null; e.glide = null; } }
   // your start, facing your first move
   const meE = SD.ents[SD.me]; let yaw = meE.x0 > 0 ? Math.PI : 0;
   for (const s0 of SD.steps) { const a = s0.actions.find(x => x.actor === SD.me && x.path && x.path.length); if (a) { const [px, pz] = sdP(a.path[0]); if (Math.hypot(px - meE.x0, pz - meE.z0) > 0.3) { yaw = Math.atan2(pz - meE.z0, px - meE.x0); if (a.type === 'backskate') yaw += Math.PI; } break; } }
@@ -4656,11 +4718,12 @@ function sdStep() {
     SD.steps = SD.steps.concat(SD.def.variants[SD.variant]);
   }
   if (SD.si >= SD.steps.length) { sdRepDone(); return; }
-  const st0 = SD.steps[SD.si]; SD.t = 0; SD.wait = 0;
-  SD.acts = st0.actions.map((a, i) => ({ a, i, state: 'wait', delay: a.delay || 0 })).sort((x, y) => x.delay - y.delay || x.i - y.i);
+  const st0 = SD.steps[SD.si], carry = (SD.acts || []).filter(x => x.synth && x.state !== 'done').map(x => Object.assign(x, { state: 'wait', delay: 0.15 }));   // a pass that was still coming to you carries on
+  SD.t = 0; SD.wait = 0;
+  SD.acts = st0.actions.map((a, i) => ({ a, i, state: 'wait', delay: a.delay || 0 })).sort((x, y) => x.delay - y.delay || x.i - y.i).concat(carry);
   SD.msg = st0.title + (st0.description ? ': ' + st0.description : ''); DR.msg = st0.title; boardText();
   const mine = SD.acts.filter(x => x.a.actor === SD.me && x.a.type !== 'say');
-  toast(mine.length ? st0.title + '  (your move)' : st0.title, 2);
+  if (mine.length) toast(st0.title, 1.4);
 }
 function sdRepDone() {
   SD.rep++;
@@ -4668,16 +4731,19 @@ function sdRepDone() {
   HUDS.fade = 0.5; sdRep(false);
 }
 function sdTaskDone(x, ok) { (SD.tlog = SD.tlog || []).push(x.a.type.slice(0, 2) + SD.si + (ok === false ? '-' : '+') + (x.why || '')); if (SD.tlog.length > 80) SD.tlog.shift(); x.state = 'done'; if (ok !== false) { SD.done++; buzz('right', 0.3, 30); } DR.sdScore = SD.done; hudDraw(); SDG.ring.visible = false; SDG.dots.count = 0; }
+const sdMove = t => t === 'skate' || t === 'carry' || t === 'backskate';
 function sdFrame(dt) {
   if (!SD.on) return;
+  SD.T = (SD.T || 0) + dt;
   if (SD.placeMe > 0 && --SD.placeMe === 0) { const r = SD.pucks.find(p => p.real); if (r && r.holder === SD.me && !humanHas()) { const b = humanBlade(); PK.x = b[0]; PK.z = b[1]; PK.y = PUCK.HH; PK.vx = S.vx; PK.vz = S.vz; PK.vy = 0; } }
-  sdFeedCheck(dt);
   for (const p of SD.pucks) if (!p.real) sdPuckDraw(p, dt);
   if (SD.si < 0 || SD.next > 0) { SD.next = (SD.next || 0) - dt; sdMoveAll(dt); if (SD.next <= 0 && SD.si < SD.steps.length) { SD.next = 0; sdStep(); } return; }
   SD.t += dt;
+  sdFeedCheck(dt);
   let busy = false;
   for (const x of SD.acts) {
-    if (x.state === 'done') continue; busy = true;
+    if (x.state === 'done') continue;
+    if (!(x.a.actor !== SD.me && sdMove(x.a.type) && x.state === 'run')) busy = true;   // their skating carries on into the next step: the drill flows
     if (x.state === 'wait' && SD.t >= x.delay) {
       const puckJob = t => t === 'pass' || t === 'shoot';                 // your passes and shots come one after another
       if (!(x.a.actor === SD.me && puckJob(x.a.type) && SD.acts.some(y => y !== x && y.a.actor === SD.me && puckJob(y.a.type) && y.state !== 'done' && SD.acts.indexOf(y) < SD.acts.indexOf(x)))) sdBegin(x);
@@ -4686,25 +4752,25 @@ function sdFrame(dt) {
   }
   sdMoveAll(dt);
   for (const p of SD.pucks) if (p.real && p.fly) sdRealFly(p, dt);
-  if (SD.pucks.some(p => p.fly)) busy = true;
-  if (!busy) SD.next = 0.35;                                           // a short gap, then the next step
-  if (SD.t > 25) { for (const x of SD.acts) if (x.state !== 'done') { if (x.a.actor === SD.me) sdTaskDone(x, false); else x.state = 'done'; } for (const p of SD.pucks) p.fly = null; toast('Moving on', 1.2); }
+  if (SD.pucks.some(p => p.fly && p.fly.to)) busy = true;
+  if (!busy) SD.next = 0.08;                                           // straight into the next step
+  if (SD.t > 25) { for (const x of SD.acts) if (x.state !== 'done') { if (x.a.actor === SD.me) sdTaskDone(x, false); else x.state = 'done'; } for (const p of SD.pucks) p.fly = null; }
 }
 function sdBegin(x) {
-  const a = x.a, e = SD.ents[a.actor]; x.state = 'run'; x.t0 = SD.t;
+  const a = x.a, e = SD.ents[a.actor]; x.state = 'run'; x.t0 = SD.t; x.T0 = SD.T;
   if (!e) { x.state = 'done'; return; }
   if (a.type === 'say') { if (e.sk) say(e.sk.p, a.text, { force: true }); else if (e.me) toast(a.text, 1.5); x.state = 'done'; return; }
-  if (a.type === 'skate' || a.type === 'carry' || a.type === 'backskate') {
+  if (sdMove(a.type)) {
     const pts = (a.path || []).map(sdP); if (!pts.length) { x.state = 'done'; return; }
     const from = sdPos(a.actor), poly = sdPoly(sdSmooth([from, ...pts])), dur = a.duration || clamp(poly.len / SDFT / SDSPD[a.type], .5, 12);
     x.poly = poly; x.dur = dur;
-    if (e.me) { sdTrail(sdTrailPts(poly)); SDG.ring.visible = true; SDG.ring.position.set(pts[pts.length - 1][0], 0.014, pts[pts.length - 1][1]); x.end = pts[pts.length - 1]; }
-    else { e.seg = { poly, t0: SD.t, dur, back: a.type === 'backskate' }; }
+    if (e.me) { x.trail = sdTrailPts(poly); sdTrail(x.trail); SDG.ring.visible = true; SDG.ring.position.set(pts[pts.length - 1][0], 0.014, pts[pts.length - 1][1]); x.end = pts[pts.length - 1]; x.prog = 0; }
+    else { e.glide = null; e.seg = { poly, t0: SD.T, dur, back: a.type === 'backskate' }; }
     if (a.puck) sdPickup(a.puck, a.actor);
     return;
   }
   if (a.type === 'pass' || a.type === 'shoot') {
-    if (e.me) { x.myPuck = SD.pucks.find(p => p.real); SDG.dots.count = 0; if (a.type === 'pass' && a.to && SD.ents[a.to]) { x.tgt = a.to; } SDG.ring.visible = true; toast(a.type === 'shoot' ? 'Shoot!' : 'Pass to ' + sdName(a.to), 1.6); x.had = humanHas(); }
+    if (e.me) { SDG.dots.count = 0; if (a.type === 'pass' && a.to && SD.ents[a.to]) { x.tgt = a.to; } SDG.ring.visible = true; toast(a.type === 'shoot' ? 'Shoot!' : 'Pass to ' + sdName(a.to), 1.3); x.had = humanHas(); }
     return;
   }
   x.state = 'done';
@@ -4712,76 +4778,118 @@ function sdBegin(x) {
 function sdTrailPts(poly) { const out = [], n = Math.max(2, Math.floor(poly.len / 0.8)); for (let i = 1; i <= n; i++) out.push(sdAt(poly, poly.len * i / n)); return out; }
 const sdName = id => { const e = SD.ents[id]; return e && e.sk && e.sk.p.name ? e.sk.p.name : id ? (SD.def.players.find(p => p.id === id) || {}).label || id : ''; };
 function sdPickup(pid, actor) { const p = SD.pucks.find(q => q.id === pid); if (!p) return; p.holder = actor; p.fly = null; if (actor === SD.me) sdSwapReal(p); else if (p.real) sdRealTo(p); }
+const sdNet = (a, ox) => (a.target === 'net_left' || (typeof a.target === 'string' && SD.ents[a.target] && SD.ents[a.target].x0 < 0)) ? -GX : (a.target === 'net_right' || (typeof a.target === 'string' && SD.ents[a.target])) ? GX : (ox > 0 ? GX : -GX);
+// a pass that leads the man: where his stick will be when the puck gets there
+function sdLead(id, ox, oz, spd) {
+  const e = SD.ents[id], bl = sdStick(id), vx = e && e.me ? S.vx : e && e.sk ? e.sk.vx : 0, vz = e && e.me ? S.vz : e && e.sk ? e.sk.vz : 0;
+  const t = Math.hypot(bl[0] - ox, bl[1] - oz) / spd; return [bl[0] + vx * t * 0.9, bl[1] + vz * t * 0.9];
+}
+function sdPassTo(e, actor, to, pk) {                                      // a real-puck pass, led onto his stick
+  const [ox, oz] = sdStick(actor), bl = sdStick(to), d = Math.hypot(bl[0] - ox, bl[1] - oz), spd = clamp(7 + d * 0.4, 8, 15), tg = sdLead(to, ox, oz, spd);
+  skRelease(e.sk, tg[0], tg[1], spd, 0, 0.01); pk.holder = null; pk.fly = { to, from: actor, t: 0, real: true }; e.sk.p.s.shotT = 0.1;
+}
 function sdRun(x, dt) {
   const a = x.a, e = SD.ents[a.actor];
-  if (a.type === 'skate' || a.type === 'carry' || a.type === 'backskate') {
-    if (e.me) { const d = Math.hypot(S.x - x.end[0], S.z - x.end[1]); if (d < 2.4 || SD.t - x.t0 > x.dur + 8) sdTaskDone(x, d < 2.4); return; }
-    if (SD.t - x.t0 >= x.dur) { e.seg = null; x.state = 'done'; }
+  if (sdMove(a.type)) {
+    if (e.me) {                                                          // your route: done when you're nearly there, or most of the way along it
+      const d = Math.hypot(S.x - x.end[0], S.z - x.end[1]);
+      for (let i = x.prog; i < x.trail.length; i++) if (Math.hypot(S.x - x.trail[i][0], S.z - x.trail[i][1]) < 2.2) x.prog = i;
+      if (x.trail.length > 2 && x.prog < x.trail.length) { sdTrail(x.trail.slice(x.prog)); }
+      if (d < 3.2 || x.prog >= x.trail.length * 0.85 || SD.t - x.t0 > x.dur + 8) sdTaskDone(x, d < 3.2 || x.prog >= x.trail.length * 0.85);
+      return;
+    }
+    if (SD.T - x.T0 >= x.dur) x.state = 'done';
     return;
   }
   if (a.type === 'pass' || a.type === 'shoot') {
     if (e.me) {                                                            // your pass or shot: done when the puck leaves your stick
-      const tg = a.type === 'pass' && x.tgt ? sdPos(x.tgt) : [(a.target === 'net_left' || (typeof a.target === 'string' && SD.ents[a.target] && SD.ents[a.target].x0 < 0)) ? -GX : GX, 0];
+      const tg = a.type === 'pass' && x.tgt ? sdPos(x.tgt) : [sdNet(a, S.x), 0];
       SDG.ring.position.set(tg[0], 0.014, tg[1]);
       if (SD.acts.some(y => y !== x && y.a.actor === SD.me && y.state === 'run' && y.end)) x.t0 = SD.t;   // still skating your route: the clock waits
       const has = humanHas(); if (has) x.had = true;
-      if (!has && !x.fed && SD.t - x.t0 > 0.8 && !SD.pucks.some(p => p.real && p.fly && p.fly.to === SD.me) && !SD.acts.some(y => y.state !== 'done' && y.a.to === SD.me)) {   // no puck coming: here's a new one
-        const real = SD.pucks.find(p => p.real); if (real) { if (real.holder && SD.ents[real.holder] && SD.ents[real.holder].sk) SD.ents[real.holder].sk.has = false; real.holder = SD.me; real.fly = null; sdRealTo(real); x.fed = true; toast('New puck', 1); }
-      }
       const sp = Math.hypot(PK.vx, PK.vz), gone = x.had && !has && sp > (a.type === 'shoot' ? 6 : 2.5) && pClock - (PK.htouch || -9) < 0.5;
-      if (gone) { const pk = SD.pucks.find(p => p.real); if (pk) { pk.holder = null; if (a.type === 'pass' && x.tgt) { pk.fly = { to: x.tgt, t: 0, real: true }; SD.passes++; } } if (a.type === 'shoot') SD.shots++; sdTaskDone(x, true); return; }
-      if (SD.t - x.t0 > 9) { sdTaskDone(x, false); const pk = SD.pucks.find(p => p.real); if (pk && a.type === 'pass' && x.tgt) { pk.holder = x.tgt; sdRealTo(pk); } }
+      if (gone) { const pk = SD.pucks.find(p => p.real); if (pk) { pk.holder = null; if (a.type === 'pass' && x.tgt) { pk.fly = { to: x.tgt, from: SD.me, t: 0, real: true }; SD.passes++; } } if (a.type === 'shoot') SD.shots++; sdTaskDone(x, true); return; }
+      if (SD.t - x.t0 > 10) { sdTaskDone(x, false); const pk = SD.pucks.find(p => p.real); if (pk && a.type === 'pass' && x.tgt && pk.holder === SD.me) { pk.holder = x.tgt; sdRealTo(pk); } }
       return;
     }
     // their pass or shot: they need a puck first
     let pk = SD.pucks.find(p => p.holder === a.actor) || (a.puck && SD.pucks.find(p => p.id === a.puck && p.holder === a.actor));
     if (!pk) { if (SD.t - x.t0 > 6) x.state = 'done'; return; }
-    if (a.type === 'pass' && a.to === SD.me) {                             // a pass to you waits until you're near where you should be
-      const mv = SD.acts.find(y => y.a.actor === SD.me && y.state === 'run' && y.end);
-      if (mv && Math.hypot(S.x - mv.end[0], S.z - mv.end[1]) > 6 && SD.t - x.t0 < 3) return;
+    if (a.type === 'pass' && a.to === SD.me) {
+      const mv = SD.acts.find(y => y.a.actor === SD.me && y.state === 'run' && y.end);   // only waits if you haven't set off at all
+      if (mv && Math.hypot(S.vx, S.vz) < 0.8 && Math.hypot(S.x - mv.end[0], S.z - mv.end[1]) > 15 && SD.t - x.t0 < 2) return;
       if (!pk.real) sdSwapReal(pk);
       if (Math.random() < 0.5) say(e.sk.p, pick(['Drew!', 'Heads up!', 'Yours!']), { gap: 0.5 });
     }
     const [ox, oz] = sdStick(a.actor);
+    if (a.type === 'pass') {                                               // the net's in the way (passing out from behind it): he steps out to the side first
+      if (x.out && SD.T < x.out) return;
+      const tg0 = a.to ? sdStick(a.to) : sdP(a.target || { x: 0, y: 0 }), side = sdNetSide(ox, oz, tg0[0], tg0[1]);
+      if (side && !x.out) { x.out = SD.T + 0.8; e.seg = { poly: sdPoly(sdSmooth([[e.sk.x, e.sk.z], side])), t0: SD.T, dur: 0.75, back: false }; return; }
+    }
     if (pk.real) {
-      if (a.type === 'pass') { const tg = a.to ? sdStick(a.to) : sdP(a.target || { x: 0, y: 0 }), d = Math.hypot(tg[0] - ox, tg[1] - oz), spd = clamp(6 + d * 0.45, 8, 15); skRelease(e.sk, tg[0], tg[1], spd, 0, 0.02); pk.holder = null; pk.fly = a.to ? { to: a.to, t: 0, real: true } : null; }
-      else { const nx = (a.target === 'net_left' || (SD.ents[a.target] && SD.ents[a.target].x0 < 0)) ? -GX : (a.target === 'net_right' || SD.ents[a.target]) ? GX : (ox > 0 ? GX : -GX); skRelease(e.sk, nx, (Math.random() - 0.5) * 1.2, 20, 1.6, 0.03); pk.holder = null; pk.fly = null; }
+      if (a.type === 'pass') { if (a.to) sdPassTo(e, a.actor, a.to, pk); else { const tg = sdP(a.target || { x: 0, y: 0 }); skRelease(e.sk, tg[0], tg[1], 11, 0, 0.02); pk.holder = null; pk.fly = null; } }
+      else { skRelease(e.sk, sdNet(a, ox), (Math.random() - 0.5) * 1.2, 20, 1.6, 0.03); pk.holder = null; pk.fly = null; }
       e.sk.p.s.shotT = 0.1;
     } else {
-      const tg = a.type === 'pass' ? (a.to ? sdStick(a.to) : sdP(a.target || { x: 0, y: 0 })) : [(a.target === 'net_left' || (SD.ents[a.target] && SD.ents[a.target].x0 < 0)) ? -(GX + 0.6) : (GX + 0.6), (Math.random() - 0.5) * 1.2];
+      const tg = a.type === 'pass' ? (a.to ? sdLead(a.to, ox, oz, SDPASS * SDFT) : sdP(a.target || { x: 0, y: 0 })) : [sdNet(a, ox) * (GX + 0.6) / GX, (Math.random() - 0.5) * 1.2];
       const d = Math.hypot(tg[0] - ox, tg[1] - oz), T = clamp(d / SDFT / (a.type === 'pass' ? SDPASS : SDSHOT), .3, 1.6);
       pk.holder = null; pk.fly = { fx: ox, fz: oz, tx: tg[0], tz: tg[1], t: 0, T, to: a.type === 'pass' ? a.to || null : null }; e.sk.p.s.shotT = 0.1;
     }
     x.state = 'done';
   }
 }
+// does a pass from (ox,oz) to (tx,tz) go through a net? then the spot beside the net to pass from instead
+function sdNetSide(ox, oz, tx, tz) {
+  for (const sg of [1, -1]) {
+    const ax = sg * ox - GX, bx = sg * tx - GX; if (ax * bx >= 0) continue;
+    const u = ax / (ax - bx), zc = oz + (tz - oz) * u; if (Math.abs(zc) > NETW + 0.35) continue;
+    const zs = Math.sign(tz || oz || 1) * (NETW + 1.0); return ax > 0 ? [sg * (GX + 0.4), zs] : [sg * (GX - 0.9), zs];
+  }
+  return null;
+}
+// a teammate gives you a puck (the passer again, or whoever's nearest), the way a coach or a mate would at practice
+function sdResupply(r, from) {
+  let f = from && SD.ents[from] && SD.ents[from].sk ? from : null;
+  if (!f) { let bd = 30; for (const id in SD.ents) { const e = SD.ents[id]; if (!e.sk || e.sk.team !== 'ravens') continue; const d = Math.hypot(e.sk.x - S.x, e.sk.z - S.z); if (d > 4 && d < bd) { bd = d; f = id; } } }
+  if (r.holder && SD.ents[r.holder] && SD.ents[r.holder].sk) SD.ents[r.holder].sk.has = false;
+  r.fly = null;
+  if (!f) { r.holder = SD.me; sdRealTo(r); return; }
+  r.holder = f; sdRealTo(r);                                               // he has one (a spare from the pile)
+  SD.acts.push({ a: { actor: f, type: 'pass', to: SD.me }, i: 99, state: 'wait', delay: SD.t + 0.45, synth: true });
+}
 function sdRealFly(p, dt) {                                              // the real puck on its way to someone: he takes it, or goes and gets it
   p.fly.t += dt; const to = p.fly.to; if (!to) { p.fly = null; return; }
   if (to === SD.me) {
     if (humanHas()) { p.holder = SD.me; p.fly = null; return; }
-    const hb = humanBlade(), d = Math.hypot(PK.x - hb[0], PK.z - hb[1]); p.fly.dmin = Math.min(p.fly.dmin == null ? 99 : p.fly.dmin, d);
-    if ((p.fly.t > 0.8 && d > p.fly.dmin + 2.5) || p.fly.t > 2.4) { p.fly = null; p.holder = SD.me; sdRealTo(p); toast('New puck', 0.9); }
+    const hb = humanBlade(), d = Math.hypot(PK.x - hb[0], PK.z - hb[1]), sp = Math.hypot(PK.vx, PK.vz); p.fly.dmin = Math.min(p.fly.dmin == null ? 99 : p.fly.dmin, d);
+    if ((p.fly.t > 0.6 && d > p.fly.dmin + 3 && d > 3) || (sp < 1.2 && d > 3.5) || p.fly.t > 3.2) { const from = p.fly.from; p.fly = null; sdResupply(p, from !== SD.me ? from : null); toast('Another one', 0.8); }
     return;
   }
   const e = SD.ents[to]; if (!e || !e.sk) { p.fly = null; return; }
   const [bx, bz] = skBlade(e.sk), d = Math.hypot(PK.x - bx, PK.z - bz), sp = Math.hypot(PK.vx, PK.vz); p.fly.dmin = Math.min(p.fly.dmin == null ? 99 : p.fly.dmin, d);
   if (d < (e.chase ? 0.9 : 1.3)) { sdCatch(p, to); return; }
-  if (!e.chase && p.fly.t > 0.3 && (d > p.fly.dmin + 0.6 || sp < 1.5)) { e.chase = { t: 0 }; }   // it's not coming to him: he skates to it
+  if (!e.chase && p.fly.t > 0.25 && (d > p.fly.dmin + 0.5 || sp < 1.5)) { e.chase = { t: 0 }; }   // it's not coming to him: he skates to it
   if (e.chase) { e.chase.t += dt; if (e.chase.t > 3.5) sdCatch(p, to); }
 }
 function sdCatch(p, to) {
   const e = SD.ents[to]; p.holder = to; p.fly = null; e.sk.has = true; skGlue(e.sk);
-  if (e.chase) { e.chase = null; if (e.seg) { const last = e.seg.poly.pts[e.seg.poly.pts.length - 1], left = Math.max(0.6, e.seg.dur - (SD.t - e.seg.t0)); e.seg = { poly: sdPoly(sdSmooth([[e.sk.x, e.sk.z], last])), t0: SD.t, dur: left, back: false }; } }
+  if (e.chase) { e.chase = null; if (e.seg) { const last = e.seg.poly.pts[e.seg.poly.pts.length - 1], left = Math.max(0.6, e.seg.dur - (SD.T - e.seg.t0)); e.seg = { poly: sdPoly(sdSmooth([[e.sk.x, e.sk.z], last])), t0: SD.T, dur: left, back: false }; } }
 }
-// you need the puck and it isn't coming: a new one, quickly
+// you need the puck for your next move and it isn't coming: a teammate gives you one
 function sdFeedCheck(dt) {
   const job = SD.acts && SD.acts.find(x => x.a.actor === SD.me && x.state === 'run' && (x.a.type === 'carry' || x.a.type === 'pass' || x.a.type === 'shoot'));
   const r = SD.pucks.find(p => p.real);
   const coming = r && (r.fly && r.fly.to === SD.me || SD.acts && SD.acts.some(y => y.state !== 'done' && y.a.to === SD.me));
-  if (!job || humanHas() || !r || coming || (r.holder && r.holder !== SD.me && SD.ents[r.holder] && SD.ents[r.holder].sk)) { SD.noPk = 0; return; }
-  if (Math.hypot(PK.x - S.x, PK.z - S.z) < 2.2 && Math.hypot(PK.vx, PK.vz) < 3) { SD.noPk = 0; return; }   // it's right there: go get it
+  if (!job || humanHas() || !r || coming) { SD.noPk = 0; return; }
+  if (r.holder && r.holder !== SD.me && SD.ents[r.holder] && SD.ents[r.holder].sk) {                 // a teammate has it and nothing says he'll pass it: he gives it to you
+    if (SD.acts.some(y => y.state !== 'done' && y.a.actor === r.holder && (y.a.type === 'pass' || y.a.type === 'shoot'))) { SD.noPk = 0; return; }
+    SD.noPk = (SD.noPk || 0) + dt; if (SD.noPk > 0.5) { SD.noPk = 0; SD.acts.push({ a: { actor: r.holder, type: 'pass', to: SD.me }, i: 99, state: 'wait', delay: SD.t, synth: true }); }
+    return;
+  }
+  if (Math.hypot(PK.x - S.x, PK.z - S.z) < 2.5 && Math.hypot(PK.vx, PK.vz) < 3) { SD.noPk = 0; return; }   // it's right there: go get it
   SD.noPk = (SD.noPk || 0) + dt;
-  if (SD.noPk > 0.8) { SD.noPk = 0; r.fly = null; r.holder = SD.me; sdRealTo(r); toast('New puck', 0.9); }
+  if (SD.noPk > 1.0) { SD.noPk = 0; sdResupply(r, null); }
 }
 function sdPuckDraw(p, dt) {
   const m = p.mesh;
@@ -4794,10 +4902,13 @@ function sdMoveAll(dt) {
     const e = SD.ents[id]; if (!e.sk) continue; const s = e.sk;
     const x0 = s.x, z0 = s.z;
     if (e.chase) { const tx = PK.x + PK.vx * 0.25, tz = PK.z + PK.vz * 0.25, dx = tx - s.x, dz = tz - s.z, d = Math.hypot(dx, dz) || 1, st0 = Math.min(d, 7 * dt); s.x += dx / d * st0; s.z += dz / d * st0; }
-    else if (e.seg) { const u = (SD.t - e.seg.t0) / e.seg.dur, q = sdAt(e.seg.poly, sdEase(u) * e.seg.poly.len); s.x = q[0]; s.z = q[1]; }
+    else if (e.seg) {
+      const u = (SD.T - e.seg.t0) / e.seg.dur, q = sdAt(e.seg.poly, sdEase(u) * e.seg.poly.len); s.x = q[0]; s.z = q[1];
+      if (u >= 1) { e.glide = { vx: s.vx, vz: s.vz, back: e.seg.back }; e.seg = null; }               // at the end of a route he glides on and slows, rather than stopping dead
+    } else if (e.glide) { const g = e.glide, k = Math.exp(-dt / 0.45); s.x += g.vx * dt; s.z += g.vz * dt; g.vx *= k; g.vz *= k; const [cx, cz] = inRink(s.x, s.z, 0.6); s.x = cx; s.z = cz; if (Math.hypot(g.vx, g.vz) < 0.2) e.glide = null; }
     const vx = (s.x - x0) / Math.max(dt, 1e-3), vz = (s.z - z0) / Math.max(dt, 1e-3); s.vx += (vx - s.vx) * 0.35; s.vz += (vz - s.vz) * 0.35;
     const sp = Math.hypot(s.vx, s.vz); let turn = 0;
-    if (sp > 0.4) { let hx = s.vx / sp, hz = s.vz / sp; if (e.seg && e.seg.back) { hx = -hx; hz = -hz; } const a0 = Math.atan2(s.fz, s.fx), a1 = Math.atan2(hz, hx); turn = wrapPi(a1 - a0) / Math.max(dt, 1e-3); const k = 1 - Math.exp(-dt / 0.12); s.fx += (hx - s.fx) * k; s.fz += (hz - s.fz) * k; const n = Math.hypot(s.fx, s.fz) || 1; s.fx /= n; s.fz /= n; }
+    if (sp > 0.4) { let hx = s.vx / sp, hz = s.vz / sp; if ((e.seg && e.seg.back) || (e.glide && e.glide.back)) { hx = -hx; hz = -hz; } const a0 = Math.atan2(s.fz, s.fx), a1 = Math.atan2(hz, hx); turn = wrapPi(a1 - a0) / Math.max(dt, 1e-3); const k = 1 - Math.exp(-dt / 0.12); s.fx += (hx - s.fx) * k; s.fz += (hz - s.fz) * k; const n = Math.hypot(s.fx, s.fz) || 1; s.fx /= n; s.fz /= n; }
     if (s.has) { const pk = SD.pucks.find(p => p.real && p.holder === id); if (pk) skGlue(s); else s.has = false; }
     skSync(s, sp, clamp(turn, -4, 4), dt);
   }
@@ -5477,7 +5588,7 @@ $('btest').addEventListener('click', async () => {
   if (!/^https:\/\//.test(st.brainUrl)) { n.textContent = 'The address should start with https://'; return; }
   n.textContent = 'Checking...';
   let msg = '';
-  try { const h = await brainFetch('/hello', null, 8000); if (!(h.version >= 6)) { n.textContent = 'Your server is running old code: open it in Cloudflare, Edit code, paste in the new ravens-brain.js and Deploy.'; return; } msg = 'Server OK' + (h.claude ? ' (Claude answers)' : ' (free Cloudflare model answers)') + (h.kv ? '' : ', but no KV store: sessions are not kept'); await rosterLoad(); const nm = RN.map ? Object.values(RN.map).map(r => r.n).join(', ') : ''; if (nm) msg += '. On the ice with you: ' + nm; }
+  try { const h = await brainFetch('/hello', null, 8000); if (!(h.version >= 7)) { n.textContent = 'Your server is running old code: open it in Cloudflare, Edit code, paste in the new ravens-brain.js and Deploy.'; return; } msg = 'Server OK' + (h.claude ? ' (Claude answers)' : ' (free Cloudflare model answers)') + (h.kv ? '' : ', but no KV store: sessions are not kept'); await rosterLoad(); const nm = RN.map ? Object.values(RN.map).map(r => r.n).join(', ') : ''; if (nm) msg += '. On the ice with you: ' + nm; }
   catch (e) { n.textContent = 'Server: ' + (e.message === 'bad key' ? 'the key is wrong' : e.name === 'AbortError' ? 'no answer' : e.message); return; }
   if (st.talk !== 'off') { try { const m = await navigator.mediaDevices.getUserMedia({ audio: true }); m.getTracks().forEach(t => t.stop()); msg += '. Mic allowed.'; } catch (e) { msg += '. Mic: ' + (e.name === 'NotAllowedError' ? 'not allowed (check the browser\'s site settings)' : e.name || 'error'); } }
   n.textContent = msg; brainFlush(false);
@@ -5509,7 +5620,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
