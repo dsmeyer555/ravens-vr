@@ -502,7 +502,7 @@ const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
-const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 0, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 3, rulesOn: true, scrimM: '5' };
+const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 0, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 3, rulesOn: true, scrimM: '5', voices: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -515,7 +515,7 @@ function loadSettings() {
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
       if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['hold', 'btn', 'grip', 'off'])) o.oneM = j.oneM; if (typeof j.arcade === 'boolean') o.arcade = j.arcade; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2, 3])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone', 'twoone', 'breakout', 'defend', 'scrim', 'scrim3'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2, 3])) o.oppP = j.oppP;
-      if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM;
+      if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM; if (typeof j.voices === 'boolean') o.voices = j.voices;
       if (ok(j.mountH, ['off', 'right', 'left'])) o.mountH = j.mountH; if (typeof j.mD === 'number' && j.mD > 0.2 && j.mD < 1.8) o.mD = j.mD;
       if (Array.isArray(j.mAx) && j.mAx.length === 3 && j.mAx.every(v => typeof v === 'number' && isFinite(v)) && Math.abs(Math.hypot(...j.mAx) - 1) < 0.05) o.mAx = j.mAx;
     }
@@ -1383,6 +1383,7 @@ puck.castShadow = true; scene.add(puck);
 const puckShadow = new THREE.Mesh(new THREE.CircleGeometry(PUCK.R * 1.2, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
 puckShadow.rotation.x = -Math.PI / 2; scene.add(puckShadow);
 const H = { x: 0, z: 0, fx: 1, fz: 0, ok: false };
+function puckBack() { if (SC.on || DR.on) { toast('No puck reset in drills or games', 1.4); return; } placePuck(); }
 function placePuck() {
   const side = st.shot === 'right' ? 1 : -1;
   if (H.ok) resetPuck(H.x + H.fx * 0.95 - H.fz * 0.3 * side, H.z + H.fz * 0.95 + H.fx * 0.3 * side); else resetPuck(1, 0.4);
@@ -1847,7 +1848,7 @@ function pollInput(dt, hw, hy) {
     const pb = prevBtn[h], edge = i => !!(gp.buttons[i] && gp.buttons[i].pressed) && !pb[i];
     const mh = mountOn(), role = mh ? (h === mh ? 'mount' : 'free') : h;            // stick mount: the free controller skates and has the menu, the one on the stick keeps the puck
     if (role === 'mount') {
-      if (edge(4) || edge(5)) placePuck();
+      if (edge(4) || edge(5)) puckBack();
       const mt = gp.buttons[0], mv = mt ? (mt.value || (mt.pressed ? 1 : 0)) : 0;
       if (st.keepM === 'hold') { const want = keepOn ? mv > 0.3 : mv > 0.55; if (want !== keepOn) setKeep(want); }
       else if (st.keepM === 'toggle') { if (edge(0)) setKeep(!keepOn); }
@@ -1855,7 +1856,7 @@ function pollInput(dt, hw, hy) {
       for (let i = 0; i < gp.buttons.length; i++) pb[i] = !!gp.buttons[i].pressed;
       continue;
     }
-    if (role === 'free' && edge(1)) placePuck();
+    if (role === 'free' && edge(1)) puckBack();
     if (!mh && h === handTop && edge(1)) callForPuck('grip');                 // top-hand grip: call for the puck
     if (!mh && st.oneM === 'hold' && h === (st.shot === 'right' ? 'right' : 'left')) {                    // lower hand: hold the trigger (or grip) and it is on the stick; let go and the stick stays in your top hand
       const tv = gp.buttons[0] ? (gp.buttons[0].value || (gp.buttons[0].pressed ? 1 : 0)) : 0, gv = gp.buttons[1] ? (gp.buttons[1].value || (gp.buttons[1].pressed ? 1 : 0)) : 0;
@@ -1873,7 +1874,7 @@ function pollInput(dt, hw, hy) {
       const tr = gp.buttons[0]; brake = tr ? (tr.value || (tr.pressed ? 1 : 0)) : 0;
     } else {
       if (edge(4) && st.oneM === 'btn') toggleHands();
-      if (edge(5)) placePuck();
+      if (edge(5)) puckBack();
       if (edge(3)) nextCurve();
       const lt = gp.buttons[0], lv = lt ? (lt.value || (lt.pressed ? 1 : 0)) : 0;                    // the right trigger keeps the puck on the blade (unless it holds the stick)
       if (st.oneM === 'hold' && h === (st.shot === 'right' ? 'right' : 'left')) { if (keepOn) setKeep(false); }
@@ -2085,8 +2086,8 @@ function stripeTex(baseHex, trimHex) {
 }
 const PG = {
   pants: new THREE.CylinderGeometry(0.19, 0.215, 0.27, 14), torso: new THREE.CylinderGeometry(0.235, 0.2, 0.5, 16, 1, true), torsoTop: new THREE.SphereGeometry(1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2),
-  helmet: new THREE.SphereGeometry(0.128, 16, 12), face: new THREE.SphereGeometry(0.1, 12, 10), visor: new THREE.CylinderGeometry(0.135, 0.135, 0.045, 16, 1, true, -0.9, 1.8),
-  upper: new THREE.CapsuleGeometry(0.06, 0.2, 4, 10), fore: new THREE.CapsuleGeometry(0.055, 0.17, 4, 10), glove: new THREE.BoxGeometry(0.1, 0.13, 0.12), cuff: new THREE.CylinderGeometry(0.07, 0.062, 0.12, 10),
+  helmet: new THREE.SphereGeometry(0.128, 16, 12), face: new THREE.SphereGeometry(0.1, 12, 10), visor: new THREE.CylinderGeometry(0.128, 0.122, 0.05, 20, 1, true, -0.85, 1.7),
+  upper: new THREE.CapsuleGeometry(0.06, 0.2, 4, 10), fore: new THREE.CapsuleGeometry(0.055, 0.17, 4, 10), glove: new THREE.CapsuleGeometry(0.054, 0.06, 4, 10), cuff: new THREE.CylinderGeometry(0.07, 0.062, 0.12, 10),
   thigh: new THREE.CapsuleGeometry(0.088, 0.25, 4, 10), shin: new THREE.CapsuleGeometry(0.06, 0.31, 4, 10), boot: new THREE.BoxGeometry(0.1, 0.13, 0.27), blade: new THREE.BoxGeometry(0.007, 0.035, 0.3),
   shaft: new THREE.BoxGeometry(0.022, 1.0, 0.03), neck: new THREE.CylinderGeometry(0.05, 0.055, 0.1, 10),
   pad: new THREE.BoxGeometry(0.28, 1.0, 0.17), padRoll: new THREE.CylinderGeometry(0.06, 0.06, 0.28, 10), blocker: new THREE.BoxGeometry(0.2, 0.36, 0.045), trapper: new THREE.SphereGeometry(1, 14, 10),
@@ -2104,17 +2105,37 @@ function ik2(A, T, l1, l2, pole, J, E) {
   J.copy(A).addScaledVector(dir, a).addScaledVector(pd, h); E.copy(A).addScaledVector(dir, L);
 }
 const STICK_BP = {};
+const SKINS = [0xf1c6a5, 0xe8b896, 0xd9a888, 0xc68f6a, 0xa86f4c, 0x7d4f33], HAIRS = [0x2b1d14, 0x4a3020, 0x7a4a24, 0xc89a5a, 0x151515, 0x8f8f8f, 0xa0522d];
+const hashStr = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+function faceTex(seed, skin, hair) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d'), r = n => ((seed >>> n) & 255) / 255;
+  const hex = n => '#' + n.toString(16).padStart(6, '0'), cx = 64;
+  g.fillStyle = hex(skin); g.fillRect(0, 0, 256, 128);
+  const sh = g.createRadialGradient(cx, 64, 6, cx, 64, 70); sh.addColorStop(0, 'rgba(255,255,255,0.10)'); sh.addColorStop(1, 'rgba(0,0,0,0.22)'); g.fillStyle = sh; g.fillRect(0, 0, 256, 128);
+  if (r(3) > 0.55) { g.fillStyle = hex(hair); g.globalAlpha = 0.28 + r(11) * 0.4; g.beginPath(); g.ellipse(cx, 92, 30, 20, 0, 0, Math.PI * 2); g.fill(); g.fillRect(cx - 34, 74, 68, 14); g.globalAlpha = 1; }   // a beard or stubble
+  const ey = 54, ex = 13 + r(5) * 3, eyeC = ['#3b2a1a', '#4a6a8a', '#5a6b3a', '#2a2a2a'][(seed >>> 8) % 4];
+  for (const sx of [-1, 1]) {
+    g.fillStyle = '#f4f1ea'; g.beginPath(); g.ellipse(cx + sx * ex, ey, 5.5, 3.2, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = eyeC; g.beginPath(); g.arc(cx + sx * ex, ey, 2.6, 0, Math.PI * 2); g.fill(); g.fillStyle = '#000'; g.beginPath(); g.arc(cx + sx * ex, ey, 1.2, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = hex(hair); g.lineWidth = 2.4 + r(13) * 1.6; g.beginPath(); g.moveTo(cx + sx * (ex - 6), ey - 7 - r(7) * 2); g.quadraticCurveTo(cx + sx * ex, ey - 10, cx + sx * (ex + 7), ey - 6); g.stroke();
+  }
+  g.strokeStyle = 'rgba(0,0,0,0.25)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(cx - 1, ey + 2); g.lineTo(cx - 3, ey + 15); g.lineTo(cx + 3, ey + 16); g.stroke();   // nose
+  g.fillStyle = 'rgba(150,60,60,0.35)'; g.beginPath(); g.ellipse(cx, ey + 26, 8, 2.4, 0, 0, Math.PI * 2); g.fill();                                          // lips
+  const t = new THREE.CanvasTexture(c); if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const PG2 = { skull: new THREE.SphereGeometry(0.103, 20, 16), hcap: new THREE.SphereGeometry(0.119, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), ear: new THREE.SphereGeometry(0.026, 8, 6), hair: new THREE.SphereGeometry(0.108, 16, 8, Math.PI * 1.1, Math.PI * 0.8, Math.PI * 0.3, Math.PI * 0.32), mouth: new THREE.CircleGeometry(0.016, 12), strap: new THREE.TorusGeometry(0.075, 0.005, 4, 16, Math.PI) };
 function stickBladeGeo(curveId) { if (!STICK_BP[curveId]) { const bp = makeProfile(curveById(curveId)); STICK_BP[curveId] = { bp, geo: buildBladeGeo(bp) }; } return STICK_BP[curveId]; }
 function makePlayer(team, num, shoots, goalie) {
-  const T = TEAMS[team], root = new THREE.Group(), P = { root, team, num, shoots, goalie, side: shoots === 'left' ? 1 : -1, ph: Math.random() * 6, m: {}, j: {}, look: 0 };
+  const T = TEAMS[team], root = new THREE.Group(), P = { root, team, num, shoots, goalie, side: shoots === 'left' ? 1 : -1, ph: Math.random() * 6, m: {}, j: {}, look: 0, talkT: 0 };
+  P.seed = hashStr(team + '#' + num); P.skinC = SKINS[P.seed % SKINS.length]; P.hairC = HAIRS[(P.seed >>> 5) % HAIRS.length]; P.hgt = 0.95 + ((P.seed >>> 9) % 11) / 100;   // each player looks like himself
   const jm = new THREE.MeshStandardMaterial({ map: jerseyTex(team, num, goalie), roughness: 0.85, side: THREE.DoubleSide }), jPlain = plMat(T.jersey, 0.85), pm = plMat(T.pants, 0.75), hm = plMat(T.helmet, 0.35, 0.1);
-  const gm = plMat(T.glove, 0.7), skin = plMat(0xd9a888, 0.8), steel = plMat(0xc8ccd2, 0.25, 0.85), boot = plMat(0x121214, 0.5), visor = new THREE.MeshStandardMaterial({ color: 0x8fb0cc, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.45 });
+  const gm = plMat(T.glove, 0.7), skin = plMat(P.skinC, 0.8), steel = plMat(0xc8ccd2, 0.25, 0.85), boot = plMat(0x121214, 0.5), visor = new THREE.MeshStandardMaterial({ color: 0x8fb0cc, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.45 });
   const sock = new THREE.MeshStandardMaterial({ map: stripeTex(T.socks, T.trim), roughness: 0.85 });
   const add = (geo, mat, name, parent) => { const m = new THREE.Mesh(geo, mat); m.castShadow = true; (parent || root).add(m); if (name) P.m[name] = m; return m; };
   const M = P.m;
   if (!goalie) {
     add(PG.pants, pm, 'pants'); M.pants.scale.z = 0.78;
-    add(PG.torso, jm, 'torso'); M.torso.scale.z = 0.72; add(PG.torsoTop, jPlain, 'shoulders'); M.shoulders.scale.set(0.3, 0.12, 0.19);
+    add(PG.torso, jm, 'torso'); M.torso.scale.z = 0.72; add(PG.torsoTop, jPlain, 'shoulders'); M.shoulders.scale.set(0.265, 0.085, 0.17);
     for (const s of ['L', 'R']) { add(PG.upper, jPlain, 'up' + s); add(PG.fore, gm, 'fo' + s); add(PG.glove, gm, 'gl' + s); add(PG.thigh, pm, 'th' + s); add(PG.shin, sock, 'sh' + s); add(PG.boot, boot, 'bo' + s); add(PG.blade, steel, 'bl' + s); }
   } else {
     const pad = new THREE.MeshStandardMaterial({ map: stripeTex(T.pad, T.padTrim), roughness: 0.7 });
@@ -2125,7 +2146,15 @@ function makePlayer(team, num, shoots, goalie) {
   }
   add(PG.neck, skin, 'neck');
   if (goalie) { add(PG.helmet, plMat(0xf2f2ee, 0.3, 0.1), 'head'); M.head.scale.set(1.05, 1.08, 1.2); add(PG.cage, plMat(0x222226, 0.4, 0.6), 'visor'); M.visor.material.wireframe = true; }
-  else { add(PG.helmet, hm, 'head'); M.head.scale.set(1, 0.95, 1.12); add(PG.face, skin, 'face'); add(PG.visor, visor, 'visor'); }
+  else {
+    add(PG2.hcap, new THREE.MeshStandardMaterial({ color: T.helmet, roughness: 0.35, metalness: 0.1, side: THREE.DoubleSide }), 'head'); M.head.scale.set(1.0, 0.95, 1.1);   // a helmet that sits on top, face open from the brow down
+    const fm = new THREE.MeshStandardMaterial({ map: faceTex(P.seed, P.skinC, P.hairC), roughness: 0.75 }); add(PG2.skull, fm, 'face'); M.face.scale.set(0.9, 1.1, 0.98);
+    const skinM = plMat(P.skinC, 0.8), hairM = plMat(P.hairC, 0.9);
+    for (const sx of [-1, 1]) { const e = new THREE.Mesh(PG2.ear, skinM); e.position.set(sx * 0.095, -0.005, -0.005); e.scale.set(0.45, 1, 0.8); M.face.add(e); }
+    const hr = new THREE.Mesh(PG2.hair, hairM); hr.position.set(0, 0.0, -0.004); M.face.add(hr);
+    const mo = new THREE.Mesh(PG2.mouth, plMat(0x3a1616, 0.9)); mo.position.set(0, -0.052, 0.09); mo.rotation.x = 0.5; mo.scale.set(1.25, 0.25, 1); M.face.add(mo); P.mouth = mo;
+    add(PG.visor, visor, 'visor'); M.visor.scale.set(0.93, 1, 0.98); M.visor.visible = (P.seed >>> 3) % 5 < 3;   // most wear a visor
+  }
   // the stick
   if (goalie) { add(PG.shaft, plMat(0x18181c, 0.4), 'shaft'); add(PG.paddle, plMat(0x18181c, 0.4), 'paddle'); add(PG.gBlade, mTape, 'sblade'); }
   else { add(PG.shaft, mShaft, 'shaft'); const sb = stickBladeGeo(shoots === 'left' ? 'p92' : 'p88'); P.bp = sb.bp; add(sb.geo, bladeMat, 'sblade'); M.sblade.matrixAutoUpdate = false; }
@@ -2136,6 +2165,7 @@ function makePlayer(team, num, shoots, goalie) {
     const q = (geo, mat, x, y, z, rx) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (rx) m.rotation.x = rx; g.add(m); return m; };
     q(LODG.torso, jm, 0, 1.24, 0).scale.z = 0.72; q(LODG.pants, pm, 0, 0.9, 0); q(LODG.legs, sock, 0, 0.42, 0.02); q(LODG.head, hm, 0, 1.66, 0.01); q(LODG.stick, mShaft, -P.side * 0.28, 0.5, 0.5, 1.05);
   }
+  root.scale.setScalar(goalie ? 1 : P.hgt);
   scene.add(root); return P;
 }
 const LODG = { torso: new THREE.CapsuleGeometry(0.2, 0.32, 3, 8), pants: new THREE.BoxGeometry(0.38, 0.26, 0.27), legs: new THREE.BoxGeometry(0.32, 0.78, 0.2), head: new THREE.SphereGeometry(0.13, 10, 8), stick: new THREE.BoxGeometry(0.03, 0.03, 1.45) };
@@ -2145,8 +2175,8 @@ function setFar(P, far) {
 }
 const _A = new THREE.Vector3(), _B = new THREE.Vector3(), _J = new THREE.Vector3(), _E = new THREE.Vector3(), _T2 = new THREE.Vector3(), _P2 = new THREE.Vector3(), _W2 = new THREE.Vector3(), _U2 = new THREE.Vector3();
 const _hipL = new THREE.Vector3(), _hipR = new THREE.Vector3(), _shL = new THREE.Vector3(), _shR = new THREE.Vector3();
-function toLocal(P, wx, wz, out) { const s = P.s, dx = wx - s.x, dz = wz - s.z; out.x = dx * s.fz - dz * s.fx; out.z = dx * s.fx + dz * s.fz; return out; }   // world -> his frame (x left, z forward)
-function toWorld(P, lx, lz) { const s = P.s; return [s.x + lx * s.fz + lz * s.fx, s.z - lx * s.fx + lz * s.fz]; }
+function toLocal(P, wx, wz, out) { const s = P.s, k = P.goalie ? 1 : 1 / (P.hgt || 1), dx = (wx - s.x) * k, dz = (wz - s.z) * k; out.x = dx * s.fz - dz * s.fx; out.z = dx * s.fx + dz * s.fz; return out; }   // (taller players are scaled up: undo that)   // world -> his frame (x left, z forward)
+function toWorld(P, lx, lz) { const s = P.s; if (!P.goalie && P.hgt) { lx *= P.hgt; lz *= P.hgt; } return [s.x + lx * s.fz + lz * s.fx, s.z - lx * s.fx + lz * s.fz]; }
 function posePlayer(P, dt) {
   if (P.far) { const s = P.s; P.root.position.set(s.x, 0, s.z); P.root.rotation.set(0, Math.atan2(s.fx, s.fz), 0); return; }   // far away: just place the stand-in
   if (P.goalie) poseGoalie(P, dt); else poseSkater2(P, dt);
@@ -2156,7 +2186,7 @@ function poseSkater2(P, dt) {
   P.root.position.set(s.x, 0, s.z); P.root.rotation.set(0, Math.atan2(s.fx, s.fz), 0);
   P.root.rotation.z = clamp(-s.turn * 0.09, -0.3, 0.3) * k;                                        // lean into turns
   // legs: a push out and back with each stride, the other skate gliding under him; standing still both skates sit under the hips
-  P.ph += dt * Math.PI * 2 * (0.35 + 0.12 * s.speed) * (s.speed > 0.4 ? 1 : 0);
+  P.ph += dt * Math.PI * 2 * (0.35 + 0.12 * s.speed) * (s.speed > 0.4 ? 1 : 0) * (s.bk ? -0.75 : 1);   // backwards: C-cuts the other way
   const hipY = 0.93 - 0.15 * k;
   _hipL.set(0.1, hipY, -0.03); _hipR.set(-0.1, hipY, -0.03);
   for (const [sx, hip, nm, off] of [[1, _hipL, 'L', 0], [-1, _hipR, 'R', Math.PI]]) {
@@ -2175,12 +2205,15 @@ function poseSkater2(P, dt) {
   M.torso.position.set(0, by + 0.27 * cl, 0.27 * sl); M.torso.rotation.set(lean, 0, 0);
   M.shoulders.position.set(0, by + 0.5 * cl, 0.5 * sl); M.shoulders.rotation.set(lean, 0, 0);
   _shL.set(0.22, by + 0.47 * cl, 0.47 * sl); _shR.set(-0.22, by + 0.47 * cl, 0.47 * sl);
-  const hx = 0, hy = by + 0.68 * cl, hz = 0.68 * sl + 0.03;
-  M.neck.position.set(0, by + 0.58 * cl, 0.58 * sl);
+  const hx = 0, hy = by + 0.725 * cl, hz = 0.725 * sl + 0.03;
+  M.neck.position.set(0, by + 0.62 * cl, 0.62 * sl + 0.015); M.neck.rotation.set(lean, 0, 0); M.neck.scale.set(1.35, 1, 1.25);
+  if (P.talkT > 0 && st.inVR) { s.lookX = HEADW.x; s.lookZ = HEADW.z; }
   let look = 0; if (s.lookX != null) { const l = toLocal(P, s.lookX, s.lookZ, {}); look = clamp(Math.atan2(l.x, l.z), -1, 1); }
   P.look += (look - P.look) * (1 - Math.exp(-dt * 6));
-  M.head.position.set(hx, hy, hz); M.head.rotation.set(-lean * 0.6, P.look, 0);
-  M.face.position.set(hx + Math.sin(P.look) * 0.04, hy - 0.02, hz + Math.cos(P.look) * 0.04); M.visor.position.set(hx, hy + 0.0, hz); M.visor.rotation.set(-lean * 0.6, P.look, 0);
+  M.head.position.set(hx, hy + 0.012, hz - 0.004); M.head.rotation.set(-lean * 0.6 - 0.38, P.look, 0, 'YXZ');
+  M.face.position.set(hx, hy, hz); M.face.rotation.set(-lean * 0.6, P.look, 0, 'YXZ');
+  if (P.mouth) { P.talkT = Math.max(0, P.talkT - dt); P.mouth.scale.y = P.talkT > 0 ? 0.3 + 0.75 * Math.abs(Math.sin(pClock * 16 + P.ph)) : 0.25; }
+  M.torso.scale.x = 1 + Math.sin(pClock * (1.6 + 0.4 * k) + P.ph) * 0.015; M.visor.position.set(hx, hy + 0.012, hz + 0.004); M.visor.rotation.set(-lean * 0.6, P.look, 0, 'YXZ');
   // the stick: blade target on the ice (where the puck is, or out in front on his forehand), with a wind-up, sweep and follow-through when he shoots
   let bx = sd * 0.36, bz = 0.85, by2 = 0;
   if (s.bx != null) { const l = toLocal(P, s.bx, s.bz, {}); bx = clamp(l.x, -0.9, 0.9); bz = clamp(l.z, 0.3, 1.2); }
@@ -2380,7 +2413,7 @@ const DRILLS = [
   { id: 'give', name: 'Give-and-go', reps: 8, how: 'Pass to #17 on the wall, skate to the slot cone, take his pass back and shoot. Call for it to get it sooner.' },
   { id: 'oneone', name: '1 on 1', reps: 6, how: 'Beat the defender and score. He backs off, closes the gap, then comes at you.' },
   { id: 'twoone', name: '2 on 1', reps: 8, how: 'You and #17 against one D. Shoot, or pass to #17 and call for it back.' },
-  { id: 'breakout', name: 'Breakout', reps: 8, score: 'exits', unit: 'Clean', how: 'Puck dumped in. Get to the wall at the lit cone, take the pass from #44, get it out past the blue line, then attack.' },
+  { id: 'breakout', name: 'Breakout', reps: 8, score: 'exits', unit: 'Clean', how: 'You start on your blue line at left wing. The puck goes to a D and his partner calls it: same side or D to D. Curl to that side: on the left, get to the wall for the pass from the centre; on the right, curl through the middle.' },
   { id: 'defend', name: 'Defending 1 on 1', reps: 8, score: 'stops', unit: 'Stops', how: 'You are the D. Keep a tight gap, stay between him and the net, and take the puck off him.' }
 ];
 const DR = { on: false, id: null, d: null, rep: 0, phase: '', t: 0, goals: 0, saves: 0, shots: 0, miss: 0, steals: 0, passes: 0, pmiss: 0, msg: '', spot: null, k0: null, best: {} };
@@ -2410,7 +2443,7 @@ function drillPiles() {
   if (d.id === 'shoot') setPiles(SPOTS.map((sp, i) => { let c = 0; for (let r = DR.rep + 1; r <= d.reps; r++) if ((r - 1) % SPOTS.length === i) c++; return [sp[0], sp[1], c]; }));
   else if (d.id === 'give') setPiles([[8.5, 3, left]]);
   else if (d.id === 'twoone') setPiles([[-3, -5, left]]);
-  else if (d.id === 'breakout') setPiles([[-2, 7, left]]);
+  else if (d.id === 'breakout') setPiles([[-3, 0, left]]);
   else if (d.id === 'defend') setPiles([[8, 0, left]]);
   else setPiles([[-4, 0, left]]);
 }
@@ -2484,11 +2517,11 @@ function drillStart(id) {
   defShow(id === 'oneone' || id === 'twoone');
   DR.sk = []; DR.c17 = DR.d44 = DR.fc = DR.atk = null;
   if (id === 'twoone' || id === 'breakout') DR.sk.push(DR.c17 = skGet('ravens', '17', 'left', 'C', 0));
-  if (id === 'breakout') { DR.sk.push(DR.d44 = skGet('ravens', '44', 'right', 'D', 0)); DR.sk.push(DR.fc = skGet('visitors', '9', 'right', 'C', 0)); }
+  if (id === 'breakout') { DR.sk.push(DR.rw = skGet('ravens', '12', 'right', 'W', 1), DR.ld = skGet('ravens', '44', 'right', 'D', -1), DR.rd = skGet('ravens', '5', 'left', 'D', 1), DR.fc = skGet('visitors', '9', 'right', 'C', 0)); }
   if (id === 'defend') DR.sk.push(DR.atk = skGet('visitors', '9', 'right', 'C', 0));
   for (const s of DR.sk) skShow(s, true);
   g2Show(id === 'breakout' || id === 'defend');
-  setCones(id === 'shoot' ? SPOTS : id === 'give' ? [[GX - 7, 0], [16, 9]] : id === 'breakout' ? [[-GX + 9.5, -10]] : id === 'defend' ? [[-8.5, 0]] : [[0, 0]]); drillPiles();
+  setCones(id === 'shoot' ? SPOTS : id === 'give' ? [[GX - 7, 0], [16, 9]] : id === 'breakout' ? [[-GX + 9.5, -10], [-BLUEL - 3, 1.5]] : id === 'defend' ? [[-8.5, 0]] : [[0, 0]]); drillPiles();
   toast(d.name + ': ' + d.how, 4);
 }
 function drillStop(quiet) {
@@ -2525,11 +2558,14 @@ function drillRep() {
     if (two) skPlace(DR.c17, -3, 3.5, 1, 0);
     DR.msg = (two ? '2 on 1 ' : 'Attempt ') + DR.rep + ' of ' + d.reps + (two ? ': make him commit' : ': beat him and score');
   } else if (d.id === 'breakout') {
-    teleportTo(-GX + 11, -9.4, 0); lightSpot([-GX + 9.5, -10]);
-    skPlace(DR.d44, -15, 2.5, -1, 0); skPlace(DR.c17, -11, 3.5, -1, 0); skPlace(DR.fc, 4, 2, -1, 0); DR.fc.cool = 0.6;
-    resetPuck(-2, 7); { const a = Math.atan2(5.5 - 7, -29.2 + 2); PK.vx = Math.cos(a) * 15; PK.vz = Math.sin(a) * 15; PK.lastT = 'visitors'; }
-    DR.bo = { dT: 0, exitT: null, fcGo: 1.6 - 0.4 * st.oppP };
-    DR.msg = 'Get to the wall. #44 is going back for it';
+    const s0 = Math.random() < 0.5 ? -1 : 1;
+    teleportTo(-BLUEL - 0.8, -9.0, Math.PI);                       // you: left wing, on your own blue line, facing your D
+    skPlace(DR.c17, -BLUEL - 0.8, 0, -1, 0); skPlace(DR.rw, -BLUEL - 0.8, 9.0, -1, 0);
+    skPlace(DR.ld, -GX + 6.5, -3.2, 1, 0); skPlace(DR.rd, -GX + 6.5, 3.2, 1, 0); skPlace(DR.fc, 3, -s0 * 2, -1, 0); DR.fc.cool = 1;
+    const D0 = s0 < 0 ? DR.ld : DR.rd, b = skBlade(D0);
+    resetPuck(-3, s0 * 1.2); { const a = Math.atan2(b[1] - PK.z, b[0] - PK.x); PK.vx = Math.cos(a) * 12.5; PK.vz = Math.sin(a) * 12.5; PK.lastT = 'ravens'; PK.touch = pClock; }
+    DR.bo = { ph: 'in', s0, S: s0, t: 0, fcGo: 3.4 - 0.6 * st.oppP, dd: Math.random() < 0.45, exitT: null, looseT: 0 };
+    lightSpot(null); DR.msg = 'Puck to the ' + (s0 < 0 ? 'left' : 'right') + ' D. Listen for the call';
   } else if (d.id === 'defend') {
     teleportTo(-8.5, 0, 0);
     const z = (Math.random() - 0.5) * 7, A = DR.atk; skPlace(A, 7, z, -1, 0); A.has = true; A.cool = 0; A.dec = 0.5; A.plan = ['wide', 'middle', 'shoot'][Math.floor(Math.random() * 3)]; A.side = z > 0.5 ? 1 : z < -0.5 ? -1 : (Math.random() < 0.5 ? -1 : 1); A.dekeT = 0;
@@ -2557,7 +2593,7 @@ function drillAI(dt) {
     if (skAct(s, dt, Q)) { return; }
     if (s.act !== 'shoot' && s.act !== 'pass' && s.dec <= 0) {
       s.dec = Q.dec * 0.6; const dN = Math.hypot(GX - s.x, s.z), hb = humanBlade();
-      if (called() && laneOpen(s.x, s.z, hb[0], hb[1], s.team) > 0.6) { skPass(s, { bl: hb, vx: S.vx, vz: S.vz }); s.actT = 0.12; }
+      if (called() && laneOpen(s.x, s.z, hb[0], hb[1], s.team) > 0.6) { skPass(s, { bl: hb, vx: S.vx, vz: S.vz, human: true }); s.actT = 0.12; }
       else if (dN < 9.5 && s.x < GX - 0.8) { skShoot(s, GX, GOAL, Q); s.actT = 0.22; DR.shot = true; }
       else s.act = 'carry';
     }
@@ -2572,36 +2608,76 @@ function drillAI(dt) {
     skMove(C, t[0], t[1], dt, Q, { all, vmax: Q.spd * 0.95 }); skTapCall(C, dt);
   }
   if (id === 'breakout') {
-    const B = DR.bo, car = anyHas();
-    if (!car) { for (const s of [D4, C, F]) if (skCanPick(s) && !(s === F && DR.t < B.fcGo)) { skPick(s); break; } }
-    // #44: goes back for it, takes it behind the net, then passes to you on the wall
-    let tD;
-    if (D4.has) {
-      B.dT += dt; const hb = humanBlade(), open = laneOpen(D4.x, D4.z, hb[0], hb[1], 'ravens'), fcNear = Math.hypot(F.x - D4.x, F.z - D4.z) < 2.2;
-      if (!skAct(D4, dt, Q) && D4.act !== 'pass') {
-        if ((called() || B.dT > 1.0 || fcNear) && open > 0.8 && H.x < -BLUEL) { skPass(D4, { bl: hb, vx: S.vx, vz: S.vz }); D4.actT = 0.15; DR.msg = 'Pass to you on the wall'; }
-        else if (B.dT > 3 || fcNear) {
-          const cb = skBlade(C); if (laneOpen(D4.x, D4.z, cb[0], cb[1], 'ravens') > 1 && !fcNear) { skPass(D4, { bl: cb, vx: C.vx, vz: C.vz }); DR.msg = '#44 went to #17'; }
-          else { D4.act = 'pass'; D4.p.s.shotT = 0.15; D4.aim = [-GX + 14, -11.5, 0, 12]; D4.actT = 0.15; DR.msg = 'Up the wall to you'; }
-        }
-      }
-      if (D4.has) skGlue(D4);
-      tD = [-GX - 0.6, -2.8];
-    } else tD = car ? [clamp(PK.x - 7, -GX + 3, 18), PK.z * 0.3] : [PK.x + PK.vx * 0.3, PK.z + PK.vz * 0.3];
-    skMove(D4, tD[0], tD[1], dt, Q, { all });
-    // #17: low in the middle for support, then up the ice with you, then to the net
-    let tC;
-    if (C.has) { mateWithPuck(C); tC = C.act === 'carry' ? [C.x + 7, C.z * 0.6] : [C.x, C.z]; }
-    else if (B.exitT != null) tC = H.x > GX - 12 ? [GX - 3.2, 1.8] : [clamp(H.x + 4, -20, GX - 4), 3];
-    else if (D4.has || !car) tC = [-GX + 8, 2];
-    else tC = skIncoming(C) || [clamp(H.x + 5, -GX + 8, 0), 2.5];
-    skMove(C, tC[0], tC[1], dt, Q, { all }); skTapCall(C, dt);
+    // a game breakout: forwards start on the blue line, the puck goes to a D, his partner calls it (same side, or D to D), the forwards curl to
+    // that side, the D hits the centre low in his curl, the centre hits the winger on the wall, out we go. You are the left wing.
+    const B = DR.bo, C = DR.c17, RW = DR.rw, LD = DR.ld, RD = DR.rd, F = DR.fc; B.t += dt;
+    const D0 = B.s0 < 0 ? LD : RD, D1 = D0 === LD ? RD : LD, car = anyHas();
+    if (!car) for (const s of [LD, RD, C, RW, F]) if (skCanPick(s) && !(s === F && DR.t < B.fcGo)) { skPick(s); break; }
+    if (B.ph === 'in' && D0.has) { B.ph = 'call'; B.t = 0; }
+    if (B.ph === 'call' && B.t > 0.45) {
+      const fcClose = DR.t > B.fcGo && Math.hypot(F.x - D0.x, F.z - D0.z) < 4.5, dd = B.dd || fcClose; B.S = dd ? -B.s0 : B.s0;
+      say(D1.p, dd ? pick(['D to D!', 'Reverse! D to D!', 'Over, over!']) : pick(['Same side!', 'Up! Same side!', 'Time! Same side!']), { force: true });
+      B.ph = dd ? 'dd' : 'up'; B.t = 0;
+      toast((dd ? 'D to D: ' : 'Same side: ') + 'breakout goes ' + (B.S < 0 ? 'left (your side)' : 'right'), 2);
+      lightSpot(B.S < 0 ? [-GX + 9.5, -10] : [-BLUEL - 3, 1.5]);
+      DR.msg = B.S < 0 ? 'Left side: get to the wall at the cone' : 'Right side: curl through the middle';
+    }
+    if (B.ph === 'dd' && D0.has && D0.act !== 'pass' && B.t > 0.3) { skPass(D0, { bl: skBlade(D1), vx: D1.vx, vz: D1.vz }); D0.actT = 0.15; }
+    if (B.ph === 'dd' && D1.has) { B.ph = 'up'; B.t = 0; }
+    const Dc = B.S < 0 ? LD : RD, wingH = B.S < 0, wb = () => wingH ? humanBlade() : skBlade(RW), wv = () => wingH ? [S.vx, S.vz] : [RW.vx, RW.vz];
+    if (B.ph === 'up' && Dc.has && Dc.act !== 'pass') {                // the D up to the centre in his curl (or straight to the winger)
+      const cb = skBlade(C), dC = Math.hypot(cb[0] - Dc.x, cb[1] - Dc.z), open = laneOpen(Dc.x, Dc.z, cb[0], cb[1], 'ravens');
+      if (B.t > 0.45 && dC > 4 && dC < 17 && open > 1.0 && C.x > Dc.x - 1) { skPass(Dc, { bl: cb, vx: C.vx, vz: C.vz }); Dc.actT = 0.15; B.ph = 'toC'; B.t = 0; }
+      else if (B.t > 2.8) { const w = wb(), v = wv(); skPass(Dc, { bl: w, vx: v[0], vz: v[1], human: wingH }); Dc.actT = 0.15; B.ph = 'toW'; B.t = 0; }
+    }
+    if (B.ph === 'toC' && C.has) { B.ph = 'cHas'; B.t = 0; }
+    if (B.ph === 'cHas' && C.has && C.act !== 'pass' && B.t > 0.4) {   // the centre up to the winger on the wall
+      const w = wb(), v = wv(), open = laneOpen(C.x, C.z, w[0], w[1], 'ravens'), ready = !wingH || Math.hypot(H.x - (-GX + 9.5), H.z + 10) < 5 || called() || H.x > C.x + 1;
+      if ((ready && open > 0.8) || B.t > 2.4) { if (open > 0.6) { skPass(C, { bl: w, vx: v[0], vz: v[1], human: wingH }); C.actT = 0.15; B.ph = 'toW'; B.t = 0; if (wingH) say(C.p, pick(['Drew!', 'Wall!', 'Yours!'])); } else C.act = 'carry'; }
+    }
+    for (const s of [LD, RD, C, RW]) if (s.has) {
+      if (skAct(s, dt, Q)) continue;
+      if (B.exitT != null) mateWithPuck(s); else if (s.act !== 'pass' && s.dec <= 0 && s !== Dc && s !== D0 && s !== D1) { s.dec = 0.3; s.act = 'carry'; }
+      if (s.has) skGlue(s);
+    }
+    const all2 = all, px = PK.x, att = B.exitT != null;
+    const T = new Map();
+    // the D: the first one takes the pass, his partner goes to the other post (or the corner for a D to D), then both follow the play up
+    for (const D of [LD, RD]) {
+      const own = D === LD ? -1 : 1;
+      let t;
+      if (D.has) t = D.act === 'carry' ? [D.x + 6, own * 6] : [Math.max(D.x, -GX + 3), D.z];
+      else if (B.ph === 'in' && D === D0) t = skIncoming(D) || [PK.x + PK.vx * 0.3, PK.z + PK.vz * 0.3];
+      else if ((B.ph === 'in' || B.ph === 'call') && D === D1) t = [-GX + 4, own * 2.5];
+      else if (B.ph === 'dd' && D === D1) t = skIncoming(D) || [-GX + 3.5, own * 4.5];
+      else t = [clamp(px - 8, -GX + 4, 18), own * 3.5];
+      T.set(D, t);
+    }
+    // the centre: drifts down, then curls low to the side it's going, takes the pass moving up ice, then up the middle
+    { let t;
+      if (C.has) t = C.act === 'carry' ? [C.x + 7, B.S * 2] : [C.x + 2, C.z];
+      else if (att) t = [Math.min(H.x + 3, GX - 8), 0.5];
+      else if (B.ph === 'toC') t = skIncoming(C) || [-GX + 10, B.S * 3.5];
+      else if (B.ph === 'up' || B.ph === 'dd') t = [-GX + 9.5, B.S * 3.5];
+      else if (B.ph === 'cHas' || B.ph === 'toW') t = [-BLUEL - 2, B.S * 3];
+      else t = [-BLUEL - 3.5, 0];
+      T.set(C, t); }
+    // the right wing: the wall at the hash marks if it's his side, otherwise curls through the middle; then up his lane
+    { let t;
+      if (RW.has) t = att ? [GX - 5, RW.z * 0.5] : [RW.x + 7, B.S > 0 ? 9.5 : 4];
+      else if (att) t = [Math.min(H.x + 2, GX - 4), 4];
+      else if (B.ph === 'toW' && !wingH) t = skIncoming(RW) || [-GX + 9.5, 10];
+      else if (B.ph === 'in' || B.ph === 'call') t = [-BLUEL - 1.5, 9];
+      else t = B.S > 0 ? [-GX + 9.5, 10] : (B.ph === 'cHas' || B.ph === 'toW' ? [-BLUEL + 2, 4] : [-BLUEL - 3, 1.5]);
+      T.set(RW, t); }
+    for (const [s, t] of T) skMove(s, t[0], t[1], dt, Q, { all: all2, vmax: Q.spd * 0.95 });
+    skTapCall(C, dt); skTapCall(RW, dt);
     // their forechecker: goes after whoever has it
     let tF;
     if (F.has) { skGlue(F); tF = [F.x, F.z]; }
     else if (DR.t < B.fcGo) tF = [F.x, F.z];
-    else { const c2 = anyHas(), cx = c2 === 'human' ? H.x : c2 ? c2.x : PK.x, cz = c2 === 'human' ? H.z : c2 ? c2.z : PK.z; tF = [cx + (c2 ? -1.0 : 0), cz]; if (c2) skPoke(F, Q, c2 === 'human', c2 === 'human' ? null : c2); }
-    skMove(F, tF[0], tF[1], dt, Q, { all, vmax: Q.spd * (0.8 + 0.07 * st.oppP), hit: true });
+    else { const c2 = anyHas(), cx = c2 === 'human' ? H.x : c2 ? c2.x : PK.x, cz = c2 === 'human' ? H.z : c2 ? c2.z : PK.z; tF = [cx - 0.8, cz]; if (c2) skPoke(F, Q, c2 === 'human', c2 === 'human' ? null : c2); }
+    skMove(F, tF[0], tF[1], dt, Q, { all: all2, vmax: Q.spd * (0.72 + 0.06 * st.oppP), hit: true });
   }
   if (id === 'defend') {
     const V = DR.dv; let t;
@@ -2670,10 +2746,12 @@ function drillFrame(dt) {
     }
     if (!end && d.id === 'breakout') {
       const B = DR.bo;
+      B.looseT = !humanHas() && !mateHas && !DR.fc.has && Math.hypot(PK.vx, PK.vz) < 0.6 ? B.looseT + dt : 0;
       if (DR.fc.has) end = 'Turnover: their forechecker got it';
-      else if (B.exitT == null && PK.x > -BLUEL + 0.5 && (humanHas() || mateHas)) { B.exitT = DR.t; DR.exits++; DR.msg = 'Clean breakout! Now attack'; toast('Clean breakout! Now attack', 1.6); }
-      else if (B.exitT == null && DR.t > 15) end = 'Too slow out of your end';
-      else if (B.exitT != null && DR.t - B.exitT > 13) end = 'Out of time';
+      else if (B.exitT == null && PK.x > -BLUEL + 0.5 && (humanHas() || mateHas)) { B.exitT = DR.t; DR.exits++; const m = humanHas() ? 'Clean breakout! You took it out' : 'Clean breakout!'; DR.msg = m + ' Now attack'; toast(m, 1.6); if (humanHas()) say(DR.c17.p, pick(['Go, Drew!', 'Nice!', 'Away you go!'])); }
+      else if (B.exitT == null && B.looseT > 2.5) end = 'The pass went astray';
+      else if (B.exitT == null && DR.t > 18) end = 'Too slow out of your end';
+      else if (B.exitT != null && DR.t - B.exitT > 12) end = 'Out of time';
     }
     if (!end && d.id === 'give') {
       if (DR.passStage === 0 && MATE.st === 'hold') { DR.passStage = 1; DR.passes++; DR.msg = 'Now skate to the slot cone'; }
@@ -2786,6 +2864,9 @@ function skMove(s, tx, tz, dt, Q, o) {
   let sx = 0, sz = 0;
   for (const q of all) if (q !== s) { const ex = s.x - q.x, ez = s.z - q.z, e = Math.hypot(ex, ez); if (e < 1.3 && e > 0.01) { sx += ex / e * (1.3 - e) * 1.6; sz += ez / e * (1.3 - e) * 1.6; } }
   if (!o.hit) { const ex = s.x - H.x, ez = s.z - H.z, e = Math.hypot(ex, ez); if (e < 1.2 && e > 0.01) { sx += ex / e * (1.2 - e) * 2; sz += ez / e * (1.2 - e) * 2; } }
+  const sp0 = Math.hypot(s.vx, s.vz), dT = Math.hypot(tx - s.x, tz - s.z);
+  if (o.back && dT > 9) o.back = false;                                                          // a long way to go: turn and skate, don't backpedal
+  if (o.back && sp0 > 0.5 && (s.vx * s.fx + s.vz * s.fz) < -0.4 * sp0) vmax = Math.min(vmax, Q.spd * 0.7);   // skating backwards is slower
   aiSkate(s, tx, tz, dt, vmax, sx, sz);
   // facing
   const sp = Math.hypot(s.vx, s.vz); let lx, lz;
@@ -2798,6 +2879,7 @@ function skMove(s, tx, tz, dt, Q, o) {
   let da = Math.atan2(Math.sin(a1 - a0), Math.cos(a1 - a0)); da = clamp(da, -6 * dt, 6 * dt);
   const y0 = Math.atan2(s.fx, s.fz); s.fx = Math.cos(a0 + da); s.fz = Math.sin(a0 + da);
   let dy = Math.atan2(s.fx, s.fz) - y0; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+  s.p.s.bk = sp > 0.6 && (s.vx * s.fx + s.vz * s.fz) < -0.3 * sp;
   skSync(s, sp, dt > 0 ? dy / dt : 0, dt);
 }
 function skSync(s, sp, turn, dt) {
@@ -2856,6 +2938,7 @@ function skShoot(s, nx, G, Q) {                          // wind up, then a shot
   s.act = 'shoot'; s.p.s.shotT = 0.1; s.aim = [nx, tz, ty, 18 + Math.random() * 7]; s.actT = 0.3;
 }
 function skPass(s, m) {                                 // m: { bl: [x, z], vx, vz }
+  if (m.o === 'human' || m.human) { if (Math.random() < 0.4) say(s.p, pick(['Heads up!', 'Drew!', 'Yours!'])); }
   const d = Math.hypot(m.bl[0] - s.x, m.bl[1] - s.z), spd = clamp(6 + d * 0.45, 8, 14), t = d / spd;
   s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [m.bl[0] + m.vx * t, m.bl[1] + m.vz * t, 0, spd]; s.actT = 0.2;
 }
@@ -2907,7 +2990,7 @@ function skIncoming(s) {
 function skTapCall(s, dt) {
   s.tap -= dt; if (s.tap > 0 || !humanHas()) return;
   const [bx, bz] = skBlade(s), hb = humanBlade(), d = Math.hypot(bx - hb[0], bz - hb[1]);
-  if (d > 5 && d < 24 && laneOpen(hb[0], hb[1], bx, bz, 'ravens') > 1.6) { s.tap = 3.5; if (audio) { audio.hit(1.2, { x: bx, y: 0.02, z: bz }); setTimeout(() => { if (audio) audio.hit(1.2, { x: bx, y: 0.02, z: bz }); }, 160); } }
+  if (d > 5 && d < 24 && laneOpen(hb[0], hb[1], bx, bz, 'ravens') > 1.6) { s.tap = 3.5; say(s.p, pick(['Yes! Yes!', 'Here!', "I'm open!", 'Drew!', 'Wheel!'])); if (audio) { audio.hit(1.2, { x: bx, y: 0.02, z: bz }); setTimeout(() => { if (audio) audio.hit(1.2, { x: bx, y: 0.02, z: bz }); }, 160); } }
 }
 // how open is a pass from a to b: the closest any opponent of team gets to the line
 function laneOpen(ax, az, bx, bz, team) {
@@ -2954,6 +3037,7 @@ function scStart(mode) {
   const R = SC.mode === '5' ? ROSTER5 : ROSTER3;
   SC.lines = { ravens: R.ravens.map(L => mkLine('ravens', L)), visitors: R.visitors.map(L => mkLine('visitors', L)) };
   SC.cur = { ravens: 0, visitors: 0 };
+  for (const L of [...SC.lines.ravens, ...SC.lines.visitors]) for (const q of L) skShow(q, false);   // everyone starts on the bench
   SC.sk = [...SC.lines.ravens[0], ...SC.lines.visitors[0]];
   for (const s of SC.sk) { skShow(s, true); s.shift = 0; s.chg = false; }
   Object.assign(SC, { flip: 1, changes: 0, dOff: null, calls: {}, rpx: null, lastTeam: null, lastU: 0, on: true, score: [0, 0], shots: [0, 0], t: 0, per: 1, clk: PERLENS[st.perP] * 60, over: false, after: 0, inter: 0, chase: {}, press: {}, shotT: [-9, -9] });
@@ -3017,7 +3101,7 @@ function scLines(dt, carrierTeam, stopped) {
     const dir = teamDir(team), mine = SC.sk.filter(s => s.team === team), going = mine.filter(s => s.chg).length;
     const pinned = carrierTeam && carrierTeam !== team && dir * PK.x < -BLUEL;          // never change while they have it in your end
     for (const s of mine) {
-      if (!s.chg && !pinned && going < 2 && !s.has && s.shift > SHIFT && Math.random() < dt * 0.6) s.chg = true;
+      if (!s.chg && !pinned && going < 2 && !s.has && s.shift > SHIFT && Math.random() < dt * 0.6) { s.chg = true; if (team === 'ravens') say(s.p, 'Change!'); }
       if (s.chg) { const [bx, bz] = BENCH[team]; if (Math.hypot(s.x - bx, s.z - bz) < 2) scSwapOne(s); }
     }
   }
@@ -3038,6 +3122,7 @@ function scGoal(xSide) {
   const ravens = xSide * teamDir('ravens') > 0, k = ravens ? 0 : 1; SC.score[k]++; if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; }
   SC.msg = (ravens ? 'Ravens' : 'Visitors') + ' score!  ' + SC.score[0] + ' - ' + SC.score[1]; toast(SC.msg, 2.5);
   SC.after = 3; for (const s of SC.sk) { s.has = false; s.act = ''; }
+  { const mate = SC.sk.find(q => q.team === 'ravens'); if (mate) say(mate.p, ravens ? (PK.lastT === 'ravens' && pClock - (PK.htouch || -9) < 3 ? pick(['Get in, Drew!', 'What a finish!', 'Yes, Drew!']) : pick(['Get in!', 'Yes boys!', 'Lovely!'])) : pick(['Unlucky. Next one.', 'Heads up, lads.', 'Come on, Ravens!']), { force: true }); }
   boardText();
 }
 function scPeriodEnd() {
@@ -3100,12 +3185,12 @@ function scTargets(s, carrier, carrierTeam) {
     }
     if (pu < BLUEL) {                                                  // through the neutral zone in lanes (staying onside until the puck is in)
       const lim = BLUEL - 1.6 - (carrier && carrier !== s ? clamp((pu - BLUEL + 6) * 0.15, 0, 0.8) : 0);   // a little short of the line (they glide), more so as the puck gets close
-      const onside = t => (st.rulesOn && dir * t[0] > lim) ? [dir * lim, t[1]] : t;
+      const onside = t => { if (st.rulesOn && dir * t[0] > lim) { if (dir * s.x > lim) s.urg = true; return [dir * lim, t[1]]; } return t; };   // over the line already: hurry back
       if (s.role === 'D') return onside(s.ln ? W(pu - 7, s.ln * 3.5 + pv * 0.2) : W(pu - 7, pv * 0.35));
       if (s.role === 'W') return onside(W(Math.min(pu + 5, GX - 12), s.ln * 8));
       return onside(W(Math.min(pu + 3, GX - 12), clamp(-pv * 0.3, -3, 3)));
     }
-    if (SC.dOff && SC.dOff.team === s.team) return W(BLUEL - 0.8, clamp(dir * s.z, -9, 9));   // delayed offside: everyone back over the line
+    if (SC.dOff && SC.dOff.team === s.team) { s.urg = true; return W(BLUEL - 1.2, clamp(dir * s.z, -9, 9)); }   // delayed offside: everyone back over the line, quickly
     if (s.role === 'D') return s.ln ? W(BLUEL + 1.0, s.ln * 6 + pv * 0.15) : W(BLUEL + 1.0, clamp(pv * 0.55, -7, 7));   // the points, just inside the line
     const carrierD = carrier && carrier !== 'human' && carrier.role === 'D';
     if (carrierD) return s.role === 'W' ? W(GX - 6, s.ln * 5.5) : W(GX - 3.2, -side * 0.8);   // shot from the point: wingers low, centre at the net
@@ -3219,12 +3304,12 @@ function scFrame(dt) {
     else if (SC.pause > 0) t = [s.x, s.z];
     else if (s.has && s.act === 'carry') t = scCarry(s);
     else if (s.has) t = [s.x, s.z];
-    else t = (!s.chg && skIncoming(s)) || scTargets(s, carrier, carrierTeam);
+    else { s.urg = false; t = (!s.chg && skIncoming(s)) || scTargets(s, carrier, carrierTeam); }
     t = s.chg ? t : inRink(t[0], t[1], 1.0);
-    const k = s.has || SC.chase[s.team] === s ? 1 : 1 - Math.exp(-dt / 0.35);
+    const k = s.has || SC.chase[s.team] === s || s.urg ? 1 : 1 - Math.exp(-dt / 0.5);
     if (s.gx == null) { s.gx = t[0]; s.gz = t[1]; } else { s.gx += (t[0] - s.gx) * k; s.gz += (t[1] - s.gz) * k; }
     const defending = carrier && carrierTeam !== s.team && SC.press[s.team] !== s;
-    skMove(s, s.gx, s.gz, dt, Q, { all, hit: SC.press[s.team] === s, back: defending || (s.role === 'D' && !s.has && carrierTeam !== s.team), vmax: SC.chase[s.team] === s || SC.press[s.team] === s ? Q.spd : Q.spd * 0.9 });
+    skMove(s, s.gx, s.gz, dt, Q, { all, hit: SC.press[s.team] === s, back: defending || (s.role === 'D' && !s.has && carrierTeam !== s.team), vmax: SC.chase[s.team] === s || SC.press[s.team] === s || s.urg ? Q.spd : Q.spd * 0.9 });
     if (s.team === 'ravens' && !stopped) skTapCall(s, dt);
   }
   bodyAI();
@@ -3266,6 +3351,41 @@ function hudDraw() {
   hudTex.needsUpdate = true;
 }
 function scBoard() { return null; }
+// ---- players talk: a line said out loud (the browser's own speech voices, each player keeps his own voice and pitch) and shown in a bubble
+// above his head, with his mouth moving and his head turned to you. say() is the hook the full game's conversations will use.
+const TALK = { last: -9, voices: [], bub: [] };
+function voicesInit() { try { const v = speechSynthesis.getVoices().filter(x => /^en/i.test(x.lang)); TALK.voices = v.filter(x => /GB|IE|AU/i.test(x.lang)).concat(v.filter(x => !/GB|IE|AU/i.test(x.lang))); } catch (e) { } }
+if ('speechSynthesis' in window) { try { speechSynthesis.onvoiceschanged = voicesInit; voicesInit(); } catch (e) { } }
+function bubbleFor() {
+  let b = TALK.bub.find(q => q.t <= 0); if (b) return b;
+  if (TALK.bub.length >= 4) return TALK.bub.reduce((a, q) => q.t < a.t ? q : a);
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 112; const tex = new THREE.CanvasTexture(cv); if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, fog: false })); sp.scale.set(1.1, 0.24, 1); sp.renderOrder = 999; sp.visible = false; scene.add(sp);
+  b = { cv, g: cv.getContext('2d'), tex, sp, t: 0, P: null }; TALK.bub.push(b); return b;
+}
+function say(P, text, o) {
+  o = o || {}; if (!P || !st.inVR) return false;
+  if (pClock - TALK.last < (o.gap || 1.0) && !o.force) return false; TALK.last = pClock;
+  const dur = 0.5 + text.length * 0.06; P.talkT = dur;
+  const b = bubbleFor(), g = b.g; b.P = P; b.t = dur + 0.8;
+  g.clearRect(0, 0, 512, 112); g.fillStyle = P.team === 'visitors' ? 'rgba(120,20,28,0.88)' : 'rgba(40,16,80,0.88)'; g.beginPath(); g.roundRect ? g.roundRect(4, 4, 504, 84, 26) : g.rect(4, 4, 504, 84); g.fill();
+  g.beginPath(); g.moveTo(236, 88); g.lineTo(256, 108); g.lineTo(276, 88); g.fill();
+  g.fillStyle = '#ffffff'; g.font = '600 40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText((P.goalie ? '' : '#' + P.num + '  ') + text, 256, 47, 490); b.tex.needsUpdate = true; b.sp.visible = true;
+  if (st.sound && st.voices && 'speechSynthesis' in window) {
+    try {
+      const u = new SpeechSynthesisUtterance(text), vs = TALK.voices, h = P.seed || 1; if (vs.length) u.voice = vs[h % vs.length];
+      u.pitch = 0.78 + (h % 8) * 0.05; u.rate = 1.08; const d = Math.hypot(P.s.x - HEADW.x, P.s.z - HEADW.z); u.volume = clamp(1.1 - d / 35, 0.3, 1);
+      if (o.force) speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch (e) { }
+  }
+  run.said = (run.said || 0) + 1; return true;
+}
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function talkFrame(dt) {
+  for (const b of TALK.bub) { if (b.t <= 0) continue; b.t -= dt; if (b.t <= 0 || !b.P || !b.P.root.visible) { b.t = 0; b.sp.visible = false; continue; }
+    const r = b.P.root; b.sp.position.set(r.position.x, 2.2 * (b.P.hgt || 1), r.position.z); b.sp.material.opacity = clamp(b.t / 0.4, 0, 1); }
+}
+
 // ---- arcade readability: a ring under every player (gold Ravens, red Visitors; bright on the puck carrier, flashing white while he reaches to
 // poke), a glow under the puck, a small map at the bottom of your view, an arrow to the puck when it is out of sight, and a blink on teleports.
 const RINGG = new THREE.RingGeometry(0.42, 0.56, 28); RINGG.rotateX(-Math.PI / 2);
@@ -3285,6 +3405,7 @@ fadeM.position.z = -0.15; fadeM.renderOrder = 1002; fadeM.visible = false; fadeM
 const HUDS = { mapT: 0, fade: 0 }, _hcw = new THREE.Vector3(), _pl = new THREE.Vector3();
 function hudFrame(dt) {
   const live = st.inVR && (SC.on || DR.on);
+  talkFrame(dt);
   // far-away stand-ins for skaters more than about 14 m from you
   if (st.inVR) { const lod = P => { if (P && P.lod) { const d = Math.hypot(P.s.x - HEADW.x, P.s.z - HEADW.z); setFar(P, d > (P.far ? 12.5 : 14.5)); } };
     for (const k in SKP) if (SKP[k].vis) lod(SKP[k].p); if (DFN.on) lod(DFN.p); if (MATE.p && MATE.p.root.visible) lod(MATE.p); }
@@ -3488,7 +3609,7 @@ function menuRows(tab) {
   ];
   return [
     { l: 'Play style', v: () => st.arcade ? 'Arcade (easier)' : 'Simulation', s: () => { setSetting('arcade', !st.arcade); toast(st.arcade ? 'Arcade: the puck stays on your blade, easier poke checks, rings under players' : 'Simulation: real puck physics, no rings'); } },
-    { l: 'Sound', v: () => st.sound ? 'On' : 'Off', s: () => setSetting('sound', !st.sound) },
+    { l: 'Sound', v: () => st.sound ? (st.voices ? 'On, players talk' : 'On, no voices') : 'Off', s: () => { if (st.sound && st.voices) setSetting('voices', false); else if (st.sound) setSetting('sound', false); else { setSetting('sound', true); setSetting('voices', true); } } },
     { l: 'Scene detail', v: () => NAMES[st.level], s: d => setSetting('level', cyc(3, st.level, d)) },
     { l: 'Which way you shoot', v: () => st.shot === 'right' ? 'Right' : 'Left', s: () => setSetting('shot', st.shot === 'right' ? 'left' : 'right') },
     { l: 'On the ice with you', v: () => OTHER_NAMES[st.others], s: d => setSetting('others', OTHERS[cyc(4, OTHERS.indexOf(st.others), d)]) },
@@ -3573,7 +3694,7 @@ function menuFrame(dt) {
     const pb = prevBtn[h], edge = i => !!(gp.buttons[i] && gp.buttons[i].pressed) && !pb[i];
     if (h === 'left' && edge(4)) closing = true;
     if (h === 'left' && edge(5)) { closing = true; recalT = 1.4; toast('Get into your ready stance'); }
-    if (h === 'right' && edge(5)) placePuck();
+    if (h === 'right' && edge(5)) puckBack();
     if (edge(0) && hov[h] >= 0 && MENU.hits[hov[h]]) { const r = MENU.hits[hov[h]]; r.act(); MENU.dirty = true; buzz(h, 0.3, 25); if (audio && MENU.open) audio.click(true); }
     if (h === 'right') {
       const ax = gp.axes.length >= 4 ? gp.axes[2] : (gp.axes[0] || 0);
@@ -3842,7 +3963,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
