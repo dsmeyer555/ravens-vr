@@ -310,6 +310,7 @@ details.rate[open]>summary{margin-bottom:10px}
       <li><b>Puck help</b> (on Normal) catches a pass on your blade, carries the puck while you skate, carries it round with you on a snap turn, and slows a puck you have just nudged so you can catch up with it. It lets go the moment you swing at the puck, so passes and shots are not changed. You feel a soft buzz while the puck is on your blade, a tap for each touch, and a stronger kick for passes and shots.</li>
       <li><b>Get into your ready stance</b> with the blade just above the ice and keep it there for a second: the stick calibrates itself so the blade sits flat. Press <b>Y</b> any time to do it again (it also resets your height).</li>
       <li><b>Left thumbstick</b> skates. Push a little for a slow stride, fully for top speed. In an arc you crossover automatically, and pushing the stick well to the side at speed makes a punch turn (quick, and it costs speed). <b>Left trigger</b> brakes.</li>
+      <li><b>Calls</b> in drills and the scrimmage: <b>left stick click</b> shouts "Shoot!" to a teammate with the puck in their end, <b>right stick click</b> shouts "Over! D to D!" to a D with it (in the breakout drill your call decides the side). When a game or drill ends you get a <b>career code</b> (RV-XXXX-XXXX) on the board and in your report: type it into the career game under VR sessions and your teammates there will know how it went.</li>
       <li><b>Call for the puck</b> in drills and the scrimmage: squeeze the <b>grip on your top hand</b>, or tap your blade on the ice twice. An open teammate taps his stick when he wants it from you.</li>
       <li><b>Right thumbstick</b> left and right turns you. Up and down sets the stick length (it starts at 58 in). <b>Click it</b> to change curve.</li>
       <li><b>B</b> puts the puck back in front of you. <b>X</b> (left) opens the menu (top speed is in there now): point at it with either controller and pull the trigger. The right thumbstick left and right changes tab. The game stands still while it is open.</li>
@@ -1870,12 +1871,13 @@ function pollInput(dt, hw, hy) {
     if (role === 'left' || role === 'free') {
       if (edge(4)) openMenu();
       if (edge(5)) { calibReq = true; STK.calReq = true; run.pk.cal++; mountDReq = true; }
+      if (edge(3) && (SC.on || DR.on)) myCall('shoot');
       sx = ax[0]; sy = ax[1];
       const tr = gp.buttons[0]; brake = tr ? (tr.value || (tr.pressed ? 1 : 0)) : 0;
     } else {
       if (edge(4) && st.oneM === 'btn') toggleHands();
       if (edge(5)) puckBack();
-      if (edge(3)) nextCurve();
+      if (edge(3)) { if (SC.on || DR.on) myCall('over'); else nextCurve(); }
       const lt = gp.buttons[0], lv = lt ? (lt.value || (lt.pressed ? 1 : 0)) : 0;                    // the right trigger keeps the puck on the blade (unless it holds the stick)
       if (st.oneM === 'hold' && h === (st.shot === 'right' ? 'right' : 'left')) { if (keepOn) setKeep(false); }
       else if (st.keepM === 'hold') { const want = keepOn ? lv > 0.3 : lv > 0.55; if (want !== keepOn) setKeep(want); }
@@ -2538,6 +2540,7 @@ function drillEnd() {
   const extra = d.id === 'give' ? ', ' + DR.passes + ' passes completed' : d.id === 'oneone' || d.id === 'twoone' ? ', the D won it ' + DR.steals + ' times' : d.id === 'breakout' ? ', ' + DR.goals + ' goals off the rush' : d.id === 'defend' ? ', he scored ' + DR.against + (DR.gaps.length ? ', average gap at the blue line ' + (DR.gaps.reduce((a, b) => a + b, 0) / DR.gaps.length).toFixed(1) + ' m' : '') : '';
   run.drills = run.drills || []; run.drills.push(d.name + ' (' + OPP_NAMES[st.oppP] + '): ' + sc + ' ' + (d.unit || 'goals').toLowerCase() + ' from ' + d.reps + extra + (d.id !== 'defend' ? ', ' + DR.saves + ' saves' : ''));
   toast(d.name + ' done: ' + sc + ' of ' + d.reps + (sc > prev ? '  (new best)' : '  (best ' + prev + ')'), 3);
+  { const c = careerCode({ mode: d.id, lvl: st.oppP, rs: sc, vs: d.reps, g: d.id === 'breakout' ? DR.goals : 0, a: 0, sh: 0, tk: d.id === 'defend' ? DR.stops : 0, per: 0 }); setTimeout(() => showCode(c, d.name), 3200); }
   drillStop(true); boardText();
 }
 // one rep: set it up, wait for it to end (goal, save, miss, steal, clean breakout or time), then the next
@@ -2792,6 +2795,32 @@ const SC = { on: false, sk: [], score: [0, 0], t: 0, pause: 0, after: 0, inter: 
 const teamDir = t => (t === 'ravens' ? 1 : -1) * (SC.on && SC.flip === -1 ? -1 : 1);   // teams change ends each period
 const ordN = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n + 'th';
 function clockStr(t) { t = Math.max(0, Math.ceil(t)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+
+// ---- the career code: a game or drill result squeezed into 8 characters (RV-XXXX-XXXX) that you type into the career game, so your teammates
+// there know how it went. Crockford base32, 35 bits of result and a 5-bit check.
+const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ', CODE_MODES = ['5v5', '3v3', 'shoot', 'give', 'oneone', 'twoone', 'breakout', 'defend'];
+function careerCode(f) {
+  const v = [[CODE_MODES.indexOf(f.mode), 3], [f.lvl, 2], [f.rs, 5], [f.vs, 5], [f.g, 4], [f.a, 4], [f.sh, 5], [f.tk, 5], [f.per, 2]];
+  let bits = ''; for (const [x, n] of v) bits += clamp(Math.round(x) || 0, 0, (1 << n) - 1).toString(2).padStart(n, '0');
+  const g = []; for (let i = 0; i < 35; i += 5) g.push(parseInt(bits.slice(i, i + 5), 2));
+  const ck = (g.reduce((a, x, i) => a + x * (i + 3), 0) + 7) % 32; g.push(ck);
+  const c = g.map(x => B32[x]).join(''); return 'RV-' + c.slice(0, 4) + '-' + c.slice(4);
+}
+function showCode(c, what) { run.codes = run.codes || []; run.codes.push(what + ': ' + c); toast('Career code ' + c, 6); SC.code = c; DR.code = c; }
+
+// ---- your calls on the ice: the top-hand grip (pass me it), left stick click (shoot!), right stick click (over, D to D!). Teammates react.
+const MYCALL = { t: -9, what: '' };
+function myCall(what) {
+  if (pClock - MYCALL.t < 0.8) return; MYCALL.t = pClock; MYCALL.what = what; run.myCalls = (run.myCalls || 0) + 1;
+  toast(what === 'shoot' ? 'You: "Shoot!"' : 'You: "Over! D to D!"', 1.1);
+  const mates = SC.on ? SC.sk.filter(q => q.team === 'ravens') : DR.on ? (DR.sk || []).filter(q => q.team === 'ravens') : [];
+  const c = mates.find(q => q.has);
+  if (what === 'shoot' && c && teamDir('ravens') * c.x > BLUEL && c.act !== 'shoot' && c.act !== 'pass') { skShoot(c, teamDir('ravens') * GX, GOAL, OPPS[st.oppP] || OPPS[1]); c.actT = 0.18; if (Math.random() < 0.4) say(c.p, pick(['Yep!', 'On it!']), { gap: 0.3 }); }
+  if (what === 'over' && c && c.role === 'D') {
+    const o = mates.find(q => q !== c && q.role === 'D');
+    if (o && c.act !== 'pass') { skPass(c, { bl: skBlade(o), vx: o.vx, vz: o.vz }); c.actT = 0.15; if (DR.on && DR.bo && (DR.bo.ph === 'call' || DR.bo.ph === 'up')) { DR.bo.S = o === DR.ld ? -1 : 1; DR.bo.ph = 'dd'; DR.bo.t = 0.31; } }
+  } else if (what === 'over' && DR.on && DR.bo && DR.bo.ph === 'call') DR.bo.dd = true;                 // your call decides the breakout
+}
 // ---- calling for the puck
 const CALL = { t: -9, taps: [], hi: false };
 function callForPuck(how) {
@@ -2959,6 +2988,7 @@ function skStolen(s, Q) {
   if (s.prot > 0) { if (!near) { PK.cr = 0; PK.rel = pClock + 0.2; } return false; }
   s.prot = 0.45;
   if (Math.random() < Math.min(0.92, (1 - Q.prot) * (st.arcade ? 1.3 : 1))) {
+    if (SC.on && SC.my) SC.my.tk++;
     if (near && !humanHas()) { const a = Math.atan2(PK.z - s.z, PK.x - s.x) + (Math.random() - 0.5) * 1.2; PK.vx = s.vx * 0.3 + Math.cos(a) * 2.5; PK.vz = s.vz * 0.3 + Math.sin(a) * 2.5; PK.cr = 0; PK.touch = pClock; EV.push({ k: 'mpass', v: 4, x: PK.x, y: PK.y, z: PK.z }); } s.has = false; s.act = ''; s.cool = 0.8; s.poke = 0.6; run.steals = (run.steals || 0) + 1; PK.lastT = 'ravens'; return true; }
   PK.cr = 0; PK.rel = pClock + 0.3; return false;            // he protected it
 }
@@ -3040,7 +3070,7 @@ function scStart(mode) {
   for (const L of [...SC.lines.ravens, ...SC.lines.visitors]) for (const q of L) skShow(q, false);   // everyone starts on the bench
   SC.sk = [...SC.lines.ravens[0], ...SC.lines.visitors[0]];
   for (const s of SC.sk) { skShow(s, true); s.shift = 0; s.chg = false; }
-  Object.assign(SC, { flip: 1, changes: 0, dOff: null, calls: {}, rpx: null, lastTeam: null, lastU: 0, on: true, score: [0, 0], shots: [0, 0], t: 0, per: 1, clk: PERLENS[st.perP] * 60, over: false, after: 0, inter: 0, chase: {}, press: {}, shotT: [-9, -9] });
+  Object.assign(SC, { my: { g: 0, a: 0, sh: 0, tk: 0 }, tc: { last: null, prev: null }, code: null, flip: 1, changes: 0, dOff: null, calls: {}, rpx: null, lastTeam: null, lastU: 0, on: true, score: [0, 0], shots: [0, 0], t: 0, per: 1, clk: PERLENS[st.perP] * 60, over: false, after: 0, inter: 0, chase: {}, press: {}, shotT: [-9, -9] });
   goalHomes();
   scFaceoff((SC.mode === '5' ? '5 on 5' : '3 on 3') + ': Ravens attack the far net. You are left wing', [0, 0]);
 }
@@ -3119,7 +3149,8 @@ function scDrop(Q) {
 }
 function scGoal(xSide) {
   if (SC.over || SC.after > 0) return;
-  const ravens = xSide * teamDir('ravens') > 0, k = ravens ? 0 : 1; SC.score[k]++; if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; }
+  const ravens = xSide * teamDir('ravens') > 0, k = ravens ? 0 : 1; SC.score[k]++;
+  if (ravens) { if (SC.tc.last === 'you') { SC.my.g++; SC.my.sh++; } else if (SC.tc.last && SC.tc.last[0] === 'r' && SC.tc.prev === 'you') SC.my.a++; } if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; }
   SC.msg = (ravens ? 'Ravens' : 'Visitors') + ' score!  ' + SC.score[0] + ' - ' + SC.score[1]; toast(SC.msg, 2.5);
   SC.after = 3; for (const s of SC.sk) { s.has = false; s.act = ''; }
   { const mate = SC.sk.find(q => q.team === 'ravens'); if (mate) say(mate.p, ravens ? (PK.lastT === 'ravens' && pClock - (PK.htouch || -9) < 3 ? pick(['Get in, Drew!', 'What a finish!', 'Yes, Drew!']) : pick(['Get in!', 'Yes boys!', 'Lovely!'])) : pick(['Unlucky. Next one.', 'Heads up, lads.', 'Come on, Ravens!']), { force: true }); }
@@ -3130,6 +3161,7 @@ function scPeriodEnd() {
   for (const s of SC.sk) { s.has = false; s.act = ''; }
   if (SC.per >= 3) {
     SC.over = true; SC.msg = 'Final: Ravens ' + SC.score[0] + ', Visitors ' + SC.score[1]; toast(SC.msg, 4);
+    showCode(careerCode({ mode: SC.mode === '5' ? '5v5' : '3v3', lvl: st.oppP, rs: SC.score[0], vs: SC.score[1], g: SC.my.g, a: SC.my.a, sh: SC.my.sh, tk: SC.my.tk, per: 3 }), (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final');
     run.scrims = run.scrims || []; run.scrims.push('Final: Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ' (3 x ' + PERLENS[st.perP] + ' min, shots ' + SC.shots[0] + ' to ' + SC.shots[1] + (Object.keys(SC.calls).length ? ', whistles: ' + Object.entries(SC.calls).map(([k, n]) => k.split(':')[0].toLowerCase() + ' ' + n).join(', ') : '') + ')');
   } else { SC.inter = 6; SC.msg = 'End of the ' + ordN(SC.per) + ' period'; toast(SC.msg, 3); }
   boardText();
@@ -3277,7 +3309,7 @@ function scFrame(dt) {
   const stopped = SC.pause > 0 || SC.after > 0 || SC.inter > 0 || SC.over;
   if (!stopped) { SC.clk -= dt; if (SC.clk <= 0) { SC.clk = 0; scPeriodEnd(); } }
   // shots on goal: a goalie stopping it
-  for (const e of EV) if (e.k === 'block' && e.kind === 'goalie') { const k = (e.x != null ? e.x : PK.x) * teamDir('ravens') > 0 ? 0 : 1; if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; } }
+  for (const e of EV) if (e.k === 'block' && e.kind === 'goalie') { const k = (e.x != null ? e.x : PK.x) * teamDir('ravens') > 0 ? 0 : 1; if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; if (k === 0 && SC.tc.last === 'you') SC.my.sh++; } }
   for (const s of SC.sk) { s.cool -= dt; s.poke -= dt; s.dec -= dt; s.prot -= dt; if (s.has && !stopped) skStolen(s, Q); }
   const hum = humanHas();
   if (hum) for (const s of SC.sk) if (s.has) { s.has = false; s.act = ''; s.cool = 0.7; }
@@ -3292,6 +3324,7 @@ function scFrame(dt) {
     }
   }
   const carrierTeam = carrier === 'human' ? 'ravens' : carrier ? carrier.team : null;
+  { const who = carrier === 'human' || pClock - (PK.htouch || -9) < 0.08 ? 'you' : carrier ? carrier.team[0] + carrier.num : null; if (who && who !== SC.tc.last) { SC.tc.prev = SC.tc.last; SC.tc.last = who; } }   // who touched it last (for goals and assists)
   if (!stopped) for (const s of SC.sk) if (carrier && carrierTeam !== s.team && !s.chg) { if (skPoke(s, Q, carrier === 'human', carrier)) carrier = null; }
   if (!stopped && scRules(carrier, carrierTeam)) return;
   scLines(dt, carrierTeam, stopped);
@@ -3326,7 +3359,7 @@ function drawScore() {
   bx.fillStyle = '#93a2b0'; bx.font = '600 42px sans-serif'; bx.fillText(SC.over ? 'FINAL' : SC.inter > 0 ? 'INTERMISSION' : 'PERIOD ' + SC.per, 512, 268);
   bx.font = '500 36px sans-serif'; bx.fillText('SHOTS  ' + SC.shots[0], 180, 330); bx.fillText('SHOTS  ' + SC.shots[1], 844, 330);
   bx.fillStyle = '#e6edf3'; bx.font = '500 38px sans-serif'; bx.fillText(SC.msg, 512, 410);
-  bx.fillStyle = '#93a2b0'; bx.font = '500 26px sans-serif'; bx.fillText('Call for the puck: top-hand grip or two stick taps   ·   opponents ' + OPP_NAMES[st.oppP], 512, 466);
+  bx.fillStyle = SC.over && SC.code ? '#e0a928' : '#93a2b0'; bx.font = SC.over && SC.code ? '700 34px monospace' : '500 26px sans-serif'; bx.fillText(SC.over && SC.code ? 'Career code  ' + SC.code : 'Calls: top grip = pass me it, left stick click = shoot, right stick click = D to D', 512, 466);
   bx.textAlign = 'left'; btex.needsUpdate = true;
 }
 const hudCv = document.createElement('canvas'); hudCv.width = 640; hudCv.height = 72;
@@ -3874,7 +3907,8 @@ function buildResult(r) {
   lines.push('Blade to ice: ' + ICE_NAMES[st.iceP] + ', blade on the ice ' + fmt(pk.iceT) + ' s of ' + fmt(pk.stickT) + ' s held; stick stretch ' + fmt(pk.extMin * 100) + ' to +' + fmt(pk.extMax * 100) + ' cm (average ' + fmt(pk.stickT > 1 ? pk.extSum / pk.stickT * 100 : 0, 1) + ' cm), biggest lie change ' + fmt(pk.lieMax) + ' degrees');
   lines.push('Curve in the shot: ' + (pk.relN ? 'pucks left the blade on average ' + Math.round(100 * pk.relU / pk.relN) + '% of the way from heel to toe' : 'no carried shots') + '; aim help ' + AIM_NAMES[st.aimP] + ' turned ' + pk.aimed + ' shots or passes; puck buzz ' + HAP_NAMES[st.hapP]);
   if (run.drills && run.drills.length) lines.push('Drills: ' + run.drills.join('; '));
-  if (run.scrims && run.scrims.length) lines.push('3 on 3 (opponents ' + OPP_NAMES[st.oppP] + '): ' + run.scrims.join('; '));
+  if (run.scrims && run.scrims.length) lines.push('Scrimmages (opponents ' + OPP_NAMES[st.oppP] + '): ' + run.scrims.join('; '));
+  if (run.codes && run.codes.length) lines.push('Career codes (type these into the career game, under VR sessions): ' + run.codes.join('; '));
   lines.push('On the ice with you: ' + OTHER_NAMES[st.others] + '. Pass partner took ' + pk.mateGot + ' passes and passed back ' + pk.matePass + ' times; the goalie stopped ' + pk.saves + ' shots (' + pk.gHits + ' pucks hit him)');
   lines.push('Hands: lower-hand switch ' + ONEM_NAMES[st.oneM] + ', one hand ' + pk.oneN + ' times for ' + fmt(pk.oneT) + ' s');
   if (st.mountH !== 'off' || run.mount) { const m = run.mount && run.mount.last; lines.push('Stick mount: ' + MOUNT_NAMES[st.mountH] + (st.mAx ? ', set up, heel ' + Math.round(st.mD * 100) + ' cm past the controller' : ', not set up') + (m ? '; last set-up ' + (m.fail ? 'failed' : 'fit within ' + Math.round(m.rms * 1000) + ' mm') + ' (' + m.spread + ' degrees of circling, ' + m.n + ' samples)' : '')); }
@@ -3963,7 +3997,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
