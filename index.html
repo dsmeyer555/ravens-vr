@@ -3446,14 +3446,14 @@ function voxPlay(P, text) {                                            // true i
   const buf = VOX.buf[text]; if (!buf || !audio || !audio.ctx || !st.sound) return 0;
   return voxBuf(P, buf, 0.9 + ((P.seed || 1) % 9) * 0.028, 1.6);
 }
-function voxBuf(P, buf, rate, gain) {                                    // a voice clip from a player's mouth, placed in 3D; returns its length
+function voxBuf(P, buf, rate, gain, at) {                                    // a voice clip from a player's mouth, placed in 3D; returns its length
   try {
     const ctx = audio.ctx, src = ctx.createBufferSource(), g = ctx.createGain(), pn = ctx.createPanner();
     src.buffer = buf; src.playbackRate.value = rate; g.gain.value = gain;
     pn.panningModel = 'HRTF'; pn.distanceModel = 'inverse'; pn.refDistance = 3; pn.rolloffFactor = 0.8; pn.maxDistance = 80;
     const y = 1.7 * (P.hgt || 1); if (pn.positionX) { pn.positionX.value = P.s.x; pn.positionY.value = y; pn.positionZ.value = P.s.z; } else pn.setPosition(P.s.x, y, P.s.z);
-    src.connect(g); g.connect(pn); pn.connect(ctx.destination); src.start();
-    MIC.gate = Math.max(MIC.gate, nowS() + buf.duration / rate + 0.3);       // the mic doesn't take his voice for yours
+    src.connect(g); g.connect(pn); pn.connect(ctx.destination); src.start(at || 0);
+    MIC.gate = Math.max(MIC.gate, nowS() + Math.max(0, (at || 0) - ctx.currentTime) + buf.duration / rate + 0.3);       // the mic doesn't take his voice for yours
     return buf.duration / rate;
   } catch (e) { return 0; }
 }
@@ -3612,7 +3612,7 @@ function micChunk(a) {
   if (gated && nowS() < MIC.gate) { MIC.speak = false; return; }          // a teammate started talking over you: that was probably him
   MIC.below = rms < thr * 0.7 ? MIC.below + dt : 0;
   const len = (MIC.total - MIC.start) / MIC.sr;
-  if (MIC.below >= 0.7 || len >= 8) { MIC.speak = false; const end = MIC.total - Math.round(Math.max(0, MIC.below - 0.2) * MIC.sr); if ((end - MIC.start) / MIC.sr >= 0.4) micSend(micCut(MIC.start, end)); }
+  if (MIC.below >= 0.5 || len >= 8) { MIC.speak = false; const end = MIC.total - Math.round(Math.max(0, MIC.below - 0.15) * MIC.sr); if ((end - MIC.start) / MIC.sr >= 0.4) micSend(micCut(MIC.start, end)); }
 }
 function micPTT(down) {                                                   // A on the right controller
   if (!MIC.on) { if (down && st.talk !== 'off') { if (!brainOK()) toast('Talking needs your server: set it up on the start page', 3); else micStart(); } return; }
@@ -3661,20 +3661,31 @@ function talkCtx() {
 async function micSend(pcm) {
   if (MIC.busy || !brainOK()) return;
   const T = talkTarget(), P = T && T.p, to = P && P.name || null, live = playLive();
-  MIC.busy = true; MIC.sent++; const t0 = nowS();
+  MIC.busy = true; MIC.sent++; const t0 = nowS(), rec = { heard: '', intent: '', to, ms: 0 }; MIC.qEnd = 0; MIC.dq = Promise.resolve();
   if (P && !live) say(P, '...', { force: true, quiet: true, hold: 8 });
+  const hist = to ? (MIC.hist[to] || []) : [];
+  const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 20000);
+  const on = o => {                                                       // each part as it arrives
+    if (o.error) throw new Error(o.error);
+    if (o.heard !== undefined) { rec.heard = o.heard; rec.intent = o.intent; rec.tHeard = Math.round((nowS() - t0) * 1000); if (o.heard && o.intent !== 'none') toast('You: "' + o.heard.slice(0, 60) + '"', 1.6);
+      if (o.intent === 'command') { voiceCommand(o.command); if (P) bubbleClear(P); } else if (o.intent === 'none' && P) bubbleClear(P); }
+    if (o.reply !== undefined && P) { rec.tReply = Math.round((nowS() - t0) * 1000); if (o.reply) { say(P, o.reply, { force: true, quiet: true, hold: 1.5 + o.reply.length * 0.07 }); hist.push({ role: 'user', content: rec.heard }, { role: 'assistant', content: o.reply }); MIC.hist[to] = hist.slice(-12); } else bubbleClear(P); }
+    if (o.audio && P) { if (rec.tVoice === undefined) rec.tVoice = Math.round((nowS() - t0) * 1000); replyAudio(P, o.audio); }
+    if (o.ms) rec.srv = o.ms;
+  };
   try {
-    const hist = to ? (MIC.hist[to] || []) : [];
-    const r = await brainFetch('/talk', { audio: wavB64(pcm), mime: 'audio/wav', to, play: live, ctx: talkCtx(), hist }, 20000);
-    run.talk = run.talk || []; run.talk.push({ heard: r.heard || '', intent: r.intent, to, ms: Math.round((nowS() - t0) * 1000) });
-    if (r.heard && r.intent !== 'none') toast('You: "' + r.heard.slice(0, 60) + '"', 1.6);
-    if (r.intent === 'command') { voiceCommand(r.command); if (P) bubbleClear(P); }
-    else if (r.intent === 'chat' && r.reply && P) {
-      hist.push({ role: 'user', content: r.heard }, { role: 'assistant', content: r.reply }); MIC.hist[to] = hist.slice(-12);
-      await playReply(P, r.reply, r.audio);
-    } else if (P) bubbleClear(P);
+    const r = await fetch(st.brainUrl.replace(/\/+$/, '') + '/talk', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Ravens-Key': st.brainKey }, signal: ac.signal,
+      body: JSON.stringify({ audio: wavB64(pcm), mime: 'audio/wav', to, play: live, ctx: talkCtx(), hist, stream: true }) });
+    if (!r.ok) { let m = 'HTTP ' + r.status; try { m = (await r.json()).error || m; } catch (e) { } throw new Error(m); }
+    if (r.body && r.body.getReader && /ndjson/.test(r.headers.get('Content-Type') || '')) {
+      const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '';
+      for (;;) { const { value, done } = await rd.read(); if (value) buf += dec.decode(value, { stream: true }); let i; while ((i = buf.indexOf('\n')) >= 0) { const l = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (l) on(JSON.parse(l)); } if (done) break; }
+      if (buf.trim()) on(JSON.parse(buf));
+    } else on(await r.json());                                           // an older server: one answer
   } catch (e) { if (P) bubbleClear(P); toast('Could not reach your server: ' + (e.name === 'AbortError' ? 'too slow' : e.message), 3); run.talkErr = String(e.message || e); }
-  MIC.busy = false;
+  clearTimeout(tm);
+  rec.ms = Math.round((nowS() - t0) * 1000); MIC.last = rec; run.talk = run.talk || []; run.talk.push(rec); MENU.dirty = true;
+  await MIC.dq; MIC.busy = false;
 }
 function voiceCommand(c) {
   if (c === 'shoot') myCall('shoot');
@@ -3683,16 +3694,16 @@ function voiceCommand(c) {
   else if (c === 'pass') callForPuck('voice');
   else if (c === 'change') toast('You: "Change!"', 1.2);
 }
-function playReply(P, text, b64) {
-  say(P, text, { force: true, quiet: true });
-  const ctx = audio && audio.ctx; if (!b64 || !ctx || !st.sound) { MIC.gate = nowS() + 0.5; return Promise.resolve(); }
-  return new Promise(res => {
+function replyAudio(P, b64) {                                          // the reply's voice, a sentence at a time, played back to back from his mouth
+  const ctx = audio && audio.ctx; if (!b64 || !ctx || !st.sound) { MIC.gate = Math.max(MIC.gate, nowS() + 0.5); return; }
+  MIC.dq = MIC.dq.then(() => new Promise(res => {
     try {
       const b = Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer;
-      ctx.decodeAudioData(b, buf => { const d = voxBuf(P, buf, 1, 1.9); if (d) { P.talkT = d + 0.1; MIC.gate = nowS() + d + 0.4; } res(); }, () => res());
+      ctx.decodeAudioData(b, buf => { const at = Math.max(ctx.currentTime + 0.02, MIC.qEnd || 0), d = voxBuf(P, buf, 1, 1.9, at); if (d) { MIC.qEnd = at + d; P.talkT = MIC.qEnd - ctx.currentTime + 0.1; MIC.gate = Math.max(MIC.gate, nowS() + (MIC.qEnd - ctx.currentTime) + 0.4); } res(); }, () => res());
     } catch (e) { res(); }
-  });
+  }));
 }
+function talkTimes() { const r = MIC.last; if (!r) return ''; const f = x => x === undefined ? '-' : (x / 1000).toFixed(1); return 'last: heard ' + f(r.tHeard) + 's, words ' + f(r.tReply) + 's, voice ' + f(r.tVoice) + 's'; }
 
 // ---- arcade readability: a ring under every player (gold Ravens, red Visitors; bright on the puck carrier, flashing white while he reaches to
 // poke), a glow under the puck, a small map at the bottom of your view, an arrow to the puck when it is out of sight, and a blink on teleports.
@@ -3919,7 +3930,7 @@ function menuRows(tab) {
   return [
     { l: 'Play style', v: () => st.arcade ? 'Arcade (easier)' : 'Simulation', s: () => { setSetting('arcade', !st.arcade); toast(st.arcade ? 'Arcade: the puck stays on your blade, easier poke checks, rings under players' : 'Simulation: real puck physics, no rings'); } },
     { l: 'Sound', v: () => st.sound ? (st.voices ? 'On, players talk' : 'On, no voices') : 'Off', s: () => { if (st.sound && st.voices) setSetting('voices', false); else if (st.sound) setSetting('sound', false); else { setSetting('sound', true); setSetting('voices', true); } } },
-    { l: 'Talking to teammates', v: () => !brainOK() ? 'Needs your server (start page)' : st.talk === 'off' ? 'Off' : (st.talk === 'free' ? 'Just talk' : 'Hold A to talk') + (MIC.on ? '' : MIC.err ? ' (mic: ' + MIC.err + ')' : ''), s: d => setSetting('talk', ['free', 'hold', 'off'][cyc(3, ['free', 'hold', 'off'].indexOf(st.talk), d)]) },
+    { l: 'Talking to teammates', v: () => !brainOK() ? 'Needs your server (start page)' : st.talk === 'off' ? 'Off' : (st.talk === 'free' ? 'Just talk' : 'Hold A to talk') + (MIC.on ? (MIC.last ? '  (' + talkTimes() + ')' : '') : MIC.err ? ' (mic: ' + MIC.err + ')' : ''), s: d => setSetting('talk', ['free', 'hold', 'off'][cyc(3, ['free', 'hold', 'off'].indexOf(st.talk), d)]) },
     { l: 'Scene detail', v: () => NAMES[st.level], s: d => setSetting('level', cyc(3, st.level, d)) },
     { l: 'Which way you shoot', v: () => st.shot === 'right' ? 'Right' : 'Left', s: () => setSetting('shot', st.shot === 'right' ? 'left' : 'right') },
     { l: 'On the ice with you', v: () => OTHER_NAMES[st.others], s: d => setSetting('others', OTHERS[cyc(4, OTHERS.indexOf(st.others), d)]) },
@@ -4292,7 +4303,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, playReply, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
