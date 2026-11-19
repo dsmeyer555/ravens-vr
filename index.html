@@ -132,6 +132,27 @@ details.rate[open]>summary{margin-bottom:10px}
     <p class="note" style="margin-top:10px">Everything else is in the menu inside the headset: press <b>X</b>. The same settings are here under More settings. They are saved on this device.</p>
   </section>
 
+  <details class="card" aria-label="Talk to your teammates" id="talkcard">
+    <summary>Talk to your teammates (your server)</summary>
+    <p class="note">With your own server set up, your teammates have real Ravens names, you can talk to them out loud and they answer, and every finished game or drill goes to your career game by itself. The address and key stay on this headset.</p>
+    <div class="grid2">
+      <label class="f">Server address
+        <input id="burl" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://ravens-brain.yourname.workers.dev">
+      </label>
+      <label class="f">Key
+        <input id="bkey" type="password" autocomplete="off" spellcheck="false" placeholder="the APP_KEY you set">
+      </label>
+      <label class="f">Talking
+        <select id="talk">
+          <option value="free">Just talk (the mic listens)</option>
+          <option value="hold">Hold A to talk</option>
+          <option value="off">Off</option>
+        </select>
+      </label>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn" type="button" id="btest">Test the server and allow the mic</button><span class="note" id="bnote" role="status"></span></div>
+  </details>
+
   <details class="card" aria-label="More settings">
     <summary>More settings</summary>
     <div class="grid2">
@@ -311,6 +332,7 @@ details.rate[open]>summary{margin-bottom:10px}
       <li><b>Get into your ready stance</b> with the blade just above the ice and keep it there for a second: the stick calibrates itself so the blade sits flat. Press <b>Y</b> any time to do it again (it also resets your height).</li>
       <li><b>Left thumbstick</b> skates. Push a little for a slow stride, fully for top speed. In an arc you crossover automatically, and pushing the stick well to the side at speed makes a punch turn (quick, and it costs speed). <b>Left trigger</b> brakes.</li>
       <li><b>Calls</b> in drills and the scrimmage: <b>left stick click</b> shouts "Shoot!" to a teammate with the puck in their end, <b>right stick click</b> shouts "Over! D to D!" to a D with it (in the breakout drill your call decides the side). When a game or drill ends you get a <b>career code</b> (RV-XXXX-XXXX) on the board and in your report: type it into the career game under VR sessions and your teammates there will know how it went.</li>
+      <li><b>Talk to your teammates</b> (needs your server, set up on this page under Talk to your teammates): just talk, or hold <b>A</b> if you chose that. Quick calls work out loud: "Shoot!", "Pass!", "D to D!", "Same side!". Anything longer goes to the teammate you are looking at (or the nearest one), who answers out loud; at a stoppage or between reps is best. Finished games and drills go to your career game by themselves.</li>
       <li><b>Call for the puck</b> in drills and the scrimmage: squeeze the <b>grip on your top hand</b>, or tap your blade on the ice twice. An open teammate taps his stick when he wants it from you.</li>
       <li><b>Right thumbstick</b> left and right turns you. Up and down sets the stick length (it starts at 58 in). <b>Click it</b> to change curve.</li>
       <li><b>B</b> puts the puck back in front of you. <b>X</b> (left) opens the menu (top speed is in there now): point at it with either controller and pull the trigger. The right thumbstick left and right changes tab. The game stands still while it is open.</li>
@@ -503,7 +525,7 @@ const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
-const DEF = { level: 2, shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 0, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 3, rulesOn: true, scrimM: '5', voices: true };
+const DEF = { level: 2, brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 0, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 3, rulesOn: true, scrimM: '5', voices: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -516,7 +538,7 @@ function loadSettings() {
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
       if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['hold', 'btn', 'grip', 'off'])) o.oneM = j.oneM; if (typeof j.arcade === 'boolean') o.arcade = j.arcade; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2, 3])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone', 'twoone', 'breakout', 'defend', 'scrim', 'scrim3'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2, 3])) o.oppP = j.oppP;
-      if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM; if (typeof j.voices === 'boolean') o.voices = j.voices;
+      if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM; if (typeof j.voices === 'boolean') o.voices = j.voices; if (typeof j.brainUrl === 'string') o.brainUrl = j.brainUrl.trim().slice(0, 200); if (typeof j.brainKey === 'string') o.brainKey = j.brainKey.trim().slice(0, 200); if (ok(j.talk, ['off', 'free', 'hold'])) o.talk = j.talk;
       if (ok(j.mountH, ['off', 'right', 'left'])) o.mountH = j.mountH; if (typeof j.mD === 'number' && j.mD > 0.2 && j.mD < 1.8) o.mD = j.mD;
       if (Array.isArray(j.mAx) && j.mAx.length === 3 && j.mAx.every(v => typeof v === 'number' && isFinite(v)) && Math.abs(Math.hypot(...j.mAx) - 1) < 0.05) o.mAx = j.mAx;
     }
@@ -1876,6 +1898,7 @@ function pollInput(dt, hw, hy) {
       const tr = gp.buttons[0]; brake = tr ? (tr.value || (tr.pressed ? 1 : 0)) : 0;
     } else {
       if (edge(4) && st.oneM === 'btn') toggleHands();
+      else if (st.oneM !== 'btn' && st.talk !== 'off') { const aD = !!(gp.buttons[4] && gp.buttons[4].pressed); if (aD !== MIC.ptt) micPTT(aD); }
       if (edge(5)) puckBack();
       if (edge(3)) { if (SC.on || DR.on) myCall('over'); else nextCurve(); }
       const lt = gp.buttons[0], lv = lt ? (lt.value || (lt.pressed ? 1 : 0)) : 0;                    // the right trigger keeps the puck on the blade (unless it holds the stick)
@@ -2130,7 +2153,8 @@ function stickBladeGeo(curveId) { if (!STICK_BP[curveId]) { const bp = makeProfi
 function makePlayer(team, num, shoots, goalie) {
   const T = TEAMS[team], root = new THREE.Group(), P = { root, team, num, shoots, goalie, side: shoots === 'left' ? 1 : -1, ph: Math.random() * 6, m: {}, j: {}, look: 0, talkT: 0 };
   P.seed = hashStr(team + '#' + num); P.skinC = SKINS[P.seed % SKINS.length]; P.hairC = HAIRS[(P.seed >>> 5) % HAIRS.length]; P.hgt = 0.95 + ((P.seed >>> 9) % 11) / 100;   // each player looks like himself
-  const jm = new THREE.MeshStandardMaterial({ map: jerseyTex(team, num, goalie), roughness: 0.85, side: THREE.DoubleSide }), jPlain = plMat(T.jersey, 0.85), pm = plMat(T.pants, 0.75), hm = plMat(T.helmet, 0.35, 0.1);
+  const RR = team === 'ravens' && !goalie && RN.map && RN.map[num]; if (RR) { P.name = RR.n; P.shown = RR.num; }
+  const jm = new THREE.MeshStandardMaterial({ map: jerseyTex(team, RR ? String(RR.num) : num, goalie), roughness: 0.85, side: THREE.DoubleSide }), jPlain = plMat(T.jersey, 0.85), pm = plMat(T.pants, 0.75), hm = plMat(T.helmet, 0.35, 0.1);
   const gm = plMat(T.glove, 0.7), skin = plMat(P.skinC, 0.8), steel = plMat(0xc8ccd2, 0.25, 0.85), boot = plMat(0x121214, 0.5), visor = new THREE.MeshStandardMaterial({ color: 0x8fb0cc, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.45 });
   const sock = new THREE.MeshStandardMaterial({ map: stripeTex(T.socks, T.trim), roughness: 0.85 });
   const add = (geo, mat, name, parent) => { const m = new THREE.Mesh(geo, mat); m.castShadow = true; (parent || root).add(m); if (name) P.m[name] = m; return m; };
@@ -2561,7 +2585,7 @@ function drillEnd() {
   const extra = d.id === 'give' ? ', ' + DR.passes + ' passes completed' : d.id === 'oneone' || d.id === 'twoone' ? ', the D won it ' + DR.steals + ' times' : d.id === 'breakout' ? ', ' + DR.goals + ' goals off the rush' : d.id === 'defend' ? ', he scored ' + DR.against + (DR.gaps.length ? ', average gap at the blue line ' + (DR.gaps.reduce((a, b) => a + b, 0) / DR.gaps.length).toFixed(1) + ' m' : '') : '';
   run.drills = run.drills || []; run.drills.push(d.name + ' (' + OPP_NAMES[st.oppP] + '): ' + sc + ' ' + (d.unit || 'goals').toLowerCase() + ' from ' + d.reps + extra + (d.id !== 'defend' ? ', ' + DR.saves + ' saves' : ''));
   toast(d.name + ' done: ' + sc + ' of ' + d.reps + (sc > prev ? '  (new best)' : '  (best ' + prev + ')'), 3);
-  { const c = careerCode({ mode: d.id, lvl: st.oppP, rs: sc, vs: d.reps, g: d.id === 'breakout' ? DR.goals : 0, a: 0, sh: 0, tk: d.id === 'defend' ? DR.stops : 0, per: 0 }); setTimeout(() => showCode(c, d.name), 3200); }
+  { const c = careerDone({ mode: d.id, lvl: st.oppP, rs: sc, vs: d.reps, g: d.id === 'breakout' ? DR.goals : 0, a: 0, sh: 0, tk: d.id === 'defend' ? DR.stops : 0, per: 0 }, d.name, { level: OPP_NAMES[st.oppP], unit: (d.unit || 'goals').toLowerCase(), saves: DR.saves, best: Math.max(prev, sc) }); setTimeout(() => showCode(c, d.name), 3200); }
   drillStop(true); boardText();
 }
 // one rep: set it up, wait for it to end (goal, save, miss, steal, clean breakout or time), then the next
@@ -2833,14 +2857,15 @@ function showCode(c, what) { run.codes = run.codes || []; run.codes.push(what + 
 const MYCALL = { t: -9, what: '' };
 function myCall(what) {
   if (pClock - MYCALL.t < 0.8) return; MYCALL.t = pClock; MYCALL.what = what; run.myCalls = (run.myCalls || 0) + 1;
-  toast(what === 'shoot' ? 'You: "Shoot!"' : 'You: "Over! D to D!"', 1.1);
+  toast(what === 'shoot' ? 'You: "Shoot!"' : what === 'same' ? 'You: "Same side!"' : 'You: "Over! D to D!"', 1.1);
+  if (what === 'same') { if (DR.on && DR.bo && DR.bo.ph === 'call') DR.bo.dd = false; return; }
   const mates = SC.on ? SC.sk.filter(q => q.team === 'ravens') : DR.on ? (DR.sk || []).filter(q => q.team === 'ravens') : [];
   const c = mates.find(q => q.has);
   if (what === 'shoot' && c && teamDir('ravens') * c.x > BLUEL && c.act !== 'shoot' && c.act !== 'pass') { skShoot(c, teamDir('ravens') * GX, GOAL, OPPS[st.oppP] || OPPS[1]); c.actT = 0.18; if (Math.random() < 0.4) say(c.p, pick(['Yep!', 'On it!']), { gap: 0.3 }); }
   if (what === 'over' && c && c.role === 'D') {
     const o = mates.find(q => q !== c && q.role === 'D');
     if (o && c.act !== 'pass') { skPass(c, { bl: skBlade(o), vx: o.vx, vz: o.vz }); c.actT = 0.15; if (DR.on && DR.bo && (DR.bo.ph === 'call' || DR.bo.ph === 'up')) { DR.bo.S = o === DR.ld ? -1 : 1; DR.bo.ph = 'dd'; DR.bo.t = 0.31; } }
-  } else if (what === 'over' && DR.on && DR.bo && DR.bo.ph === 'call') DR.bo.dd = true;                 // your call decides the breakout
+  } else if (what === 'over' && DR.on && DR.bo && (DR.bo.ph === 'call' || DR.bo.ph === 'in')) DR.bo.dd = true;                 // your call decides the breakout
 }
 // ---- calling for the puck
 const CALL = { t: -9, taps: [], hi: false };
@@ -3174,6 +3199,7 @@ function scGoal(xSide) {
   const ravens = xSide * teamDir('ravens') > 0, k = ravens ? 0 : 1; SC.score[k]++;
   if (ravens) { if (SC.tc.last === 'you') { SC.my.g++; SC.my.sh++; } else if (SC.tc.last && SC.tc.last[0] === 'r' && SC.tc.prev === 'you') SC.my.a++; } if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; }
   SC.msg = (ravens ? 'Ravens' : 'Visitors') + ' score!  ' + SC.score[0] + ' - ' + SC.score[1]; toast(SC.msg, 2.5);
+  { const sc = SC.tc.last === 'you' ? 'Drew' : SC.tc.last && SC.tc.last[0] === 'r' ? ((RN.map && RN.map[SC.tc.last.slice(1)] || {}).n || 'a teammate') : ''; (SC.log = SC.log || []).push(ordN(SC.per) + ' ' + clockStr(SC.clk) + ' ' + (ravens ? 'Ravens goal' + (sc ? ' by ' + sc : '') + (SC.tc.prev === 'you' && sc !== 'Drew' ? ', Drew assist' : '') : 'Visitors goal') + ' (' + SC.score[0] + '-' + SC.score[1] + ')'); }
   SC.after = 3; for (const s of SC.sk) { s.has = false; s.act = ''; }
   { const mate = SC.sk.find(q => q.team === 'ravens'); if (mate) say(mate.p, ravens ? (PK.lastT === 'ravens' && pClock - (PK.htouch || -9) < 3 ? pick(['Get in, Drew!', 'What a finish!', 'Yes, Drew!']) : pick(['Get in!', 'Yes boys!', 'Lovely!'])) : pick(['Unlucky. Next one.', 'Heads up, lads.', 'Come on, Ravens!']), { force: true }); }
   boardText();
@@ -3183,7 +3209,7 @@ function scPeriodEnd() {
   for (const s of SC.sk) { s.has = false; s.act = ''; }
   if (SC.per >= 3) {
     SC.over = true; SC.msg = 'Final: Ravens ' + SC.score[0] + ', Visitors ' + SC.score[1]; toast(SC.msg, 4);
-    showCode(careerCode({ mode: SC.mode === '5' ? '5v5' : '3v3', lvl: st.oppP, rs: SC.score[0], vs: SC.score[1], g: SC.my.g, a: SC.my.a, sh: SC.my.sh, tk: SC.my.tk, per: 3 }), (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final');
+    showCode(careerDone({ mode: SC.mode === '5' ? '5v5' : '3v3', lvl: st.oppP, rs: SC.score[0], vs: SC.score[1], g: SC.my.g, a: SC.my.a, sh: SC.my.sh, tk: SC.my.tk, per: 3 }, (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final', { level: OPP_NAMES[st.oppP], shots: SC.shots.slice(), minutes: PERLENS[st.perP], events: (SC.log || []).slice(-8), mates: talkMates().map(q => q.p.name) }), (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final');
     run.scrims = run.scrims || []; run.scrims.push('Final: Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ' (3 x ' + PERLENS[st.perP] + ' min, shots ' + SC.shots[0] + ' to ' + SC.shots[1] + (Object.keys(SC.calls).length ? ', whistles: ' + Object.entries(SC.calls).map(([k, n]) => k.split(':')[0].toLowerCase() + ' ' + n).join(', ') : '') + ')');
   } else { SC.inter = 6; SC.msg = 'End of the ' + ordN(SC.per) + ' period'; toast(SC.msg, 3); }
   boardText();
@@ -3418,12 +3444,16 @@ function voxLoad() {
 }
 function voxPlay(P, text) {                                            // true if a recorded line played
   const buf = VOX.buf[text]; if (!buf || !audio || !audio.ctx || !st.sound) return 0;
+  return voxBuf(P, buf, 0.9 + ((P.seed || 1) % 9) * 0.028, 1.6);
+}
+function voxBuf(P, buf, rate, gain) {                                    // a voice clip from a player's mouth, placed in 3D; returns its length
   try {
-    const ctx = audio.ctx, src = ctx.createBufferSource(), g = ctx.createGain(), pn = ctx.createPanner(), h = P.seed || 1, rate = 0.9 + (h % 9) * 0.028;
-    src.buffer = buf; src.playbackRate.value = rate; g.gain.value = 1.6;
+    const ctx = audio.ctx, src = ctx.createBufferSource(), g = ctx.createGain(), pn = ctx.createPanner();
+    src.buffer = buf; src.playbackRate.value = rate; g.gain.value = gain;
     pn.panningModel = 'HRTF'; pn.distanceModel = 'inverse'; pn.refDistance = 3; pn.rolloffFactor = 0.8; pn.maxDistance = 80;
     const y = 1.7 * (P.hgt || 1); if (pn.positionX) { pn.positionX.value = P.s.x; pn.positionY.value = y; pn.positionZ.value = P.s.z; } else pn.setPosition(P.s.x, y, P.s.z);
     src.connect(g); g.connect(pn); pn.connect(ctx.destination); src.start();
+    MIC.gate = Math.max(MIC.gate, nowS() + buf.duration / rate + 0.3);       // the mic doesn't take his voice for yours
     return buf.duration / rate;
   } catch (e) { return 0; }
 }
@@ -3432,18 +3462,32 @@ if ('speechSynthesis' in window) { try { speechSynthesis.onvoiceschanged = voice
 function bubbleFor() {
   let b = TALK.bub.find(q => q.t <= 0); if (b) return b;
   if (TALK.bub.length >= 4) return TALK.bub.reduce((a, q) => q.t < a.t ? q : a);
-  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 112; const tex = new THREE.CanvasTexture(cv); if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, fog: false })); sp.scale.set(1.1, 0.24, 1); sp.renderOrder = 999; sp.visible = false; scene.add(sp);
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 192; const tex = new THREE.CanvasTexture(cv); if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, fog: false })); sp.scale.set(1.1, 1.1 * 192 / 512, 1); sp.renderOrder = 999; sp.visible = false; scene.add(sp);
   b = { cv, g: cv.getContext('2d'), tex, sp, t: 0, P: null }; TALK.bub.push(b); return b;
+}
+function bubbleClear(P) { for (const q of TALK.bub) if (q.P === P && q.t > 0) { q.t = 0; q.sp.visible = false; } }
+function bubbleLines(g, t, w) {                                          // the words in up to 3 lines that fit
+  for (const px of [40, 32, 27]) {
+    g.font = '600 ' + px + 'px sans-serif'; const L = []; let cur = '';
+    for (const wd of t.split(' ')) { const tr = cur ? cur + ' ' + wd : wd; if (g.measureText(tr).width <= w || !cur) cur = tr; else { L.push(cur); cur = wd; } }
+    if (cur) L.push(cur);
+    if (L.length <= (px === 40 ? 1 : px === 32 ? 2 : 3) || px === 27) { if (L.length > 3) { L.length = 3; L[2] = L[2].replace(/\s*\S*$/, '') + '...'; } return { px, L }; }
+  }
 }
 function say(P, text, o) {
   o = o || {}; if (!P || !st.inVR) return false;
   if (pClock - TALK.last < (o.gap || 1.0) && !o.force) return false; TALK.last = pClock;
-  const dur = 0.5 + text.length * 0.06; P.talkT = dur;
+  const dur = o.hold || (0.5 + text.length * 0.06); P.talkT = o.quiet ? (text === '...' ? 0 : dur) : dur;
+  bubbleClear(P);
   const b = bubbleFor(), g = b.g; b.P = P; b.t = dur + 0.8;
-  g.clearRect(0, 0, 512, 112); g.fillStyle = P.team === 'visitors' ? 'rgba(120,20,28,0.88)' : 'rgba(40,16,80,0.88)'; g.beginPath(); g.roundRect ? g.roundRect(4, 4, 504, 84, 26) : g.rect(4, 4, 504, 84); g.fill();
-  g.beginPath(); g.moveTo(236, 88); g.lineTo(256, 108); g.lineTo(276, 88); g.fill();
-  g.fillStyle = '#ffffff'; g.font = '600 40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText((P.goalie ? '' : '#' + P.num + '  ') + text, 256, 47, 490); b.tex.needsUpdate = true; b.sp.visible = true;
+  const label = P.goalie ? '' : P.name ? P.name + ':  ' : '#' + P.num + '  ', fit = bubbleLines(g, label + text, 470), H = fit.L.length === 1 ? 84 : fit.L.length * fit.px * 1.15 + 22;
+  if (b.cv.height !== 192) { b.cv.height = 192; b.sp.scale.set(1.1, 1.1 * 192 / 512, 1); }
+  g.clearRect(0, 0, 512, 192); const y0 = 168 - H; g.fillStyle = P.team === 'visitors' ? 'rgba(120,20,28,0.88)' : 'rgba(40,16,80,0.88)'; g.beginPath(); g.roundRect ? g.roundRect(4, y0, 504, H, 26) : g.rect(4, y0, 504, H); g.fill();
+  g.beginPath(); g.moveTo(236, 168); g.lineTo(256, 188); g.lineTo(276, 168); g.fill();
+  g.fillStyle = '#ffffff'; g.font = '600 ' + fit.px + 'px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  fit.L.forEach((ln, i) => g.fillText(ln, 256, y0 + H / 2 + (i - (fit.L.length - 1) / 2) * fit.px * 1.15, 490)); b.tex.needsUpdate = true; b.sp.visible = true;
+  if (o.quiet) { run.said = (run.said || 0) + 1; return true; }
   voxLoad(); const vd = st.voices ? voxPlay(P, text) : 0; if (vd) { P.talkT = vd + 0.1; run.voxPlayed = (run.voxPlayed || 0) + 1; }
   else if (st.sound && st.voices && 'speechSynthesis' in window) {
     try {
@@ -3457,7 +3501,197 @@ function say(P, text, o) {
 const pick = a => a[Math.floor(Math.random() * a.length)];
 function talkFrame(dt) {
   for (const b of TALK.bub) { if (b.t <= 0) continue; b.t -= dt; if (b.t <= 0 || !b.P || !b.P.root.visible) { b.t = 0; b.sp.visible = false; continue; }
-    const r = b.P.root; b.sp.position.set(r.position.x, 2.2 * (b.P.hgt || 1), r.position.z); b.sp.material.opacity = clamp(b.t / 0.4, 0, 1); }
+    const r = b.P.root; b.sp.position.set(r.position.x, 2.25 * (b.P.hgt || 1), r.position.z); b.sp.material.opacity = clamp(b.t / 0.4, 0, 1); }
+}
+
+// ---- your server (the "brain", a Cloudflare Worker you own): it knows the real Ravens line-up, hears you, answers in a teammate's voice and keeps
+// every finished game or drill for the career game. Its address and key are typed in on the start page and stay on this headset.
+const brainOK = () => !!(st.brainUrl && st.brainKey && /^https:\/\//.test(st.brainUrl));
+function brainFetch(path, body, ms) {
+  const ac = new AbortController(), tm = setTimeout(() => ac.abort(), ms || 15000);
+  return fetch(st.brainUrl.replace(/\/+$/, '') + path, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', 'X-Ravens-Key': st.brainKey }, body: body ? JSON.stringify(body) : undefined, signal: ac.signal })
+    .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }))
+    .finally(() => clearTimeout(tm));
+}
+// the line-up: the VR slots get real Ravens names and numbers (forwards in the forward slots, D in the D slots)
+const RN = { map: null, at: 0 }, RSLOTS = { F: ['17', '12', '19', '22'], D: ['44', '5', '2', '8'] };
+function rosterApply(j) {
+  if (!j || !Array.isArray(j.players)) return;
+  const F = j.players.filter(p => p.pos === 'F'), D = j.players.filter(p => p.pos === 'D'), m = {};
+  RSLOTS.F.forEach((s, i) => { if (F[i]) m[s] = { n: F[i].n, num: F[i].num }; });
+  RSLOTS.D.forEach((s, i) => { if (D[i]) m[s] = { n: D[i].n, num: D[i].num }; });
+  RN.map = m;
+  for (const k in SKP) { const s = SKP[k]; if (s.team === 'ravens') rosterLabel(s.p, s.num); }
+}
+function rosterLabel(P, slot) {
+  const R = RN.map && RN.map[slot]; if (!R || P.goalie || P.team !== 'ravens') return;
+  P.name = R.n; if (P.shown === R.num) return; P.shown = R.num;
+  const t = P.m.torso; if (t && t.material && t.material.map) { const old = t.material.map; t.material.map = jerseyTex('ravens', String(R.num), false); t.material.needsUpdate = true; try { old.dispose(); } catch (e) { } }
+}
+function rosterLoad() {
+  try { const c = JSON.parse(localStorage.getItem('ravens-vr3-roster') || 'null'); if (c) rosterApply(c); } catch (e) { }
+  if (!brainOK()) return Promise.resolve(false);
+  return brainFetch('/roster', null, 8000).then(j => { rosterApply(j); try { localStorage.setItem('ravens-vr3-roster', JSON.stringify(j)); } catch (e) { } return true; }).catch(() => false);
+}
+// finished games and drills go to the server; if it can't be reached they wait on the headset and go next time
+const SQKEY = 'ravens-vr3-sendq';
+function brainSession(o) {
+  if (!st.brainUrl) return;
+  o.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); o.at = new Date().toISOString();
+  let q = []; try { q = JSON.parse(localStorage.getItem(SQKEY) || '[]'); } catch (e) { }
+  q.push(o); try { localStorage.setItem(SQKEY, JSON.stringify(q.slice(-30))); } catch (e) { }
+  brainFlush(true);
+}
+let flushing = false;
+async function brainFlush(tell) {
+  if (flushing || !brainOK()) return; flushing = true;
+  try {
+    let q = []; try { q = JSON.parse(localStorage.getItem(SQKEY) || '[]'); } catch (e) { }
+    let sent = 0;
+    while (q.length) { await brainFetch('/session', q[0], 10000); q.shift(); sent++; try { localStorage.setItem(SQKEY, JSON.stringify(q)); } catch (e) { } }
+    if (sent && tell) toast('Sent to your career game', 2.5);
+    run.sessSent = (run.sessSent || 0) + sent;
+  } catch (e) { if (tell) toast('Saved on the headset; it goes to your career game next time', 3); run.sessErr = String(e.message || e); }
+  flushing = false;
+}
+function careerDone(f, what, extra) {
+  const c = careerCode(f); brainSession(Object.assign({ name: what, code: c }, f, extra || {})); return c;
+}
+
+// ---- talking out loud. Hands-free: the mic listens and a sentence is picked out by its loudness against the room's own noise. Or hold A.
+// What you say goes to your server: a quick call ("Shoot!", "D to D", "Pass!") becomes the call; anything else goes to the teammate you are
+// looking at, who answers out loud.
+const MIC = { on: false, ctx: null, stream: null, ring: null, rp: 0, total: 0, sr: 48000, lvl: 0, floor: 0.006, speak: false, above: 0, below: 0, start: 0, busy: false, gate: 0, ptt: false, hist: {}, err: '', sent: 0 };
+const nowS = () => performance.now() / 1000;
+function micCtx() { if (!MIC.ctx) { try { MIC.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { MIC.ctx = null; } } return MIC.ctx; }
+async function micStart() {
+  if (MIC.on || st.talk === 'off' || !brainOK()) return false;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { MIC.err = 'no mic in this browser'; return false; }
+  try {
+    MIC.dbg = ['ask ' + Math.round(nowS() * 1000)];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+    MIC.dbg.push('got ' + Math.round(nowS() * 1000));
+    if (!st.inVR || MIC.on || st.talk === 'off') { stream.getTracks().forEach(t => t.stop()); return false; }     // left VR while the browser was asking
+    MIC.stream = stream;
+    const ctx = micCtx(); if (!ctx) throw new Error('no audio');
+    if (ctx.state !== 'running') ctx.resume().catch(() => { });
+    MIC.sr = ctx.sampleRate; MIC.ring = new Float32Array(Math.ceil(MIC.sr * 10)); MIC.rp = 0; MIC.total = 0; MIC.speak = false; MIC.above = MIC.below = 0;
+    const src = ctx.createMediaStreamSource(MIC.stream), z = ctx.createGain(); z.gain.value = 0; let node = null;
+    if (ctx.audioWorklet && window.AudioWorkletNode) {                      // the sound comes off the audio thread in 2048-sample pieces, none lost when a frame is slow
+      try {
+        if (!MIC.wl) { const code = "class P extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(2048);this.i=0}process(n){const c=n[0]&&n[0][0];if(c){for(let k=0;k<c.length;k++){this.b[this.i++]=c[k];if(this.i===2048){this.port.postMessage(this.b);this.b=new Float32Array(2048);this.i=0}}}return true}}registerProcessor('rv-mic',P)";
+          await Promise.race([ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([code], { type: 'application/javascript' }))), new Promise((_, no) => setTimeout(() => no(new Error('slow')), 3000))]); MIC.wl = true; }
+        node = new AudioWorkletNode(ctx, 'rv-mic', { numberOfInputs: 1, numberOfOutputs: 1, channelCount: 1 }); node.port.onmessage = e => micChunk(e.data);
+      } catch (e) { node = null; MIC.dbg.push('worklet: ' + (e && e.message)); }
+    }
+    if (!node) { node = ctx.createScriptProcessor(2048, 1, 1); node.onaudioprocess = e => micChunk(e.inputBuffer.getChannelData(0)); }
+    if (!st.inVR) { stream.getTracks().forEach(t => t.stop()); MIC.stream = null; return false; }
+    src.connect(node); node.connect(z); z.connect(ctx.destination); MIC.src = src; MIC.node = node; MIC.on = true; MIC.err = '';
+    if (st.inVR) toast(st.talk === 'hold' ? 'Mic on: hold A to talk to a teammate' : 'Mic on: just talk. Look at a teammate to talk to him', 3);
+    return true;
+  } catch (e) { MIC.err = (e && (e.name || e.message)) || 'error'; if (st.inVR) toast('Mic did not start: ' + MIC.err, 3); return false; }
+}
+function micStop() {
+  try { if (MIC.node) { MIC.node.onaudioprocess = null; if (MIC.node.port) MIC.node.port.onmessage = null; MIC.node.disconnect(); } if (MIC.src) MIC.src.disconnect(); if (MIC.stream) MIC.stream.getTracks().forEach(t => t.stop()); } catch (e) { }
+  MIC.on = false; MIC.stream = null; MIC.node = null; MIC.speak = false; MIC.ptt = false;
+}
+function micChunk(a) {
+  const R = MIC.ring; if (!R) return; const n = R.length; let s = 0;
+  for (let i = 0; i < a.length; i++) { R[MIC.rp] = a[i]; MIC.rp = (MIC.rp + 1) % n; s += a[i] * a[i]; }
+  MIC.total += a.length;
+  const rms = Math.sqrt(s / a.length), dt = a.length / MIC.sr; MIC.lvl = rms;
+  if (MIC.ptt) return;                                                    // holding A: the button decides
+  const gated = MIC.busy || nowS() < MIC.gate || st.talk !== 'free' || !st.inVR || MENU.open;
+  const thr = Math.max(0.012, MIC.floor * 3.2);
+  if (!MIC.speak) {
+    if (gated) { MIC.above = 0; return; }
+    if (rms > thr) { MIC.above += dt; if (MIC.above >= 0.15) { MIC.speak = true; MIC.below = 0; MIC.start = MIC.total - Math.round((MIC.above + 0.25) * MIC.sr); } }
+    else { MIC.above = 0; MIC.floor = clamp(MIC.floor * 0.97 + rms * 0.03, 0.002, 0.05); }
+    return;
+  }
+  if (gated && nowS() < MIC.gate) { MIC.speak = false; return; }          // a teammate started talking over you: that was probably him
+  MIC.below = rms < thr * 0.7 ? MIC.below + dt : 0;
+  const len = (MIC.total - MIC.start) / MIC.sr;
+  if (MIC.below >= 0.7 || len >= 8) { MIC.speak = false; const end = MIC.total - Math.round(Math.max(0, MIC.below - 0.2) * MIC.sr); if ((end - MIC.start) / MIC.sr >= 0.4) micSend(micCut(MIC.start, end)); }
+}
+function micPTT(down) {                                                   // A on the right controller
+  if (!MIC.on) { if (down && st.talk !== 'off') { if (!brainOK()) toast('Talking needs your server: set it up on the start page', 3); else micStart(); } return; }
+  if (down === MIC.ptt) return;
+  MIC.ptt = down;
+  if (down) { MIC.speak = false; MIC.start = MIC.total - Math.round(0.1 * MIC.sr); if (MIC.busy) toast('Hang on, still listening to the last one', 1.2); else toast('Listening...', 0.8); }
+  else if (!MIC.busy) { const end = MIC.total; if ((end - MIC.start) / MIC.sr >= 0.3) micSend(micCut(MIC.start, Math.min(end, MIC.start + 8 * MIC.sr))); }
+}
+function micCut(a, b) {                                                   // samples a..b (stream positions) out of the ring, at 16 kHz
+  const R = MIC.ring, n = R.length; a = Math.max(a, MIC.total - n + 1, 0); const L = Math.max(0, b - a), out = new Float32Array(L), off = MIC.total - a;
+  for (let i = 0; i < L; i++) out[i] = R[(MIC.rp - off + i + n * 2) % n];
+  const k = MIC.sr / 16000, m = Math.floor(L / k), r = new Float32Array(m);
+  for (let i = 0; i < m; i++) { const x = i * k, j = Math.floor(x), f = x - j; r[i] = out[j] * (1 - f) + (out[Math.min(L - 1, j + 1)] || 0) * f; }
+  return r;
+}
+function wavB64(f) {
+  const n = f.length, b = new DataView(new ArrayBuffer(44 + n * 2)), w = (o, s) => { for (let i = 0; i < s.length; i++) b.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); b.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
+  b.setUint32(24, 16000, true); b.setUint32(28, 32000, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); w(36, 'data'); b.setUint32(40, n * 2, true);
+  let pk = 0; for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(f[i])); const g = pk > 0.02 ? Math.min(8, 0.9 / pk) : 1;     // a quiet voice is brought up
+  for (let i = 0; i < n; i++) b.setInt16(44 + i * 2, clamp(f[i] * g, -1, 1) * 32767, true);
+  const u = new Uint8Array(b.buffer); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s);
+}
+// who you are talking to: the teammate nearest the middle of your view, or the nearest one
+const _tf = new THREE.Vector3();
+function talkMates() { return (SC.on ? SC.sk : DR.on ? (DR.sk || []) : []).filter(q => q.team === 'ravens' && q.vis && q.p && q.p.name); }
+function talkTarget() {
+  const ms = talkMates(); if (!ms.length) return null;
+  camera.getWorldDirection(_tf); const fl = Math.hypot(_tf.x, _tf.z) || 1, fx = _tf.x / fl, fz = _tf.z / fl;
+  let best = null, bs = 9, near = null, nd = 99;
+  for (const q of ms) {
+    const dx = q.x - HEADW.x, dz = q.z - HEADW.z, d = Math.hypot(dx, dz) || 0.01, ang = Math.acos(clamp((dx * fx + dz * fz) / d, -1, 1));
+    if (d < 30 && ang < 0.6 && ang + d * 0.02 < bs) { bs = ang + d * 0.02; best = q; }
+    if (d < nd) { nd = d; near = q; }
+  }
+  return (best || (nd < 12 ? near : null) || null);
+}
+function playLive() { return SC.on ? (!SC.over && !(SC.pause > 0) && !(SC.after > 0) && !(SC.inter > 0)) : DR.on ? DR.ph === 'play' : false; }
+function talkCtx() {
+  const live = playLive();
+  let now = 'Free skate at the rink with the puck.';
+  if (SC.on) now = (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' scrimmage against the Visitors, ' + (SC.over ? 'just finished' : ordN(SC.per) + ' period, ' + clockStr(SC.clk) + ' left') + ', Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ', shots ' + SC.shots[0] + ' to ' + SC.shots[1] + '. Drew so far: ' + SC.my.g + ' goals, ' + SC.my.a + ' assists, ' + SC.my.sh + ' shots.' + (SC.msg ? ' Last thing that happened: ' + SC.msg + '.' : '');
+  else if (DR.on && DR.d) now = 'Training, the ' + DR.d.name + ' drill' + (DR.rep ? ', rep ' + DR.rep + ' of ' + DR.d.reps : '') + '. ' + (DR.msg || '');
+  return { where: SC.on ? (live ? 'on the ice in the middle of play, so only a few words' : 'on the ice at a stoppage in the game') : DR.on ? 'on the ice at training, between reps' : 'on the ice', now };
+}
+async function micSend(pcm) {
+  if (MIC.busy || !brainOK()) return;
+  const T = talkTarget(), P = T && T.p, to = P && P.name || null, live = playLive();
+  MIC.busy = true; MIC.sent++; const t0 = nowS();
+  if (P && !live) say(P, '...', { force: true, quiet: true, hold: 8 });
+  try {
+    const hist = to ? (MIC.hist[to] || []) : [];
+    const r = await brainFetch('/talk', { audio: wavB64(pcm), mime: 'audio/wav', to, play: live, ctx: talkCtx(), hist }, 20000);
+    run.talk = run.talk || []; run.talk.push({ heard: r.heard || '', intent: r.intent, to, ms: Math.round((nowS() - t0) * 1000) });
+    if (r.heard && r.intent !== 'none') toast('You: "' + r.heard.slice(0, 60) + '"', 1.6);
+    if (r.intent === 'command') { voiceCommand(r.command); if (P) bubbleClear(P); }
+    else if (r.intent === 'chat' && r.reply && P) {
+      hist.push({ role: 'user', content: r.heard }, { role: 'assistant', content: r.reply }); MIC.hist[to] = hist.slice(-12);
+      await playReply(P, r.reply, r.audio);
+    } else if (P) bubbleClear(P);
+  } catch (e) { if (P) bubbleClear(P); toast('Could not reach your server: ' + (e.name === 'AbortError' ? 'too slow' : e.message), 3); run.talkErr = String(e.message || e); }
+  MIC.busy = false;
+}
+function voiceCommand(c) {
+  if (c === 'shoot') myCall('shoot');
+  else if (c === 'over') myCall('over');
+  else if (c === 'same') myCall('same');
+  else if (c === 'pass') callForPuck('voice');
+  else if (c === 'change') toast('You: "Change!"', 1.2);
+}
+function playReply(P, text, b64) {
+  say(P, text, { force: true, quiet: true });
+  const ctx = audio && audio.ctx; if (!b64 || !ctx || !st.sound) { MIC.gate = nowS() + 0.5; return Promise.resolve(); }
+  return new Promise(res => {
+    try {
+      const b = Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer;
+      ctx.decodeAudioData(b, buf => { const d = voxBuf(P, buf, 1, 1.9); if (d) { P.talkT = d + 0.1; MIC.gate = nowS() + d + 0.4; } res(); }, () => res());
+    } catch (e) { res(); }
+  });
 }
 
 // ---- arcade readability: a ring under every player (gold Ravens, red Visitors; bright on the puck carrier, flashing white while he reaches to
@@ -3637,6 +3871,7 @@ function setSetting(key, val) {
   else if (key === 'oneM') { if (val === 'off') { handsOne = false; grabPend = 0; } }
   else if (key === 'mountH') { STK.ok = false; STK.cal = false; if (val !== 'off' && !st.mAx) toast('Now choose Set up the mount'); }
   else if (key === 'height') calibReq = true;
+  else if (key === 'talk') { if (val === 'off') micStop(); else if (st.inVR && !MIC.on) micStart(); }
   else if (key === 'sound') { if (val) { if (!audio) { try { audio = makeAudio(); if (audio) audio.resume(); } catch (e) { audio = null; } } } else closeAudio(); }
   saveSettings(); syncUI(); MENU.dirty = true;
 }
@@ -3684,6 +3919,7 @@ function menuRows(tab) {
   return [
     { l: 'Play style', v: () => st.arcade ? 'Arcade (easier)' : 'Simulation', s: () => { setSetting('arcade', !st.arcade); toast(st.arcade ? 'Arcade: the puck stays on your blade, easier poke checks, rings under players' : 'Simulation: real puck physics, no rings'); } },
     { l: 'Sound', v: () => st.sound ? (st.voices ? 'On, players talk' : 'On, no voices') : 'Off', s: () => { if (st.sound && st.voices) setSetting('voices', false); else if (st.sound) setSetting('sound', false); else { setSetting('sound', true); setSetting('voices', true); } } },
+    { l: 'Talking to teammates', v: () => !brainOK() ? 'Needs your server (start page)' : st.talk === 'off' ? 'Off' : (st.talk === 'free' ? 'Just talk' : 'Hold A to talk') + (MIC.on ? '' : MIC.err ? ' (mic: ' + MIC.err + ')' : ''), s: d => setSetting('talk', ['free', 'hold', 'off'][cyc(3, ['free', 'hold', 'off'].indexOf(st.talk), d)]) },
     { l: 'Scene detail', v: () => NAMES[st.level], s: d => setSetting('level', cyc(3, st.level, d)) },
     { l: 'Which way you shoot', v: () => st.shot === 'right' ? 'Right' : 'Left', s: () => setSetting('shot', st.shot === 'right' ? 'left' : 'right') },
     { l: 'On the ice with you', v: () => OTHER_NAMES[st.others], s: d => setSetting('others', OTHERS[cyc(4, OTHERS.indexOf(st.others), d)]) },
@@ -3850,6 +4086,7 @@ async function enterVR() {
   showErr(''); failure = '';
   if (!navigator.xr) { failure = explain(); showErr(failure); return; }
   closeAudio(); if (st.sound) audio = makeAudio();                       // created inside the tap, so the browser allows sound
+  if (st.talk !== 'off' && brainOK()) { micCtx(); if (MIC.ctx && MIC.ctx.resume) MIC.ctx.resume().catch(() => { }); }
   let session;
   try { session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] }); }
   catch (e) { failure = explain(e); showErr(failure); closeAudio(); buildResult(null); return; }
@@ -3863,6 +4100,8 @@ async function enterVR() {
     H.ok = false; needPuck = true; if (audio) audio.resume();
     setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; handsOne = false; grabPend = 0; snapTele = false; recalT = 0; H.ok = false; othersInit(); DR.autoT = st.startDrill !== 'none' ? 4 : 0; MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
     toast('Ready stance, blade near the ice. X opens the menu');
+    if (st.talk !== 'off' && brainOK()) setTimeout(() => { if (st.inVR) micStart(); }, 2500);
+    brainFlush(false);
     try {
       const sup = session.supportedFrameRates ? Array.from(session.supportedFrameRates) : [];
       run.supported = sup;
@@ -3874,7 +4113,7 @@ async function enterVR() {
   } catch (e) { st.inVR = false; closeAudio(); failure = 'VR started but the 3D view could not attach: ' + (e && e.message || e); showErr(failure); buildResult(null); }
 }
 function onEnd() {
-  st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
+  micStop(); st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
   closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; handsOne = false; grabPend = 0; MENU.open = false; drillStop(true); scStop(true); st.inVR = false; othersInit(); menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
   const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, pk: { ...run.pk }, frames: run.frames.map(a => a.slice()) };
   buildResult(ended);
@@ -4028,6 +4267,21 @@ const bind = (id, key, conv) => $(id).addEventListener('change', e => { st[key] 
 bind('shot', 'shot'); bind('hz', 'wantHz', Number); bind('speed', 'speed', Number); bind('steer', 'steer'); bind('turn', 'turn'); bind('vig', 'vig', Number);
 bind('height', 'height'); bind('sound', 'sound', v => v === 'on'); bind('power', 'power', Number); bind('assist', 'assist', v => v === 'on');
 bind('len', 'lenIn', Number); $('len').addEventListener('change', () => { st.len = st.lenIn * 0.0254; }); bind('keepm', 'keepM'); bind('lift', 'liftP', Number); bind('rsrc', 'rollSrc'); bind('roll', 'rollG', Number); bind('bend', 'bendOn', v => v === 'on'); bind('pa', 'assistP', Number); bind('ice', 'iceP', Number); bind('onem', 'oneM'); bind('aim', 'aimP', Number); bind('hap', 'hapP', Number); bind('others', 'others'); bind('sdrill', 'startDrill'); $('onem').addEventListener('change', () => { if (st.oneM === 'off') { handsOne = false; grabPend = 0; } });
+$('burl').value = st.brainUrl; $('bkey').value = st.brainKey; $('talk').value = st.talk;
+$('burl').addEventListener('change', e => { st.brainUrl = e.target.value.trim(); saveSettings(); rosterLoad(); });
+$('bkey').addEventListener('change', e => { st.brainKey = e.target.value.trim(); saveSettings(); rosterLoad(); });
+$('talk').addEventListener('change', e => { st.talk = e.target.value; saveSettings(); MENU.dirty = true; });
+$('btest').addEventListener('click', async () => {
+  const n = $('bnote'); st.brainUrl = $('burl').value.trim(); st.brainKey = $('bkey').value.trim(); saveSettings();
+  if (!/^https:\/\//.test(st.brainUrl)) { n.textContent = 'The address should start with https://'; return; }
+  n.textContent = 'Checking...';
+  let msg = '';
+  try { const h = await brainFetch('/hello', null, 8000); msg = 'Server OK' + (h.claude ? ' (Claude answers)' : ' (free Cloudflare model answers)') + (h.kv ? '' : ', but no KV store: sessions are not kept'); await rosterLoad(); const nm = RN.map ? Object.values(RN.map).map(r => r.n).join(', ') : ''; if (nm) msg += '. On the ice with you: ' + nm; }
+  catch (e) { n.textContent = 'Server: ' + (e.message === 'bad key' ? 'the key is wrong' : e.name === 'AbortError' ? 'no answer' : e.message); return; }
+  if (st.talk !== 'off') { try { const m = await navigator.mediaDevices.getUserMedia({ audio: true }); m.getTracks().forEach(t => t.stop()); msg += '. Mic allowed.'; } catch (e) { msg += '. Mic: ' + (e.name === 'NotAllowedError' ? 'not allowed (check the browser\'s site settings)' : e.name || 'error'); } }
+  n.textContent = msg; brainFlush(false);
+});
+rosterLoad().then(() => brainFlush(false));
 $('curve').addEventListener('change', e => { setCurve(e.target.value); saveSettings(); drawCurve(); MENU.dirty = true; });
 matchMedia('(prefers-color-scheme: dark)').addEventListener && matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawCurve());
 document.querySelectorAll(ALLIN).forEach(x => x.addEventListener('change', refreshRep));
@@ -4038,7 +4292,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, playReply, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
