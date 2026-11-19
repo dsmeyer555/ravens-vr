@@ -106,9 +106,11 @@ details.rate[open]>summary{margin-bottom:10px}
 
   <section class="actions" aria-label="Start">
     <div class="row">
-      <button class="btn" id="enter" disabled>Enter VR</button>
+      <button class="btn" id="enterCareer" disabled>Career mode</button>
+      <button class="btn" id="enter" disabled>Sandbox</button>
       <span class="note" id="enter-note"></span>
     </div>
+    <p class="note" style="margin-top:8px"><b>Career mode</b>: your own Ravens season, week by week from your phone in VR (texts, training, game night, the pub). <b>Sandbox</b>: skate about, run drills, play a scrimmage or a random game against a real club.</p>
     <div class="msg bad" id="err" hidden role="alert"></div>
   </section>
 
@@ -151,8 +153,6 @@ details.rate[open]>summary{margin-bottom:10px}
       </label>
     </div>
     <div class="row" style="margin-top:10px"><button class="btn" type="button" id="btest">Test the server and allow the mic</button><span class="note" id="bnote" role="status"></span></div>
-    <p class="note" id="fxnote" hidden style="margin-top:10px"></p>
-    <div id="lineup" hidden style="margin-top:14px"><h3 style="margin:0 0 4px">Your lines</h3><p class="note" style="margin:0 0 8px">You play left wing on line 1. Pick your three forward lines and three D pairs. Picking someone already in another spot swaps the two.</p><div class="grid2" id="lineup-g"></div></div>
   </details>
 
   <details class="card" aria-label="More settings">
@@ -280,7 +280,7 @@ details.rate[open]>summary{margin-bottom:10px}
           <option value="defend">Drill: defending 1 on 1</option>
           <option value="scrim">5 on 5 scrimmage</option>
           <option value="scrim3">3 on 3 scrimmage</option>
-          <option value="fixture">This week's game (from your career game)</option>
+          <option value="random">Random game against a real club</option>
         </select>
       </label>
       <label class="f">On the ice with you
@@ -541,7 +541,7 @@ function loadSettings() {
       if (ok(j.speed, [0, 1, 2])) o.speed = j.speed; if (ok(j.steer, ['body', 'head'])) o.steer = j.steer; if (ok(j.turn, ['snap30', 'snap45', 'smooth', 'off'])) o.turn = j.turn;
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
-      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['hold', 'btn', 'grip', 'off'])) o.oneM = j.oneM; if (typeof j.arcade === 'boolean') o.arcade = j.arcade; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2, 3])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone', 'twoone', 'breakout', 'defend', 'scrim', 'scrim3', 'fixture'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2, 3])) o.oppP = j.oppP;
+      if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['hold', 'btn', 'grip', 'off'])) o.oneM = j.oneM; if (typeof j.arcade === 'boolean') o.arcade = j.arcade; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2, 3])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone', 'twoone', 'breakout', 'defend', 'scrim', 'scrim3', 'random'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2, 3])) o.oppP = j.oppP;
       if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM; if (typeof j.voices === 'boolean') o.voices = j.voices; if (typeof j.brainUrl === 'string') o.brainUrl = j.brainUrl.trim().slice(0, 200); if (typeof j.brainKey === 'string') o.brainKey = j.brainKey.trim().slice(0, 200); if (ok(j.talk, ['off', 'free', 'hold'])) o.talk = j.talk; o.lineup = {}; if (j.lineup && typeof j.lineup === 'object') for (const [k, v] of Object.entries(j.lineup).slice(0, 12)) if (typeof v === 'string' && v.length < 40) o.lineup[k] = v;
       if (ok(j.mountH, ['off', 'right', 'left'])) o.mountH = j.mountH; if (typeof j.mD === 'number' && j.mD > 0.2 && j.mD < 1.8) o.mD = j.mD;
       if (Array.isArray(j.mAx) && j.mAx.length === 3 && j.mAx.every(v => typeof v === 'number' && isFinite(v)) && Math.abs(Math.hypot(...j.mAx) - 1) < 0.05) o.mAx = j.mAx;
@@ -2594,6 +2594,7 @@ function drillStart(id) {
 }
 function drillStop(quiet) {
   if (!DR.on) return;
+  if (CAR.step === 'train') { carAbort(); setTimeout(carHub, 600); }
   DR.on = false; setCones([]); lightSpot(null); defShow(false); setPiles([]);
   for (const s of DR.sk || []) skShow(s, false); DR.sk = []; if (!SC.on) g2Show(false);
   MATE.drill = null; MATE.drillHide = false; if (MATE.p) MATE.p.root.visible = MATE.on;
@@ -2606,6 +2607,7 @@ function drillEnd() {
   const extra = d.id === 'give' ? ', ' + DR.passes + ' passes completed' : d.id === 'oneone' || d.id === 'twoone' ? ', the D won it ' + DR.steals + ' times' : d.id === 'breakout' ? ', ' + DR.goals + ' goals off the rush' : d.id === 'defend' ? ', he scored ' + DR.against + (DR.gaps.length ? ', average gap at the blue line ' + (DR.gaps.reduce((a, b) => a + b, 0) / DR.gaps.length).toFixed(1) + ' m' : '') : '';
   run.drills = run.drills || []; run.drills.push(d.name + ' (' + OPP_NAMES[st.oppP] + '): ' + sc + ' ' + (d.unit || 'goals').toLowerCase() + ' from ' + d.reps + extra + (d.id !== 'defend' ? ', ' + DR.saves + ' saves' : ''));
   toast(d.name + ' done: ' + sc + ' of ' + d.reps + (sc > prev ? '  (new best)' : '  (best ' + prev + ')'), 3);
+  if (CAR.step === 'train') carTrainDone(sc, d.reps);
   { const c = careerDone({ mode: d.id, lvl: st.oppP, rs: sc, vs: d.reps, g: d.id === 'breakout' ? DR.goals : 0, a: 0, sh: 0, tk: d.id === 'defend' ? DR.stops : 0, per: 0 }, d.name, { level: OPP_NAMES[st.oppP], unit: (d.unit || 'goals').toLowerCase(), saves: DR.saves, best: Math.max(prev, sc) }); setTimeout(() => showCode(c, d.name), 3200); }
   drillStop(true); boardText();
 }
@@ -3154,6 +3156,7 @@ function scStart(mode, fx) {
 }
 function scStop(quiet) {
   if (!SC.on) return;
+  if (CAR.step === 'game' && !SC.over) { carAbort(); setTimeout(carHub, 600); }
   benchLeave(); benchClear(); if (SC.fx) fxLineupOff();
   SC.on = false; for (const t in SKP) if (SKP[t].vis) skShow(SKP[t], false); g2Show(false);
   SC.flip = 1; goalHomes();
@@ -3386,6 +3389,7 @@ function scPeriodEnd() {
   for (const s of SC.sk) { s.has = false; s.act = ''; }
   if (SC.per >= 3) {
     SC.over = true; SC.msg = 'Final: Ravens ' + SC.score[0] + ', ' + oppN() + ' ' + SC.score[1]; toast(SC.msg, 4);
+    if (CAR.step === 'game') setTimeout(carGameDone, 50);
     showCode(careerDone({ mode: SC.mode === '5' ? '5v5' : '3v3', lvl: st.oppP, rs: SC.score[0], vs: SC.score[1], g: SC.my.g, a: SC.my.a, sh: SC.my.sh, tk: SC.my.tk, per: 3 }, (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final', { level: OPP_NAMES[st.oppP], shots: SC.shots.slice(), shotsAg: SC.shots[1], minutes: PERLENS[st.perP], events: (SC.log || []).slice(-8), goals: (SC.goals || []).slice(0, 30), fx: SC.fx ? SC.fx.id : null, opp: SC.fx ? SC.fx.opp : null, home: SC.fx ? !!SC.fx.home : null, cup: SC.fx ? !!SC.fx.cup : null, mates: (SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0]] : talkMates().filter(q => !q.coach)).map(q => q.p && q.p.name).filter(Boolean) }), (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final');
     run.scrims = run.scrims || []; run.scrims.push('Final: Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ' (3 x ' + PERLENS[st.perP] + ' min, shots ' + SC.shots[0] + ' to ' + SC.shots[1] + (Object.keys(SC.calls).length ? ', whistles: ' + Object.entries(SC.calls).map(([k, n]) => k.split(':')[0].toLowerCase() + ' ' + n).join(', ') : '') + ')');
   } else { SC.inter = 6; SC.msg = 'End of the ' + ordN(SC.per) + ' period'; toast(SC.msg, 3); }
@@ -3823,7 +3827,7 @@ function micChunk(a) {
   MIC.total += a.length;
   const rms = Math.sqrt(s / a.length), dt = a.length / MIC.sr; MIC.lvl = rms;
   if (MIC.ptt) return;                                                    // holding A: the button decides
-  const gated = MIC.busy || nowS() < MIC.gate || st.talk !== 'free' || !st.inVR || MENU.open;
+  const gated = MIC.busy || nowS() < MIC.gate || st.talk !== 'free' || !st.inVR || MENU.open || (PH.open && !(PH.scr === 'thread' && PH.th && !PH.th.busy));
   const thr = Math.max(0.012, MIC.floor * 3.2);
   if (!MIC.speak) {
     if (gated) { MIC.above = 0; return; }
@@ -3885,6 +3889,7 @@ function talkCtx() {
   return { where: SC.on && BN.on ? 'on the bench during the game, watching the play from behind the boards, so there is time for a proper chat' : SC.on ? (live ? 'on the ice in the middle of play, so only a few words' : 'on the ice at a stoppage in the game') : DR.on ? 'on the ice at training, between reps' : 'on the ice', now };
 }
 async function micSend(pcm) {
+  if (PH.open) { if (PH.scr === 'thread' && PH.th && !PH.th.busy) phoneVoice(pcm); return; }
   if (MIC.busy || !brainOK()) return;
   const T = talkTarget(), P = T && T.p, to = P && P.name || null, live = playLive() && !BN.on;
   MIC.busy = true; MIC.sent++; const t0 = nowS(), rec = { heard: '', intent: '', to, ms: 0 }; MIC.qEnd = 0; MIC.dq = Promise.resolve();
@@ -3931,6 +3936,329 @@ function replyAudio(P, b64) {                                          // the re
 }
 function talkTimes() { const r = MIC.last; if (!r) return ''; const f = x => x === undefined ? '-' : (x / 1000).toFixed(1); return 'last: heard ' + f(r.tHeard) + 's, words ' + f(r.tReply) + 's, voice ' + f(r.tVoice) + 's'; }
 
+// ---------------------------------------------------------------- VR career
+// Its own season with the Ravens: 12 weeks, 10 Talon Cup games and two friendlies. Each week runs on your phone, in your left hand:
+// midweek chat with a teammate, Thursday training (a drill Crofty picks), game night (a real club, played in VR or simmed), then the pub
+// (or a social night every 4th week) in the group chat. Saved on the headset and on your server.
+const CLUBS = [['Ayrshire Vikings', .52, 'rush'], ['Mariners B', .5, 'patient'], ['Thunder', .48, 'cycle'], ['Kilmarnock Piranhas', .5, 'forecheck'], ['Edinburgh Stingers', .54, 'cycle'],
+  ['Coatbridge Redwings', .46, 'rush'], ['Galloway Grizzlies', .5, 'cycle'], ['The Kraken', .49, 'forecheck'], ['Lossiemouth Jets', .48, 'rush'], ['Inverness Hurricanes', .51, 'rush'], ['Hamilton Hawks', .5, 'forecheck'], ['Belfast Foxes', .5, 'patient'],
+  ['Caledonian Thunder', .54, 'cycle'], ['Aberdeen Predators', .55, 'forecheck'], ['Mariners', .53, 'patient'], ['Dundee Pirates', .52, 'rush'], ['Aviemore Avalanche', .54, 'rush'], ['Lowland Raiders', .52, 'forecheck'], ['Dundee Devils', .53, 'cycle'], ['Paisley Buccaneers', .52, 'patient'], ['Dundee Wildcats', .52, 'rush'],
+  ['Paisley Panthers', .55, 'cycle'], ['Kirkcaldy Kings', .54, 'patient'], ['The Hawks', .56, 'forecheck'], ['Aberdeen North Stars', .58, 'rush'], ['Dundee Knights', .55, 'cycle'], ['Edinburgh Phoenix', .56, 'rush'], ['Coatbridge Coyotes', .57, 'patient'], ['The Distillers', .55, 'forecheck'], ['Irvine Flyers', .54, 'rush'], ['Stirling Wolves', .57, 'forecheck']];
+const TALON5 = CLUBS.slice(0, 5), RAV_R = 0.52, CWEEKS = 24, TALON_WEEKS = [2, 4, 6, 8, 10, 14, 16, 18, 20, 22];
+const CAR = { mode: 'sandbox', step: null, vc: null, saveT: 0 };
+const clubBy = n => CLUBS.find(c => c[0] === n) || [n, 0.5, 'patient'];
+const firstN = n => String(n || '').replace(/\..*$/, '').split(' ')[0];
+function randomFx() { const c = CLUBS[Math.floor(Math.random() * CLUBS.length)]; return { id: 'RND' + Date.now().toString(36), opp: c[0], r: c[1], style: c[2], home: Math.random() < 0.5, cup: false }; }
+function carNew(season) {
+  const T = ['Ravens', ...TALON5.map(c => c[0])], rounds = [];            // double round robin, circle method
+  let a = T.slice(1);
+  for (let r = 0; r < 5; r++) { const L = [T[0], ...a], pr = []; for (let i = 0; i < 3; i++) pr.push(r % 2 ? [L[5 - i], L[i]] : [L[i], L[5 - i]]); rounds.push(pr); a = [a[a.length - 1], ...a.slice(0, -1)]; }
+  for (let r = 0; r < 5; r++) rounds.push(rounds[r].map(([h, w]) => [w, h]));
+  // 24 games: the 10 Talon Cup games spread through the season, and 14 friendlies against other clubs (mostly your level, a few tougher)
+  const others = CLUBS.slice(5), easy = others.filter(c => c[1] < 0.55).sort(() => Math.random() - 0.5), hard = others.filter(c => c[1] >= 0.55).sort(() => Math.random() - 0.5);
+  const friendlies = easy.slice(0, 10).concat(hard.slice(0, 4)).sort(() => Math.random() - 0.5);
+  const fx = []; let ri = 0, fi = 0;
+  for (let w = 1; w <= CWEEKS; w++) {
+    if (!TALON_WEEKS.includes(w)) { const c = friendlies[fi++ % friendlies.length]; fx.push({ opp: c[0], r: c[1], style: c[2], home: fi % 2 === 1, cup: false }); }
+    else { const pr = rounds[ri].find(p => p.includes('Ravens')), home = pr[0] === 'Ravens', opp = home ? pr[1] : pr[0], c = clubBy(opp); fx.push({ opp, r: c[1], style: c[2], home, cup: true, round: ri }); ri++; }
+  }
+  const tab = {}; for (const n of T) tab[n] = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+  return { v: 2, ts: Date.now(), season: season || 1, week: 1, fx, rounds, tab, wk: { chat: 0, train: 0, game: 0, after: 0 }, rec: { w: 0, d: 0, l: 0, gf: 0, ga: 0 }, me: { gp: 0, g: 0, a: 0, sh: 0 },
+    conf: 55, vibe: 55, results: [], last: null, chatI: 0, notes: [], past: [] };
+}
+function carSave() {
+  const vc = CAR.vc; if (!vc) return; vc.ts = Date.now();
+  try { localStorage.setItem('ravens-vr3-career', JSON.stringify(vc)); } catch (e) { }
+  clearTimeout(CAR.saveT); CAR.saveT = setTimeout(() => { if (brainOK()) fetch(st.brainUrl.replace(/\/+$/, '') + '/vrcareer', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Ravens-Key': st.brainKey }, body: JSON.stringify(CAR.vc) }).catch(() => { }); }, 1500);
+}
+async function carLoad() {
+  let loc = null; try { loc = JSON.parse(localStorage.getItem('ravens-vr3-career') || 'null'); } catch (e) { }
+  let rem = null; if (brainOK()) { try { const j = await brainFetch('/vrcareer', null, 6000); rem = j && j.career; } catch (e) { } }
+  const ok = c => c && c.v === 2 && Array.isArray(c.fx) && c.fx.length === CWEEKS && c.tab;
+  CAR.vc = ok(rem) && (!ok(loc) || (rem.ts || 0) > (loc.ts || 0)) ? rem : ok(loc) ? loc : carNew(1);
+  return CAR.vc;
+}
+const fxNow = () => { const vc = CAR.vc; return vc && vc.fx[vc.week - 1]; };
+const carNext = () => { const vc = CAR.vc; for (const k of ['chat', 'train', 'game', 'after']) if (!vc.wk[k]) return k; return null; };
+const stepName = k => ({ chat: 'Midweek chat', train: 'Thursday training', game: 'Game night', after: CAR.vc && CAR.vc.week % 4 === 0 ? 'Social night' : 'Pub after the game' })[k];
+const lineMates = () => ['17', '12', '44', '5', '27', '19', '22', '2', '8', '14', '16', '10', '3', '6'].map(s => RN.map && RN.map[s] && RN.map[s].n).filter(Boolean);
+function carNowText() {
+  const vc = CAR.vc, f = fxNow(), r = vc.rec;
+  return `VR career, season ${vc.season}, week ${vc.week} of ${CWEEKS}. Ravens record ${r.w}-${r.d}-${r.l}. ${f ? 'This week: Ravens vs ' + f.opp + ' (' + (f.home ? 'home' : 'away') + (f.cup ? ', Talon Cup' : ', friendly') + ').' : ''} ${vc.last ? 'Last game: ' + vc.last.line : ''}`;
+}
+// ---- the phone
+const PHW = 600, PHH = 1040, PPW = 0.19, PPH = PPW * PHH / PHW;
+const phCv = document.createElement('canvas'); phCv.width = PHW; phCv.height = PHH;
+const pg = phCv.getContext('2d');
+const phTex = new THREE.CanvasTexture(phCv); if ('colorSpace' in phTex) phTex.colorSpace = THREE.SRGBColorSpace; phTex.anisotropy = 4;
+const phoneM = new THREE.Mesh(new THREE.PlaneGeometry(PPW, PPH), new THREE.MeshBasicMaterial({ map: phTex, fog: false, toneMapped: false, transparent: true }));
+phoneM.visible = false; phoneM.frustumCulled = false; phoneM.renderOrder = 905; scene.add(phoneM);
+const PH = { open: false, scr: 'home', hits: [], hov: -1, dirty: true, scroll: 0, th: null, note: '', arm: true, ptt: false };
+const _gp = new THREE.Vector3();
+function phonePlace() {
+  const g = hands.left && hands.left.grip;
+  if (g) { g.updateWorldMatrix(true, false); _gp.setFromMatrixPosition(g.matrixWorld); phoneM.position.set(_gp.x, _gp.y + 0.09, _gp.z); }
+  else phoneM.position.set(HEADW.x + HF.x * 0.45, HEADW.y - 0.25, HEADW.z + HF.z * 0.45);
+  phoneM.lookAt(HEADW.x, HEADW.y, HEADW.z); phoneM.updateMatrixWorld(true);
+}
+function pRect(x, y, w, h, r, fill) { pg.beginPath(); pg.moveTo(x + r, y); pg.arcTo(x + w, y, x + w, y + h, r); pg.arcTo(x + w, y + h, x, y + h, r); pg.arcTo(x, y + h, x, y, r); pg.arcTo(x, y, x + w, y, r); pg.closePath(); if (fill) { pg.fillStyle = fill; pg.fill(); } }
+function pWrap(t, maxW, font) { pg.font = font; const L = []; let cur = ''; for (const w of String(t).split(' ')) { const tr = cur ? cur + ' ' + w : w; if (pg.measureText(tr).width <= maxW || !cur) cur = tr; else { L.push(cur); cur = w; } } if (cur) L.push(cur); return L; }
+function pBtn(x, y, w, h, label, fill, act, px) {
+  const i = PH.hits.length; PH.hits.push({ x, y, w, h, act }); pRect(x, y, w, h, 18, fill);
+  if (PH.hov === i) { pg.lineWidth = 5; pg.strokeStyle = '#e0a928'; pg.stroke(); }
+  pg.fillStyle = '#ffffff'; pg.textAlign = 'center'; pg.textBaseline = 'middle'; const L = pWrap(label, w - 24, '700 ' + (px || 30) + 'px system-ui, sans-serif');
+  L.slice(0, 2).forEach((l, k) => pg.fillText(l, x + w / 2, y + h / 2 + (k - (Math.min(2, L.length) - 1) / 2) * (px || 30) * 1.1)); return i;
+}
+function drawPhone() {
+  PH.hits = []; const vc = CAR.vc, W = PHW;
+  pg.clearRect(0, 0, W, PHH); pRect(0, 0, W, PHH, 56, '#0b0812'); pRect(14, 14, W - 28, PHH - 28, 44, '#160f24');
+  pg.textBaseline = 'middle'; pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '800 30px system-ui, sans-serif'; pg.fillText('RAVENS', 44, 62);
+  pg.textAlign = 'right'; pg.fillStyle = '#b9a8d8'; pg.font = '600 24px system-ui, sans-serif'; pg.fillText(vc ? 'Season ' + vc.season + ' · Week ' + Math.min(vc.week, CWEEKS) : '', W - 44, 62);
+  const y0 = 100, yB = PHH - 120;
+  if (!vc) { pg.fillStyle = '#fff'; pg.textAlign = 'center'; pg.fillText('Loading...', W / 2, 400); }
+  else if (PH.scr === 'home') phHome(y0);
+  else if (PH.scr === 'thread') phThread(y0, yB);
+  else if (PH.scr === 'train') phTrain(y0);
+  else if (PH.scr === 'game') phGame(y0);
+  else if (PH.scr === 'table') phTable(y0);
+  else if (PH.scr === 'season') phSeason(y0);
+  // bottom bar
+  const nb = [['Home', () => { PH.scr = 'home'; }], ['Table', () => { PH.scr = 'table'; }], ['Lines', () => { MENU.tab = TABS.indexOf('Lines'); openMenu(); }], ['Settings', () => { openMenu(); }]];
+  nb.forEach(([l, a], i) => pBtn(30 + i * 137, PHH - 100, 128, 64, l, '#2a1a44', () => { if (PH.th && PH.th.busy) return; a(); }, 24));
+  phTex.needsUpdate = true; PH.dirty = false;
+}
+function phHome(y) {
+  const vc = CAR.vc, f = fxNow(), W = PHW;
+  if (vc.week > CWEEKS) { PH.scr = 'season'; return phSeason(y); }
+  pRect(34, y, W - 68, 170, 24, '#24183c');
+  pg.textAlign = 'left'; pg.fillStyle = '#b9a8d8'; pg.font = '600 22px system-ui, sans-serif'; pg.fillText(f.cup ? 'TALON CUP' : 'FRIENDLY', 58, y + 34);
+  pg.fillStyle = '#ffffff'; pg.font = '800 34px system-ui, sans-serif'; pWrap('Ravens vs ' + f.opp, W - 120, '800 34px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 58, y + 78 + k * 40));
+  pg.fillStyle = '#e0a928'; pg.font = '600 24px system-ui, sans-serif'; pg.fillText((f.home ? 'Home' : 'Away') + ' · Record ' + vc.rec.w + '-' + vc.rec.d + '-' + vc.rec.l, 58, y + 150);
+  // meters
+  const mtr = (l, v, x) => { pg.fillStyle = '#b9a8d8'; pg.font = '600 22px system-ui, sans-serif'; pg.textAlign = 'left'; pg.fillText(l, x, y + 205); pRect(x, y + 222, 240, 14, 7, '#2a1f40'); pRect(x, y + 222, 240 * clamp(v, 0, 100) / 100, 14, 7, '#e0a928'); };
+  mtr('Confidence', vc.conf, 44); mtr('Team spirit', vc.vibe, 316);
+  const nx = carNext();
+  ['chat', 'train', 'game', 'after'].forEach((k, i) => {
+    const yy = y + 262 + i * 66, s = vc.wk[k]; pRect(34, yy, W - 68, 58, 16, k === nx ? '#2f1c52' : '#1c1430');
+    pg.textAlign = 'left'; pg.fillStyle = k === nx ? '#ffffff' : '#c9bde3'; pg.font = '600 27px system-ui, sans-serif'; pg.fillText(stepName(k), 58, yy + 30);
+    pg.textAlign = 'right'; pg.fillStyle = s === 1 ? '#7fd49a' : s === 2 ? '#9a8fb3' : k === nx ? '#e0a928' : '#6f6390'; pg.font = '700 22px system-ui, sans-serif'; pg.fillText(s === 1 ? 'DONE' : s === 2 ? 'SKIPPED' : k === nx ? 'NEXT' : '', W - 58, yy + 30);
+  });
+  if (vc.last) { pg.textAlign = 'left'; pg.fillStyle = '#b9a8d8'; pg.font = '500 22px system-ui, sans-serif'; pWrap(vc.last.line, W - 88, '500 22px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 44, y + 545 + k * 28)); }
+  if (PH.note) { pg.fillStyle = '#e0a928'; pg.font = '600 22px system-ui, sans-serif'; pWrap(PH.note, W - 88, '600 22px system-ui, sans-serif').slice(0, 3).forEach((l, k) => pg.fillText(l, 44, y + 612 + k * 28)); }
+  if (nx) pBtn(34, y + 712, W - 68, 92, stepName(nx), '#5a2bb0', () => carGo(nx), 34);
+  else pBtn(34, y + 712, W - 68, 92, vc.week >= CWEEKS ? 'End of the season' : 'Next week', '#5a2bb0', () => carNextWeek(), 34);
+}
+function phThread(y, yB) {
+  const th = PH.th, W = PHW; if (!th) { PH.scr = 'home'; return phHome(y); }
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 30px system-ui, sans-serif'; pg.fillText(th.title, 44, y + 20);
+  pg.fillStyle = '#9a8fb3'; pg.font = '500 20px system-ui, sans-serif'; pg.fillText(th.sub || '', 44, y + 54);
+  // bubbles, newest at the bottom, scrolled with the right stick
+  const top = y + 80, optH = th.busy ? 70 : (th.options.length ? th.options.length * 72 + 8 : 0) + 84, bot = yB - optH;
+  const items = []; const font = '500 26px system-ui, sans-serif';
+  for (const m of th.msgs) { const L = pWrap(m.t, 380, font); items.push({ m, L, h: L.length * 32 + (m.me || !th.group ? 24 : 52) }); }
+  let total = items.reduce((a, b) => a + b.h + 12, 0), off = clamp(PH.scroll, 0, Math.max(0, total - (bot - top)));
+  pg.save(); pg.beginPath(); pg.rect(20, top, W - 40, bot - top); pg.clip();
+  let yy = bot - total + off;
+  for (const it of items) {
+    const me = it.m.me, bw = Math.max(...it.L.map(l => { pg.font = font; return pg.measureText(l).width; })) + 36, bx = me ? W - 44 - bw : 44;
+    pRect(bx, yy, Math.max(bw, th.group && !me ? 160 : 0), it.h, 20, me ? '#5a2bb0' : '#2a2140');
+    let ty = yy + 28; if (th.group && !me) { pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '700 20px system-ui, sans-serif'; pg.fillText(it.m.n, bx + 18, yy + 22); ty += 26; }
+    pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = font; it.L.forEach((l, k) => pg.fillText(l, bx + 18, ty + k * 32 - 4));
+    yy += it.h + 12;
+  }
+  pg.restore();
+  if (th.busy) { pg.textAlign = 'center'; pg.fillStyle = '#9a8fb3'; pg.font = '600 24px system-ui, sans-serif'; pg.fillText(th.group ? 'The lads are typing...' : firstN(th.to) + ' is typing...', W / 2, bot + 34); return; }
+  th.options.forEach((o, i) => pBtn(34, bot + 8 + i * 72, W - 68, 62, o, '#3d1778', () => phoneSend(o), 25));
+  const done = th.n >= 1 || th.had;
+  pg.textAlign = 'center'; pg.fillStyle = '#7d70a0'; pg.font = '500 19px system-ui, sans-serif'; pg.fillText((st.talk === 'off' ? '' : st.talk === 'hold' ? 'Hold A to say your own reply. ' : 'Or say your own reply. ') + 'Text as long as you like.', W / 2, yB - 66);
+  if (th.kind === 'chat') { pBtn(34, yB - 50, 300, 50, done ? th.doneLabel : 'Skip', done ? '#5a2bb0' : '#2a1a44', () => carThreadDone(), 22); pBtn(344, yB - 50, W - 378, 50, 'Text someone else', '#2a1a44', () => carThreadOther(), 22); }
+  else pBtn(34, yB - 50, W - 68, 50, done ? th.doneLabel : 'Skip', done ? '#5a2bb0' : '#2a1a44', () => carThreadDone(), 24);
+}
+function phTrain(y) {
+  const W = PHW, t = CAR.train;
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText('Thursday training', 44, y + 24);
+  pRect(34, y + 60, W - 68, 300, 24, '#2a2140'); pg.fillStyle = '#e0a928'; pg.font = '700 22px system-ui, sans-serif'; pg.fillText('Crofty', 58, y + 92);
+  pg.fillStyle = '#ffffff'; pWrap(t.msg, W - 116, '500 27px system-ui, sans-serif').slice(0, 7).forEach((l, k) => pg.fillText(l, 58, y + 132 + k * 34));
+  pBtn(34, y + 420, W - 68, 92, 'Go to training: ' + t.name, '#5a2bb0', () => carTrainGo(), 30);
+  pBtn(34, y + 530, W - 68, 70, "Can't make it this week", '#2a1a44', () => carTrainSkip(), 25);
+}
+function phGame(y) {
+  const W = PHW, f = fxNow(), g = CAR.pre;
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText('Game night', 44, y + 24);
+  pg.fillStyle = '#b9a8d8'; pg.font = '600 24px system-ui, sans-serif'; pWrap('Ravens vs ' + f.opp + ' · ' + (f.home ? 'home' : 'away') + (f.cup ? ' · Talon Cup' : ' · friendly'), W - 88, '600 24px system-ui, sans-serif').forEach((l, k) => pg.fillText(l, 44, y + 66 + k * 30));
+  pg.fillStyle = '#9a8fb3'; pg.font = '500 22px system-ui, sans-serif'; pg.fillText('They ' + (STYLE_TXT[f.style] || 'play their own way') + '.', 44, y + 134);
+  pRect(34, y + 160, W - 68, 250, 24, '#2a2140'); pg.fillStyle = '#e0a928'; pg.font = '700 22px system-ui, sans-serif'; pg.fillText('Crofty', 58, y + 192);
+  pg.fillStyle = '#ffffff'; pWrap(g, W - 116, '500 27px system-ui, sans-serif').slice(0, 6).forEach((l, k) => pg.fillText(l, 58, y + 232 + k * 34));
+  pBtn(34, y + 450, W - 68, 92, 'Play it in VR', '#5a2bb0', () => carGameGo(), 32);
+  pBtn(34, y + 560, W - 68, 70, 'Sim it (no time tonight)', '#2a1a44', () => carGameSim(), 25);
+  pg.fillStyle = '#7d70a0'; pg.font = '500 20px system-ui, sans-serif'; pg.textAlign = 'center'; pg.fillText('Periods: ' + PER_NAMES[st.perP] + ' (Drills tab in Settings)', W / 2, y + 660);
+}
+function phTable(y) {
+  const vc = CAR.vc, W = PHW, rows = Object.entries(vc.tab).sort((a, b) => b[1].pts - a[1].pts || (b[1].gf - b[1].ga) - (a[1].gf - a[1].ga) || b[1].gf - a[1].gf);
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText('Talon Cup', 44, y + 24);
+  pg.font = '600 20px system-ui, sans-serif'; pg.fillStyle = '#9a8fb3'; pg.textAlign = 'right'; ['P', 'W', 'D', 'L', 'GD', 'Pts'].forEach((h, i) => pg.fillText(h, 330 + i * 46, y + 70));
+  rows.forEach(([n, r], i) => {
+    const yy = y + 92 + i * 50, me = n === 'Ravens'; pRect(34, yy, W - 68, 44, 12, me ? '#3d1778' : i % 2 ? '#1c1430' : '#211836');
+    pg.textAlign = 'left'; pg.fillStyle = me ? '#e0a928' : '#ffffff'; pg.font = '600 22px system-ui, sans-serif'; pg.fillText((i + 1) + '. ' + (n.length > 17 ? n.slice(0, 16) + '.' : n), 48, yy + 23);
+    pg.textAlign = 'right'; [r.p, r.w, r.d, r.l, r.gf - r.ga, r.pts].forEach((v, k) => pg.fillText(String(v), 330 + k * 46, yy + 23));
+  });
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 26px system-ui, sans-serif'; pg.fillText('Results', 44, y + 420); pg.fillStyle = '#9a8fb3'; pg.font = '500 19px system-ui, sans-serif'; pg.fillText('Only Talon Cup games count in the table. (F) = friendly', 44, y + 452);
+  vc.results.slice(-8).reverse().forEach((r, i) => { pg.fillStyle = r.gf > r.ga ? '#7fd49a' : r.gf < r.ga ? '#e08a8a' : '#c9bde3'; pg.font = '500 22px system-ui, sans-serif'; pg.fillText('Wk ' + r.week + '  ' + (r.gf > r.ga ? 'W' : r.gf < r.ga ? 'L' : 'D') + ' ' + r.gf + '-' + r.ga + '  ' + (r.opp.length > 18 ? r.opp.slice(0, 17) + '.' : r.opp) + (r.cup ? '' : ' (F)') + (r.sim ? ' (sim)' : ''), 44, y + 490 + i * 30); });
+  pg.fillStyle = '#b9a8d8'; pg.font = '600 22px system-ui, sans-serif'; const pl = (n, w) => n + ' ' + w + (n === 1 ? '' : 's'); pg.fillText('You: ' + pl(vc.me.gp, 'game') + ', ' + pl(vc.me.g, 'goal') + ', ' + pl(vc.me.a, 'assist'), 44, y + 740);
+}
+function phSeason(y) {
+  const vc = CAR.vc, W = PHW, pos = Object.entries(vc.tab).sort((a, b) => b[1].pts - a[1].pts || (b[1].gf - b[1].ga) - (a[1].gf - a[1].ga)).findIndex(e => e[0] === 'Ravens') + 1;
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 34px system-ui, sans-serif'; pg.fillText('Season ' + vc.season + ' done', 44, y + 30);
+  const L = [`The Ravens finished ${ordN(pos)} of 6 in the Talon Cup${pos === 1 ? '. Champions!' : '.'}`, `Record ${vc.rec.w}-${vc.rec.d}-${vc.rec.l}, goals ${vc.rec.gf} for and ${vc.rec.ga} against.`, `You: ${vc.me.gp} games, ${vc.me.g} goals, ${vc.me.a} assists.`, 'Crofty: "Proud of you lot. Same again next year, but better."'];
+  pg.font = '500 27px system-ui, sans-serif'; let yy = y + 90; for (const t of L) { for (const l of pWrap(t, W - 88, '500 27px system-ui, sans-serif')) { pg.fillText(l, 44, yy); yy += 36; } yy += 14; }
+  pBtn(34, y + 640, W - 68, 92, 'Start season ' + (vc.season + 1), '#5a2bb0', () => { const old = CAR.vc; CAR.vc = carNew(old.season + 1); CAR.vc.past = (old.past || []).concat([{ season: old.season, pos, rec: old.rec, me: old.me }]).slice(-10); carSave(); PH.scr = 'home'; }, 32);
+}
+// ---- texting: one teammate, or the group chat, through your server (or a few stock lines without it)
+function thHist(th) { return th.msgs.map(m => m.me ? { role: 'user', content: 'Drew: ' + m.t } : { role: 'assistant', content: th.group ? m.n + ': ' + m.t : m.t }); }
+const STOCK = { chat: [["Up for the game this week? Should be a good one.", ["Wouldn't miss it", 'Who are we playing?', 'See you Thursday']], ['Good stuff. See you at the rink.', ['See you there', 'Bring the good tape', 'Cheers']]],
+  after: [['Well played tonight, lads. Pub?', ['Count me in', 'First round on me', 'Great shift everyone']], ['Brilliant. Same again next week.', ['Cheers lads', 'Night all', 'Good times']]] };
+async function thFetch(th, typed) {
+  th.busy = true; PH.dirty = true;
+  const body = { hist: thHist(th).slice(0, typed ? -1 : undefined), typed: typed || '', ctx: { now: carNowText(), topic: th.topic } };
+  if (th.group) body.group = th.group; else body.to = th.to;
+  let msgs = [], options = [];
+  if (brainOK()) { try { const j = await brainFetch('/text', body, 20000); msgs = j.msgs || []; options = j.options || []; } catch (e) { PH.note = 'Your server did not answer: ' + (e.message || e); } }
+  if (!msgs.length) { const s = STOCK[th.kind === 'after' ? 'after' : 'chat'][Math.min(th.n, 1)]; msgs = [{ n: th.group ? th.group[0] : th.to, t: s[0] }]; options = s[1]; }
+  if (options.length < 2) options = th.kind === 'after' ? ['Cheers lads', 'Great game', 'See you next week'] : ['Sounds good', 'Ha, brilliant', 'See you Thursday'];
+  for (const m of msgs) th.msgs.push({ n: m.n, t: m.t });
+  th.options = options.slice(0, 3); th.busy = false; PH.scroll = 0; PH.dirty = true;
+  if (audio && st.sound) audio.click(true); buzz('left', 0.25, 30);
+}
+function phoneSend(text) {
+  const th = PH.th; if (!th || th.busy || !text) return;
+  th.msgs.push({ me: true, t: text }); th.n++; th.options = []; PH.scroll = 0; PH.dirty = true;
+  thFetch(th, text);
+}
+async function phoneVoice(pcm) {
+  const th = PH.th; if (!th || th.busy || !brainOK()) return;
+  try { const j = await brainFetch('/hear', { audio: wavB64(pcm) }, 15000); if (j && j.text && j.text.length > 1) phoneSend(j.text); } catch (e) { }
+}
+function carThread(kind) {
+  const vc = CAR.vc, mates = lineMates();
+  if (kind === 'chat') {
+    const to = mates.length ? mates[vc.chatI % mates.length] : null; vc.chatI++;
+    const f = fxNow(), topics = ['the game this week against ' + f.opp, 'Thursday training', 'how the season is going', 'the last game', 'a bit of kit or a new stick'];
+    PH.th = { kind, to: to || 'Crofty', title: to || 'Crofty', sub: 'Midweek', group: null, msgs: [], options: [], n: 0, busy: false, topic: topics[(vc.week + vc.chatI) % topics.length], doneLabel: 'Put the phone down' };
+  } else {
+    const pool = mates.slice(0, 6), grp = []; while (grp.length < 3 && pool.length) grp.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    const soc = vc.week % 4 === 0;
+    PH.th = { kind, group: grp.length ? grp : ['Crofty'], title: 'Ravens group chat', sub: soc ? 'Social night' : 'After the game', msgs: [], options: [], n: 0, busy: false, topic: soc ? 'the team social night out (bowling, then food), and the game tonight' : 'the pub after tonight\'s game: ' + (vc.last ? vc.last.line : ''), doneLabel: 'Head home' };
+  }
+  PH.scr = 'thread'; PH.scroll = 0; thFetch(PH.th);
+}
+function carThreadOther() {                                              // midweek: start a chat with the next teammate, the week's chat still counts
+  const th = PH.th; if (!th || th.busy) return; const had = th.n || th.had; carThread('chat'); if (PH.th) PH.th.had = had;
+}
+function carThreadDone() {
+  const th = PH.th, vc = CAR.vc; if (!th || th.busy) return;
+  const k = th.kind === 'chat' ? 'chat' : 'after', talked = th.n || th.had; vc.wk[k] = talked ? 1 : 2;
+  if (talked) { if (k === 'chat') vc.vibe = clamp(vc.vibe + 3, 0, 100); else vc.vibe = clamp(vc.vibe + 5, 0, 100); }
+  PH.th = null; PH.scr = 'home'; PH.note = ''; carSave(); PH.dirty = true;
+}
+// ---- training
+const TRAIN_WHY = { defend: "We gave them too much room on Saturday, so we're working on gaps and staying between your man and the net.", shoot: "We need more pucks on net, so it's shooting tonight. Get your head up and pick your spot.",
+  breakout: "Breakouts tonight: D to D, wingers on the wall, centre low. Clean exits make everything easier.", twoone: "Odd-man rushes tonight. Make the D commit, then make the right play.", oneone: "One on ones tonight. Use your speed, protect the puck, and attack the net.", give: "Give-and-go tonight. Move it, move your feet, get it back." };
+function carGo(k) {
+  const vc = CAR.vc; PH.note = '';
+  if (k === 'chat' || k === 'after') return carThread(k);
+  if (k === 'train') {
+    const L = vc.last, rot = ['breakout', 'twoone', 'oneone', 'give', 'shoot', 'defend'];
+    const id = L && L.ga - L.gf >= 2 ? 'defend' : L && (L.sh || 0) < 2 ? 'shoot' : rot[(vc.week - 1) % rot.length], d = DRILLS.find(x => x.id === id);
+    CAR.train = { id, name: d.name, msg: 'Training tonight, lads. ' + TRAIN_WHY[id] + ' See you at the rink.' }; PH.scr = 'train'; return;
+  }
+  if (k === 'game') { const tips = ['Heads up in our end. Find your man before you find the puck.', 'Wingers, curl back and show your D a target.', 'Keep the breakouts simple. Simple wins games.', 'Skate hard through the neutral zone and make them pick.', 'Stick on the ice. Always.', 'Talk to each other. If you\'re thinking it, say it.', 'Short shifts. Come off when your legs say so.', 'Win the first five minutes and the rest gets easier.'];
+    const f = fxNow(); CAR.pre = (f.style === 'forecheck' ? 'They come hard on the forecheck, so move it quick. ' : f.style === 'rush' ? 'They love a rush, so backcheck all the way. ' : f.style === 'cycle' ? 'They grind it low, so win your battles on the wall. ' : 'They\'re patient, so make them chase it. ') + pick(tips) + ' Enjoy it.'; PH.scr = 'game'; }
+}
+function carTrainGo() { const t = CAR.train; phoneClose(); CAR.step = 'train'; drillStart(t.id); }
+function carTrainSkip() { const vc = CAR.vc; vc.wk.train = 2; vc.conf = clamp(vc.conf - 2, 0, 100); PH.note = 'Crofty: "No bother, see you Saturday."'; PH.scr = 'home'; carSave(); }
+function carTrainDone(sc, reps) {
+  const vc = CAR.vc; CAR.step = null; vc.wk.train = 1; vc.conf = clamp(vc.conf + (sc * 2 >= reps ? 6 : 3), 0, 100);
+  PH.note = 'Crofty: "' + (sc * 2 >= reps ? 'Sharp tonight. That\'ll pay off on Saturday."' : 'Good work tonight. It\'s coming."'); carSave();
+  setTimeout(() => carHub(), 3500);
+}
+// ---- game night
+function carGameGo() { const f = fxNow(), vc = CAR.vc; phoneClose(); CAR.step = 'game'; scStart('5', { id: 'VC' + vc.season + 'W' + vc.week, opp: f.opp, r: f.r, style: f.style, home: f.home, cup: f.cup }); }
+function poisson(l) { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; }
+function simScore(ra, rb) { return [poisson(clamp(2.9 + (ra - rb) * 12, 0.8, 6)), poisson(clamp(2.9 + (rb - ra) * 12, 0.8, 6))]; }
+function carRecord(gf, ga, me, sim) {
+  const vc = CAR.vc, f = fxNow(), res = gf > ga ? 'W' : gf < ga ? 'L' : 'D';
+  vc.rec.gf += gf; vc.rec.ga += ga; vc.rec[res === 'W' ? 'w' : res === 'L' ? 'l' : 'd']++;
+  vc.me.gp++; vc.me.g += me.g || 0; vc.me.a += me.a || 0; vc.me.sh += me.sh || 0;
+  vc.results.push({ week: vc.week, opp: f.opp, gf, ga, home: f.home, cup: f.cup, sim: !!sim });
+  if (f.cup) {                                                            // the table: this game and the round's other two
+    const add = (h, a, x, y) => { const H = vc.tab[h], A = vc.tab[a]; if (!H || !A) return; H.p++; A.p++; H.gf += x; H.ga += y; A.gf += y; A.ga += x; if (x > y) { H.w++; A.l++; H.pts += 2; } else if (x < y) { A.w++; H.l++; A.pts += 2; } else { H.d++; A.d++; H.pts++; A.pts++; } };
+    for (const [h, a] of vc.rounds[f.round]) { if (h === 'Ravens') add(h, a, gf, ga); else if (a === 'Ravens') add(h, a, ga, gf); else { const s = simScore(clubBy(h)[1], clubBy(a)[1]); add(h, a, s[0], s[1]); } }
+  }
+  const mine = [me.g ? me.g + (me.g > 1 ? ' goals' : ' goal') : '', me.a ? me.a + (me.a > 1 ? ' assists' : ' assist') : ''].filter(Boolean).join(', ');
+  vc.last = { gf, ga, opp: f.opp, g: me.g || 0, a: me.a || 0, sh: me.sh || 0, line: `The Ravens ${res === 'W' ? 'beat' : res === 'L' ? 'lost to' : 'drew with'} ${f.opp} ${gf}-${ga}${sim ? ' (simmed)' : ''}.${mine ? ' Drew: ' + mine + '.' : ''}` };
+  vc.conf = clamp(vc.conf + (res === 'W' ? 6 : res === 'D' ? 2 : -1) + 3 * (me.g || 0), 0, 100); vc.vibe = clamp(vc.vibe + (res === 'W' ? 5 : res === 'D' ? 2 : 0), 0, 100);
+  vc.wk.game = 1; carSave();
+}
+function carGameSim() { const f = fxNow(), s = simScore(RAV_R + (CAR.vc.conf - 55) / 1000, f.r), g = Math.random() < 0.35 ? 1 : 0, a = Math.random() < 0.35 ? 1 : 0; carRecord(s[0], s[1], { g, a, sh: 1 + Math.floor(Math.random() * 3) }, true); PH.note = CAR.vc.last.line; PH.scr = 'home'; }
+function carGameDone() {
+  CAR.step = null; carRecord(SC.score[0], SC.score[1], { g: SC.my.g, a: SC.my.a, sh: SC.my.sh }, false);
+  PH.note = CAR.vc.last.line;
+  setTimeout(() => { if (SC.on) scStop(true); carHub(); }, 6000);
+}
+function carAbort() { if (CAR.step === 'train' || CAR.step === 'game') { CAR.step = null; PH.note = 'Stopped part way: start it again when you\'re ready.'; } }
+function carNextWeek() {
+  const vc = CAR.vc; if (carNext()) return;
+  vc.week++; vc.wk = { chat: 0, train: 0, game: 0, after: 0 }; PH.note = ''; PH.scr = vc.week > CWEEKS ? 'season' : 'home'; carSave();
+}
+// ---- the hub: on the bench at the rink, phone in your hand
+function carHub() {
+  if (!st.inVR || CAR.mode !== 'career') return;
+  if (DR.on) drillStop(true); if (SC.on) scStop(true);
+  teleportTo(BNG.ravens.door, BNG.z0 + 0.6, -Math.PI / 2);
+  croftyShow(true); if (CROF.p) { const ps = CROF.p.s; ps.lookX = HEADW.x; ps.lookZ = HEADW.z; ps.speed = 0; posePlayer(CROF.p, 0.2); posePlayer(CROF.p, 0.2); }
+  phoneOpen();
+}
+async function carEnter() {
+  CAR.mode = 'career'; PH.note = brainOK() ? '' : 'No server set up: teammates have numbers, not names, and texts are stock lines. Set it up on the start page.';
+  await carLoad(); carHub(); PH.dirty = true;
+  if (brainOK()) brainFetch('/hello', null, 6000).then(h => { if (!h || h.version !== 4) { PH.note = 'Your server is running old code. Paste the new ravens-brain.js into Cloudflare and Deploy.'; PH.dirty = true; } }).catch(() => { });
+}
+function phoneOpen() { PH.open = true; PH.dirty = true; PH.hov = -1; setKeep(false); stickOn = false; showStick(false); S.vx = S.vz = 0; for (const k of ['left', 'right']) { const g0 = hands[k] && hands[k].grip.children[0]; if (g0) g0.visible = true; } }
+function phoneClose() { PH.open = false; phoneM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; } croftyShow(false); }
+// a ray from a controller onto a flat panel: which button it points at
+function panelRay(h, mesh, pw, ph, cw, ch, hits) {
+  const ray = rays[h], dot = dots[h], las = lasers[h]; if (!ray) { las.visible = false; dot.visible = false; return -1; }
+  if (las.parent !== ray) ray.add(las);
+  ray.updateWorldMatrix(true, false); _ro.setFromMatrixPosition(ray.matrixWorld); _rd.set(0, 0, -1).transformDirection(ray.matrixWorld);
+  _pn.set(0, 0, 1).transformDirection(mesh.matrixWorld);
+  const den = _pn.dot(_rd); let dist = 1.5, on = false, hit = -1;
+  if (den < -1e-4) { const tt = _pn.dot(_t3.copy(mesh.position).sub(_ro)) / den;
+    if (tt > 0.02 && tt < 6) { _hp.copy(_rd).multiplyScalar(tt).add(_ro); _lp.copy(_hp); mesh.worldToLocal(_lp); const cx = (_lp.x / pw + 0.5) * cw, cy = (0.5 - _lp.y / ph) * ch;
+      if (cx >= 0 && cx <= cw && cy >= 0 && cy <= ch) { on = true; dist = tt; dot.position.copy(_hp); for (let i = 0; i < hits.length; i++) { const r = hits[i]; if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) { hit = i; break; } } } } }
+  dot.visible = on; las.visible = true; las.scale.z = dist; las.material.color.setHex(hit >= 0 ? 0xe0a928 : 0xffffff); return hit;
+}
+function phoneFrame(dt) {
+  const s = renderer.xr.getSession(); if (!s) return;
+  phonePlace(); phoneM.visible = true;
+  lasers.left.visible = false; dots.left.visible = false;
+  const hv = panelRay('right', phoneM, PPW, PPH, PHW, PHH, PH.hits);
+  if (hv !== PH.hov) { PH.hov = hv; PH.dirty = true; if (hv >= 0) buzz('right', 0.1, 8); }
+  for (const src of s.inputSources) {
+    const gp = src.gamepad, h = src.handedness; if (!gp || (h !== 'left' && h !== 'right')) continue;
+    const pb = prevBtn[h], edge = i => !!(gp.buttons[i] && gp.buttons[i].pressed) && !pb[i];
+    if (h === 'left' && edge(4)) { openMenu(); }
+    if (h === 'left' && edge(5)) { recalT = 1.4; }
+    if (h === 'right') {
+      if (edge(0) && PH.hov >= 0 && PH.hits[PH.hov]) { PH.hits[PH.hov].act(); PH.dirty = true; buzz('right', 0.3, 25); if (audio) audio.click(true); }
+      const ay = gp.axes.length >= 4 ? gp.axes[3] : (gp.axes[1] || 0); if (Math.abs(ay) > 0.3) { PH.scroll = Math.max(0, PH.scroll + (-ay) * 900 * dt); PH.dirty = true; }
+      if (st.talk !== 'off') { const aD = !!(gp.buttons[4] && gp.buttons[4].pressed); if (aD !== MIC.ptt) micPTT(aD); }
+    }
+    for (let i = 0; i < gp.buttons.length; i++) pb[i] = !!gp.buttons[i].pressed;
+  }
+  if (PH.dirty) drawPhone();
+  updateToast(dt);
+}
+
 // ---- arcade readability: a ring under every player (gold Ravens, red Visitors; bright on the puck carrier, flashing white while he reaches to
 // poke), a glow under the puck, a small map at the bottom of your view, an arrow to the puck when it is out of sight, and a blink on teleports.
 const RINGG = new THREE.RingGeometry(0.42, 0.56, 28); RINGG.rotateX(-Math.PI / 2);
@@ -3970,7 +4298,7 @@ function puckFrame(dt) {
   PA.s = ASSISTS[st.assistP] || 0; if (st.arcade) PA.s = Math.max(PA.s, 2.2); PA.arc = st.arcade ? 1 : 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz; PA.aim = AIMS[st.aimP] || 0;
   puckAdvance(dt, stickOn && !BN.on, POWERS[st.power], pClock);
   othersFrame(dt);
-  if (DR.autoT > 0) { DR.autoT -= dt; if (DR.autoT <= 0) { if (st.startDrill === 'fixture') scStart('5', FX); else if (st.startDrill === 'scrim') scStart('5'); else if (st.startDrill === 'scrim3') scStart('3'); else drillStart(st.startDrill); } }
+  if (DR.autoT > 0) { DR.autoT -= dt; if (DR.autoT <= 0) { if (st.startDrill === 'random') scStart('5', randomFx()); else if (st.startDrill === 'scrim') scStart('5'); else if (st.startDrill === 'scrim3') scStart('3'); else drillStart(st.startDrill); } }
   if ((SC.on || DR.on) && !BN.on) tapWatch();
   drillFrame(dt);
   scFrame(dt);
@@ -4095,7 +4423,7 @@ for (const h of ['left', 'right']) {
   const d = new THREE.Mesh(new THREE.SphereGeometry(0.011, 10, 8), new THREE.MeshBasicMaterial({ color: 0xe0a928, fog: false, depthTest: false })); d.visible = false; d.renderOrder = 902; d.frustumCulled = false; scene.add(d); dots[h] = d;
 }
 const MENU = { open: false, tab: 0, dirty: true, hov: { left: -1, right: -1 }, hits: [], leave: 0, tabArm: true };
-const TABS = ['Stick', 'Puck', 'Skating', 'Game', 'Drills'];
+const TABS = ['Stick', 'Puck', 'Skating', 'Game', 'Drills', 'Lines'];
 const cyc = (n, i, d) => (i + d + n) % n;
 function setSetting(key, val) {
   st[key] = val;
@@ -4115,7 +4443,21 @@ function setSetting(key, val) {
 const KEEP_NAMES = { hold: 'Hold the trigger', toggle: 'Press on, press off', off: 'Off' };
 const MOUNT_KEYS = ['off', 'right', 'left'], MOUNT_NAMES = { off: 'Off', right: 'Right controller', left: 'Left controller' };
 const ONEM_KEYS = ['hold', 'btn', 'grip', 'off'], ONEM_NAMES = { hold: 'Lower trigger: hold', btn: 'A button', grip: 'Lower grip: hold', off: 'Off' };
+function lineSet(sl, d) {                                                // who plays where: cycle through the lads not already in a spot
+  if (!RN.players) return;
+  const sk = RN.players.filter(p => p.pos === 'F').concat(RN.players.filter(p => p.pos === 'D')), lu = {};
+  for (const [k] of LSLOTS) if (RN.map && RN.map[k]) lu[k] = RN.map[k].n;
+  const used = new Set(Object.entries(lu).filter(([k]) => k !== sl).map(([, n]) => n)), free = sk.filter(p => !used.has(p.n)); if (!free.length) return;
+  let i = free.findIndex(p => p.n === lu[sl]); i = cyc(free.length, i < 0 ? 0 : i, d); lu[sl] = free[i].n;
+  st.lineup = lu; saveSettings(); rosterApply({ players: RN.players });
+}
 function menuRows(tab) {
+  if (tab === 5) {
+    const R = [{ l: 'Line 1 left wing', v: () => 'You  #11', s: () => toast('You always play left wing on line 1', 1.5) }];
+    if (!RN.players) return R.concat([{ l: 'Your teammates', v: () => brainOK() ? 'Loading names... (press)' : 'Needs your server', s: () => { if (brainOK()) rosterLoad(); } }]);
+    for (const [sl, lab] of LSLOTS) R.push({ l: lab, v: () => { const m = RN.map && RN.map[sl]; return m ? m.n + '  #' + m.num : '-'; }, s: d => lineSet(sl, d) });
+    return R;
+  }
   if (tab === 0) return [
     { l: 'Stick curve', v: () => { const c = curveCur || curveById(st.curve); return c.name + '  ' + c.code; }, s: d => setSetting('curve', CURVES[cyc(CURVES.length, CURVES.findIndex(c => c.id === st.curve), d)].id) },
     { l: 'Stick length', v: () => Math.round(st.lenIn) + ' in', s: d => setSetting('lenIn', clamp(Math.round(st.lenIn) + d, 50, 68)) },
@@ -4136,10 +4478,11 @@ function menuRows(tab) {
     { l: 'Puck buzz', v: () => HAP_NAMES[st.hapP], s: d => setSetting('hapP', cyc(4, st.hapP, d)) }
   ];
   if (tab === 4) return [
+    ...(CAR.mode === 'career' ? [{ l: 'Career', v: () => CAR.step ? 'Stop and go back to your phone' : 'Back to your phone', s: () => { closeMenu(); carAbort(); carHub(); } }] : []),
     { l: 'Drill', v: () => DRILLS[st.drillI].name, s: d => setSetting('drillI', cyc(DRILLS.length, st.drillI, d)) },
     { l: DR.on ? 'Stop the drill' : 'Start it (the menu closes)', v: () => DR.on ? 'Stop' : 'Start', s: () => { if (DR.on) drillStop(); else { closeMenu(); drillStart(DRILLS[st.drillI].id); } } },
     { l: 'Scrimmage', v: () => SC.on ? (SC.over ? 'New game' : 'Stop') : 'Start', s: () => { if (SC.on && !SC.over) scStop(); else { if (SC.on) scStop(true); closeMenu(); scStart(); } } },
-    { l: "This week's game", v: () => FX ? 'vs ' + FX.opp + (SC.on && SC.fx ? '  (playing)' : '') : brainOK() ? 'None from your career game yet' : 'Needs your server', s: () => { if (!FX) { toast(brainOK() ? 'Open your career game once so it can send this week\'s fixture' : 'Set up your server on the start page', 3); fxLoad(); return; } if (SC.on) scStop(true); closeMenu(); scStart('5', FX); } },
+    { l: 'Random game against a real club', v: () => SC.on && SC.fx ? 'vs ' + SC.fx.opp : 'Start', s: () => { if (SC.on) scStop(true); closeMenu(); scStart('5', randomFx()); } },
     { l: 'Scrimmage size', v: () => st.scrimM === '3' ? '3 on 3' : '5 on 5', s: () => setSetting('scrimM', st.scrimM === '3' ? '5' : '3') },
     { l: 'Scrimmage length', v: () => PER_NAMES[st.perP], s: d => setSetting('perP', cyc(PERLENS.length, st.perP, d)) },
     { l: 'Offside and icing', v: () => st.rulesOn ? 'On' : 'Off', s: () => setSetting('rulesOn', !st.rulesOn) },
@@ -4177,11 +4520,20 @@ function drawMenu() {
   mg.textBaseline = 'middle'; mg.textAlign = 'left'; mg.fillStyle = '#e0a928'; mg.font = '700 34px system-ui, sans-serif'; mg.fillText('RAVENS VR', 38, 44);
   mg.fillStyle = '#b9a8d8'; mg.textAlign = 'right'; mg.font = '500 22px system-ui, sans-serif'; mg.fillText('Paused   ·   point and pull the trigger   ·   X resumes', MW - 38, 44);
   TABS.forEach((n, i) => {
-    widget(38 + i * 190, 78, 182, 54, i === MENU.tab ? '#5a2bb0' : '#2a1a44', () => { MENU.tab = i; });
-    mg.textAlign = 'center'; mg.fillStyle = i === MENU.tab ? '#ffffff' : '#c9bde3'; mg.font = '700 26px system-ui, sans-serif'; mg.fillText(n, 38 + i * 190 + 91, 78 + 28);
-    if (i === MENU.tab) { mg.fillStyle = '#e0a928'; mg.fillRect(38 + i * 190 + 20, 78 + 49, 142, 4); }
+    widget(38 + i * 158, 78, 150, 54, i === MENU.tab ? '#5a2bb0' : '#2a1a44', () => { MENU.tab = i; });
+    mg.textAlign = 'center'; mg.fillStyle = i === MENU.tab ? '#ffffff' : '#c9bde3'; mg.font = '700 26px system-ui, sans-serif'; mg.fillText(n, 38 + i * 158 + 75, 78 + 28);
+    if (i === MENU.tab) { mg.fillStyle = '#e0a928'; mg.fillRect(38 + i * 158 + 18, 78 + 49, 114, 4); }
   });
-  menuRows(MENU.tab).forEach((r, i) => {
+  const allR = menuRows(MENU.tab), many = allR.length > 8, vis = many ? 7 : 8, mx = Math.max(0, allR.length - vis);
+  MENU.sc = MENU.sc || {}; const off = MENU.sc[MENU.tab] = clamp(MENU.sc[MENU.tab] || 0, 0, mx); MENU.scMax = mx;
+  if (many) {                                                             // more rows than fit: up and down (or the right thumbstick)
+    const y = 152 + 7 * 58;
+    widget(38, y + 4, 300, 44, off > 0 ? '#3d1778' : '#1c1230', () => { MENU.sc[MENU.tab] = Math.max(0, off - 3); }, 10);
+    widget(MW - 338, y + 4, 300, 44, off < mx ? '#3d1778' : '#1c1230', () => { MENU.sc[MENU.tab] = Math.min(mx, off + 3); }, 10);
+    mg.textAlign = 'center'; mg.fillStyle = off > 0 ? '#ffffff' : '#5d5078'; mg.font = '700 24px system-ui, sans-serif'; mg.fillText('▲  Up', 188, y + 27); mg.fillStyle = off < mx ? '#ffffff' : '#5d5078'; mg.fillText('▼  More', MW - 188, y + 27);
+    mg.fillStyle = '#b9a8d8'; mg.font = '500 22px system-ui, sans-serif'; mg.fillText((off + 1) + '–' + Math.min(allR.length, off + vis) + ' of ' + allR.length + '  ·  right stick scrolls', MW / 2, y + 27);
+  }
+  allR.slice(off, off + vis).forEach((r, i) => {
     const y = 152 + i * 58;
     rrect(38, y, MW - 76, 52, 12); mg.fillStyle = i % 2 ? '#1c1230' : '#20153a'; mg.fill();
     mg.textAlign = 'left'; mg.fillStyle = '#e4dcf2'; fitText(r.l, 58, y + 27, 440, 27, '600');
@@ -4198,7 +4550,7 @@ function drawMenu() {
 const _ro = new THREE.Vector3(), _rd = new THREE.Vector3(), _pn = new THREE.Vector3(), _t3 = new THREE.Vector3(), _hp = new THREE.Vector3(), _lp = new THREE.Vector3();
 function openMenu() {
   if (MENU.open) return;
-  MENU.open = true; MENU.dirty = true; MENU.leave = 0; MENU.hov.left = MENU.hov.right = -1; setKeep(false);
+  MENU.open = true; MENU.dirty = true; MENU.leave = 0; phoneM.visible = false; MENU.hov.left = MENU.hov.right = -1; setKeep(false);
   const f = HF, hp = HEADW, y = Math.max(1.0, hp.y - 0.08);
   menuM.position.set(hp.x + f.x * 1.1, y, hp.z + f.z * 1.1); menuM.lookAt(hp.x, y, hp.z); menuM.visible = true; menuM.updateMatrixWorld(true);
   S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
@@ -4247,6 +4599,8 @@ function menuFrame(dt) {
     if (h === 'right') {
       const ax = gp.axes.length >= 4 ? gp.axes[2] : (gp.axes[0] || 0);
       if (Math.abs(ax) < 0.35) MENU.tabArm = true; else if (MENU.tabArm && Math.abs(ax) > 0.75) { MENU.tabArm = false; MENU.tab = cyc(TABS.length, MENU.tab, ax > 0 ? 1 : -1); MENU.dirty = true; }
+      const ay = gp.axes.length >= 4 ? gp.axes[3] : (gp.axes[1] || 0);
+      if (Math.abs(ay) < 0.35) MENU.yArm = true; else if (MENU.yArm !== false && Math.abs(ay) > 0.7) { MENU.yArm = false; MENU.sc = MENU.sc || {}; MENU.sc[MENU.tab] = clamp((MENU.sc[MENU.tab] || 0) + (ay > 0 ? 2 : -2), 0, MENU.scMax || 0); MENU.dirty = true; }
     }
     for (let i = 0; i < gp.buttons.length; i++) pb[i] = !!gp.buttons[i].pressed;
   }
@@ -4273,6 +4627,10 @@ function vrFrame(t, frame, dt) {
   if (MENU.open) {                                                             // paused: the game stands still, you point at the menu
     rig.updateMatrixWorld(true); const f0 = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion); HF.set(f0.x, 0, f0.z); if (HF.lengthSq() < 0.04) HF.set(Math.cos(lastYaw), 0, Math.sin(lastYaw)); HF.normalize();
     menuFrame(dt); return;
+  }
+  if (PH.open) {                                                               // career: your phone in your hand, the game waits
+    rig.updateMatrixWorld(true); const f0 = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion); HF.set(f0.x, 0, f0.z); if (HF.lengthSq() < 0.04) HF.set(Math.cos(lastYaw), 0, Math.sin(lastYaw)); HF.normalize();
+    phoneFrame(dt); return;
   }
   mountCalFrame(dt);
   if (recalT > 0) { recalT -= dt; if (recalT <= 0) { calibReq = true; STK.calReq = true; run.pk.cal++; mountDReq = true; } }
@@ -4320,7 +4678,8 @@ function explain(e) {
   return 'VR did not start' + (e && e.message ? ': ' + e.message : '.') + (n ? ' (' + n + ')' : '');
 }
 let failure = '';
-async function enterVR() {
+async function enterVR(mode) {
+  CAR.mode = mode === 'career' ? 'career' : 'sandbox';
   showErr(''); failure = '';
   if (!navigator.xr) { failure = explain(); showErr(failure); return; }
   closeAudio(); if (st.sound) audio = makeAudio();                       // created inside the tap, so the browser allows sound
@@ -4336,8 +4695,9 @@ async function enterVR() {
     S.x = -10; S.z = 0; S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0 };
     BODY.ok = false; st.yOff = 0; snapArmed = true; calibReq = false; braking = false; vigU = 0; lastYaw = -Math.PI / 2;
     H.ok = false; needPuck = true; if (audio) audio.resume();
-    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; handsOne = false; grabPend = 0; snapTele = false; recalT = 0; H.ok = false; othersInit(); DR.autoT = st.startDrill !== 'none' ? 4 : 0; MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
-    toast('Ready stance, blade near the ice. X opens the menu');
+    setCurve(st.curve); stickReset(STK.bp, st.shot === 'right' ? 1 : -1, st.len); EV.length = 0; PK.out = 0; punching = false; stickOn = false; keepOn = false; handsOne = false; grabPend = 0; snapTele = false; recalT = 0; H.ok = false; othersInit(); DR.autoT = CAR.mode === 'sandbox' && st.startDrill !== 'none' ? 4 : 0; MENU.open = false; menuM.visible = false; lenT = 0; lenDirty = false;
+    toast(CAR.mode === 'career' ? 'Career mode: your phone is in your left hand' : 'Ready stance, blade near the ice. X opens the menu');
+    if (CAR.mode === 'career') { DR.autoT = 0; setTimeout(() => { if (st.inVR) carEnter(); }, 900); }
     if (st.talk !== 'off' && brainOK()) setTimeout(() => { if (st.inVR) micStart(); }, 2500);
     brainFlush(false);
     try {
@@ -4351,7 +4711,7 @@ async function enterVR() {
   } catch (e) { st.inVR = false; closeAudio(); failure = 'VR started but the 3D view could not attach: ' + (e && e.message || e); showErr(failure); buildResult(null); }
 }
 function onEnd() {
-  micStop(); st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
+  micStop(); if (CAR.vc) carSave(); CAR.step = null; PH.open = false; phoneM.visible = false; st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
   closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; handsOne = false; grabPend = 0; MENU.open = false; drillStop(true); scStop(true); st.inVR = false; othersInit(); menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
   const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, pk: { ...run.pk }, frames: run.frames.map(a => a.slice()) };
   buildResult(ended);
@@ -4465,8 +4825,8 @@ async function probe() {
     try { probeInfo.vr = await navigator.xr.isSessionSupported('immersive-vr'); } catch (e) { probeInfo.vr = false; probeInfo.vrErr = (e && e.name) || 'error'; }
     chip('c-vr', probeInfo.vr ? 'ok' : 'no', probeInfo.vr ? 'Yes' : 'No', probeInfo.vr ? 'This browser can start an immersive VR session.' : (probeInfo.vrErr ? 'Refused: ' + probeInfo.vrErr + '.' : 'This browser says it cannot start VR here.'));
   } else chip('c-vr', 'na', 'No', 'Needs WebXR first.');
-  $('enter').disabled = !(probeInfo.xr && probeInfo.vr);
-  $('enter-note').textContent = $('enter').disabled ? 'Enter VR switches on in the Quest browser.' : 'Put the headset on first, then press it.';
+  $('enter').disabled = !(probeInfo.xr && probeInfo.vr); $('enterCareer').disabled = $('enter').disabled;
+  $('enter-note').textContent = $('enter').disabled ? 'These switch on in the Quest browser.' : 'Put the headset on first, then press one.';
 }
 function syncUI() {
   $('curve').value = st.curve; $('power').value = String(st.power); $('assist').value = st.assist ? 'on' : 'off';
@@ -4499,7 +4859,7 @@ syncUI(); applyLevel(st.level); drawCurve();
 loadResult();
 probe();
 if (navigator.xr && navigator.xr.addEventListener) navigator.xr.addEventListener('devicechange', probe);
-$('enter').addEventListener('click', enterVR);
+$('enter').addEventListener('click', () => enterVR('sandbox')); $('enterCareer').addEventListener('click', () => enterVR('career'));
 document.querySelectorAll('#lvl button').forEach(b => b.addEventListener('click', () => { applyLevel(+b.dataset.l); saveSettings(); }));
 const bind = (id, key, conv) => $(id).addEventListener('change', e => { st[key] = conv ? conv(e.target.value) : e.target.value; saveSettings(); });
 bind('shot', 'shot'); bind('hz', 'wantHz', Number); bind('speed', 'speed', Number); bind('steer', 'steer'); bind('turn', 'turn'); bind('vig', 'vig', Number);
@@ -4514,7 +4874,7 @@ $('btest').addEventListener('click', async () => {
   if (!/^https:\/\//.test(st.brainUrl)) { n.textContent = 'The address should start with https://'; return; }
   n.textContent = 'Checking...';
   let msg = '';
-  try { const h = await brainFetch('/hello', null, 8000); msg = 'Server OK' + (h.claude ? ' (Claude answers)' : ' (free Cloudflare model answers)') + (h.kv ? '' : ', but no KV store: sessions are not kept'); await rosterLoad(); const nm = RN.map ? Object.values(RN.map).map(r => r.n).join(', ') : ''; if (nm) msg += '. On the ice with you: ' + nm; }
+  try { const h = await brainFetch('/hello', null, 8000); if (h.version !== 4) { n.textContent = 'Your server is running old code: open it in Cloudflare, Edit code, paste in the new ravens-brain.js and Deploy.'; return; } msg = 'Server OK' + (h.claude ? ' (Claude answers)' : ' (free Cloudflare model answers)') + (h.kv ? '' : ', but no KV store: sessions are not kept'); await rosterLoad(); const nm = RN.map ? Object.values(RN.map).map(r => r.n).join(', ') : ''; if (nm) msg += '. On the ice with you: ' + nm; }
   catch (e) { n.textContent = 'Server: ' + (e.message === 'bad key' ? 'the key is wrong' : e.name === 'AbortError' ? 'no answer' : e.message); return; }
   if (st.talk !== 'off') { try { const m = await navigator.mediaDevices.getUserMedia({ audio: true }); m.getTracks().forEach(t => t.stop()); msg += '. Mic allowed.'; } catch (e) { msg += '. Mic: ' + (e.name === 'NotAllowedError' ? 'not allowed (check the browser\'s site settings)' : e.name || 'error'); } }
   n.textContent = msg; brainFlush(false);
@@ -4546,7 +4906,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { carThreadOther, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
