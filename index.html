@@ -151,6 +151,7 @@ details.rate[open]>summary{margin-bottom:10px}
       </label>
     </div>
     <div class="row" style="margin-top:10px"><button class="btn" type="button" id="btest">Test the server and allow the mic</button><span class="note" id="bnote" role="status"></span></div>
+    <div id="lineup" hidden style="margin-top:14px"><h3 style="margin:0 0 4px">Your lines</h3><p class="note" style="margin:0 0 8px">You play left wing on line 1. Pick your three forward lines and three D pairs. Picking someone already in another spot swaps the two.</p><div class="grid2" id="lineup-g"></div></div>
   </details>
 
   <details class="card" aria-label="More settings">
@@ -332,6 +333,7 @@ details.rate[open]>summary{margin-bottom:10px}
       <li><b>Get into your ready stance</b> with the blade just above the ice and keep it there for a second: the stick calibrates itself so the blade sits flat. Press <b>Y</b> any time to do it again (it also resets your height).</li>
       <li><b>Left thumbstick</b> skates. Push a little for a slow stride, fully for top speed. In an arc you crossover automatically, and pushing the stick well to the side at speed makes a punch turn (quick, and it costs speed). <b>Left trigger</b> brakes.</li>
       <li><b>Calls</b> in drills and the scrimmage: <b>left stick click</b> shouts "Shoot!" to a teammate with the puck in their end, <b>right stick click</b> shouts "Over! D to D!" to a D with it (in the breakout drill your call decides the side). When a game or drill ends you get a <b>career code</b> (RV-XXXX-XXXX) on the board and in your report: type it into the career game under VR sessions and your teammates there will know how it went.</li>
+      <li><b>Line changes</b> in the 5 on 5: Crofty stands behind the Ravens bench and calls your line off after about a shift. Skate to the bench door and you hop over onto the bench, where you can watch the play and talk properly with the lads. When he calls you back up (or any time you like), <b>push the left stick forward</b> or lean over the boards and you're back on. Lines 2 and 3 play while you're off, and the three D pairs change on their own. Pick your lines and pairs under Talk to your teammates.</li>
       <li><b>Talk to your teammates</b> (needs your server, set up on this page under Talk to your teammates): just talk, or hold <b>A</b> if you chose that. Quick calls work out loud: "Shoot!", "Pass!", "D to D!", "Same side!". Anything longer goes to the teammate you are looking at (or the nearest one), who answers out loud; at a stoppage or between reps is best. Finished games and drills go to your career game by themselves.</li>
       <li><b>Call for the puck</b> in drills and the scrimmage: squeeze the <b>grip on your top hand</b>, or tap your blade on the ice twice. An open teammate taps his stick when he wants it from you.</li>
       <li><b>Right thumbstick</b> left and right turns you. Up and down sets the stick length (it starts at 58 in). <b>Click it</b> to change curve.</li>
@@ -525,7 +527,7 @@ const NAMES = ['Light', 'Medium', 'Heavy'];
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
-const DEF = { level: 2, brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 0, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 3, rulesOn: true, scrimM: '5', voices: true };
+const DEF = { level: 2, lineup: {}, brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 0, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 3, rulesOn: true, scrimM: '5', voices: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -538,7 +540,7 @@ function loadSettings() {
       if (ok(j.vig, [0, 1, 2, 3])) o.vig = j.vig; if (ok(j.height, ['auto', 'standing', 'seated'])) o.height = j.height; if (typeof j.sound === 'boolean') o.sound = j.sound;
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
       if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['hold', 'btn', 'grip', 'off'])) o.oneM = j.oneM; if (typeof j.arcade === 'boolean') o.arcade = j.arcade; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2, 3])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'give', 'oneone', 'twoone', 'breakout', 'defend', 'scrim', 'scrim3'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2, 3])) o.oppP = j.oppP;
-      if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM; if (typeof j.voices === 'boolean') o.voices = j.voices; if (typeof j.brainUrl === 'string') o.brainUrl = j.brainUrl.trim().slice(0, 200); if (typeof j.brainKey === 'string') o.brainKey = j.brainKey.trim().slice(0, 200); if (ok(j.talk, ['off', 'free', 'hold'])) o.talk = j.talk;
+      if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM; if (typeof j.voices === 'boolean') o.voices = j.voices; if (typeof j.brainUrl === 'string') o.brainUrl = j.brainUrl.trim().slice(0, 200); if (typeof j.brainKey === 'string') o.brainKey = j.brainKey.trim().slice(0, 200); if (ok(j.talk, ['off', 'free', 'hold'])) o.talk = j.talk; o.lineup = {}; if (j.lineup && typeof j.lineup === 'object') for (const [k, v] of Object.entries(j.lineup).slice(0, 12)) if (typeof v === 'string' && v.length < 40) o.lineup[k] = v;
       if (ok(j.mountH, ['off', 'right', 'left'])) o.mountH = j.mountH; if (typeof j.mD === 'number' && j.mD > 0.2 && j.mD < 1.8) o.mD = j.mD;
       if (Array.isArray(j.mAx) && j.mAx.length === 3 && j.mAx.every(v => typeof v === 'number' && isFinite(v)) && Math.abs(Math.hypot(...j.mAx) - 1) < 0.05) o.mAx = j.mAx;
     }
@@ -621,6 +623,22 @@ ice.receiveShadow = true; scene.add(ice);
   const g = new THREE.Mesh(new THREE.ExtrudeGeometry(go, { depth: 1.5, bevelEnabled: false, curveSegments: 24 }),
     new THREE.MeshBasicMaterial({ color: 0xbfe0ff, transparent: true, opacity: 0.16, depthWrite: false }));
   g.rotation.x = -Math.PI / 2; g.position.y = 1.12; scene.add(g);
+}
+// the team benches: outside the boards on one side, Ravens on the left of centre and the Visitors on the right, each with a rubber floor,
+// a back wall with a seat along it, end walls and a door in the boards
+const BNG = { z0: RK.W / 2 + 0.18, z1: RK.W / 2 + 1.85, ravens: { x0: -11.4, x1: -1.8, door: -6.6, c: 0x4a2a8a }, visitors: { x0: 1.8, x1: 11.4, door: 6.6, c: 0x9a2230 } };
+{
+  const rub = new THREE.MeshStandardMaterial({ color: 0x1a1d22, roughness: 1 }), wall = new THREE.MeshStandardMaterial({ color: 0xe8eaee, roughness: 0.7 }), seat = new THREE.MeshStandardMaterial({ color: 0x3a3f48, roughness: 0.6 }), seam = new THREE.MeshBasicMaterial({ color: 0x8a9099 });
+  for (const team of ['ravens', 'visitors']) {
+    const B = BNG[team], L = B.x1 - B.x0, cx = (B.x0 + B.x1) / 2, d = BNG.z1 - BNG.z0, cz = (BNG.z0 + BNG.z1) / 2, trim = new THREE.MeshStandardMaterial({ color: B.c, roughness: 0.6 });
+    const fl = flat(new THREE.PlaneGeometry(L, d), 0.004); fl.material = rub; fl.position.set(cx, 0.004, cz); fl.receiveShadow = true; scene.add(fl);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(L, 1.1, 0.08), wall); back.position.set(cx, 0.55, BNG.z1); scene.add(back);
+    const band = new THREE.Mesh(new THREE.BoxGeometry(L, 0.14, 0.1), trim); band.position.set(cx, 1.04, BNG.z1); scene.add(band);
+    for (const x of [B.x0, B.x1]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.1, d), wall); e.position.set(x, 0.55, cz); scene.add(e); }
+    const st0 = new THREE.Mesh(new THREE.BoxGeometry(L - 0.3, 0.07, 0.42), seat); st0.position.set(cx, 0.47, BNG.z1 - 0.26); scene.add(st0);
+    const fr = new THREE.Mesh(new THREE.BoxGeometry(L - 0.3, 0.44, 0.04), trim); fr.position.set(cx, 0.22, BNG.z1 - 0.46); scene.add(fr);
+    for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.025, 0.98), seam); m.rotation.y = Math.PI; m.position.set(B.door + s * 0.48, 0.52, RK.W / 2 - 0.004); scene.add(m); }
+  }
 }
 // lines and circles
 const lineMat = c => new THREE.MeshBasicMaterial({ color: c, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
@@ -1939,6 +1957,7 @@ function pollInput(dt, hw, hy) {
     const fx = Math.cos(yaw), fz = Math.sin(yaw), fw = -sy / mag, rt = sx / mag;
     dx = fx * fw - fz * rt; dz = fz * fw + fx * rt;
   }
+  if (BN.on) { S.x = hw.x; S.z = hw.z; S.vx = S.vz = 0; BN.sy = sy; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0, brake: 0 }; return; }
   S.x = hw.x; S.z = hw.z;                                                  // your body is where your head is
   skInfo = skateStep(S, { m, dx, dz, brake, assist: st.assist }, dt, SPEEDS[st.speed]);
   rig.position.x += S.x - hw.x; rig.position.z += S.z - hw.z;
@@ -2870,7 +2889,7 @@ function myCall(what) {
 // ---- calling for the puck
 const CALL = { t: -9, taps: [], hi: false };
 function callForPuck(how) {
-  if (pClock - CALL.t < 0.9) return;
+  if (pClock - CALL.t < 0.9 || BN.on) return;
   CALL.t = pClock; run.calls = (run.calls || 0) + 1;
   if (audio && how !== 'tap') { const b = humanBlade(); audio.hit(1.5, { x: b[0], y: 0.02, z: b[1] }); setTimeout(() => { if (audio) audio.hit(1.5, { x: b[0], y: 0.02, z: b[1] }); }, 150); }
   toast(how === 'tap' ? 'Stick tap: you want it' : 'Calling for the puck', 1.1);
@@ -2906,7 +2925,7 @@ const skVis = () => { const a = []; for (const k in SKP) if (SKP[k].vis) a.push(
 const skAnyHas = () => { for (const k in SKP) if (SKP[k].vis && SKP[k].has) return true; return false; };
 function skBlade(s, lat) { const sd = s.p.side, l = lat == null ? 0.36 * sd : lat; return [s.x + s.fx * 0.85 + s.fz * l, s.z + s.fz * 0.85 - s.fx * l]; }
 function scBox(s) { return { kind: 'skater', part: 'legs', on: true, x: s.x, z: s.z, ax: s.fx, az: s.fz, hw: 0.24, hd: 0.13, y0: 0, h: 0.8, e: 0.2, vx: 0, vz: 0 }; }
-function humanHas() { return stickOn && (PK.cr > 0.4 || PK.sh); }
+function humanHas() { return stickOn && !BN.on && (PK.cr > 0.4 || PK.sh); }
 function humanBlade() { if (stickOn && STK.ok) { const o = [0, 0, 0]; bpt(STK.F, STK.bp.Lb * 0.5, PUCK.HH, -STK.bp.c[Math.round(STK.bp.n / 2)] + PUCK.R + 0.02, o); return [o[0], o[2]]; } return [H.x + H.fx * 0.9, H.z + H.fz * 0.9]; }
 // keep a point inside the rink, rounded corners included
 function inRink(x, z, m) {
@@ -2938,7 +2957,7 @@ function skMove(s, tx, tz, dt, Q, o) {
   if (SC.on && SC.mode === '5') vmax *= 1 - clamp(((s.shift || 0) - 45) / 60, 0, 0.18);        // tired late in a long shift
   let sx = 0, sz = 0;
   for (const q of all) if (q !== s) { const ex = s.x - q.x, ez = s.z - q.z, e = Math.hypot(ex, ez); if (e < 1.3 && e > 0.01) { sx += ex / e * (1.3 - e) * 1.6; sz += ez / e * (1.3 - e) * 1.6; } }
-  if (!o.hit) { const ex = s.x - H.x, ez = s.z - H.z, e = Math.hypot(ex, ez); if (e < 1.2 && e > 0.01) { sx += ex / e * (1.2 - e) * 2; sz += ez / e * (1.2 - e) * 2; } }
+  if (!o.hit && !BN.on) { const ex = s.x - H.x, ez = s.z - H.z, e = Math.hypot(ex, ez); if (e < 1.2 && e > 0.01) { sx += ex / e * (1.2 - e) * 2; sz += ez / e * (1.2 - e) * 2; } }
   const sp0 = Math.hypot(s.vx, s.vz), dT = Math.hypot(tx - s.x, tz - s.z);
   if (o.back && dT > 9) o.back = false;                                                          // a long way to go: turn and skate, don't backpedal
   if (o.back && sp0 > 0.5 && (s.vx * s.fx + s.vz * s.fz) < -0.4 * sp0) vmax = Math.min(vmax, Q.spd * 0.7);   // skating backwards is slower
@@ -3029,7 +3048,7 @@ function skAct(s, dt, Q) {
 // your stick reached the puck he is carrying: he may lose it (better players protect it more)
 function skStolen(s, Q) {
   if (!s.has) return false;
-  const hb = humanBlade(), near = st.arcade && stickOn && Math.hypot(hb[0] - PK.x, hb[1] - PK.z) < 0.5 && PK.y < PUCK.HH + 0.05;   // arcade: your blade at his puck is a poke check
+  const hb = humanBlade(), near = st.arcade && stickOn && !BN.on && Math.hypot(hb[0] - PK.x, hb[1] - PK.z) < 0.5 && PK.y < PUCK.HH + 0.05;   // arcade: your blade at his puck is a poke check
   if (!((PK.htouch || -9) > pClock - 0.06 || humanHas() || near)) return false;
   if (s.prot > 0) { if (!near) { PK.cr = 0; PK.rel = pClock + 0.2; } return false; }
   s.prot = 0.45;
@@ -3071,11 +3090,11 @@ function skTapCall(s, dt) {
 // how open is a pass from a to b: the closest any opponent of team gets to the line
 function laneOpen(ax, az, bx, bz, team) {
   let m = 9; const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1;
-  const opp = skVis().filter(o => o.team !== team).map(o => [o.x, o.z]); if (team !== 'ravens') opp.push([H.x, H.z]);
+  const opp = skVis().filter(o => o.team !== team).map(o => [o.x, o.z]); if (team !== 'ravens' && !BN.on) opp.push([H.x, H.z]);
   for (const [ox, oz] of opp) { const t = clamp(((ox - ax) * dx + (oz - az) * dz) / L2, 0, 1), d = Math.hypot(ax + dx * t - ox, az + dz * t - oz); if (d < m) m = d; }
   return m;
 }
-function nearestOpp(s) { let best = null, bd = 99; for (const o of skVis()) if (o.team !== s.team) { const d = Math.hypot(o.x - s.x, o.z - s.z); if (d < bd) { bd = d; best = o; } } if (s.team !== 'ravens') { const d = Math.hypot(H.x - s.x, H.z - s.z); if (d < bd) { bd = d; best = 'human'; } } return [best, bd]; }
+function nearestOpp(s) { let best = null, bd = 99; for (const o of skVis()) if (o.team !== s.team) { const d = Math.hypot(o.x - s.x, o.z - s.z); if (d < bd) { bd = d; best = o; } } if (s.team !== 'ravens' && !BN.on) { const d = Math.hypot(H.x - s.x, H.z - s.z); if (d < bd) { bd = d; best = 'human'; } } return [best, bd]; }
 // ---- the goalie in the near net (Ravens), for the scrimmage and the drills in your own end
 function g2Show(v) {
   if (v && !SC.g2) {
@@ -3090,11 +3109,13 @@ function g2Show(v) {
 // ---- the scrimmage
 // rosters: who plays where. Ravens left wing is you; the others change lines in the 5 on 5. Lanes: -1 left, +1 right (of the way the team attacks).
 const ROSTER5 = {
-  ravens: [[['17', 'left', 'C', 0], ['12', 'right', 'W', 1], ['44', 'right', 'D', -1], ['5', 'left', 'D', 1]], [['19', 'left', 'C', 0], ['22', 'right', 'W', 1], ['2', 'left', 'D', -1], ['8', 'right', 'D', 1]]],
-  visitors: [[['15', 'left', 'W', -1], ['9', 'right', 'C', 0], ['21', 'left', 'W', 1], ['4', 'left', 'D', -1], ['7', 'right', 'D', 1]], [['11', 'left', 'W', -1], ['16', 'right', 'C', 0], ['23', 'left', 'W', 1], ['3', 'left', 'D', -1], ['6', 'right', 'D', 1]]]
+  ravens: { F: [[['17', 'left', 'C', 0], ['12', 'right', 'W', 1]], [['27', 'left', 'W', -1], ['19', 'left', 'C', 0], ['22', 'right', 'W', 1]], [['14', 'left', 'W', -1], ['16', 'right', 'C', 0], ['10', 'right', 'W', 1]]],
+            D: [[['44', 'right', 'D', -1], ['5', 'left', 'D', 1]], [['2', 'left', 'D', -1], ['8', 'right', 'D', 1]], [['3', 'left', 'D', -1], ['6', 'right', 'D', 1]]] },
+  visitors: { F: [[['15', 'left', 'W', -1], ['9', 'right', 'C', 0], ['21', 'left', 'W', 1]], [['11', 'left', 'W', -1], ['16', 'right', 'C', 0], ['23', 'left', 'W', 1]], [['18', 'right', 'W', -1], ['20', 'left', 'C', 0], ['26', 'left', 'W', 1]]],
+              D: [[['4', 'left', 'D', -1], ['7', 'right', 'D', 1]], [['3', 'left', 'D', -1], ['6', 'right', 'D', 1]], [['2', 'right', 'D', -1], ['5', 'left', 'D', 1]]] }
 };
 const ROSTER3 = { ravens: [[['17', 'left', 'C', 0], ['44', 'right', 'D', 0]]], visitors: [[['9', 'right', 'C', 0], ['21', 'left', 'W', 1], ['4', 'left', 'D', 0]]] };
-const SHIFT = 55, BENCH = { ravens: [-5, 12.1], visitors: [5, 12.1] };
+const SHIFT = 50, SHIFT_F = 45, BENCH = { ravens: [-6.6, 12.1], visitors: [6.6, 12.1] };
 const mkLine = (team, L) => L.map(([n, sh, r, ln]) => skGet(team, n, sh, r, ln));
 // the goalies go in the net each team defends (teams change ends every period)
 function goalHomes() {
@@ -3112,17 +3133,23 @@ function scStart(mode) {
   g2Show(true);
   SC.mode = mode || st.scrimM || '5';
   const R = SC.mode === '5' ? ROSTER5 : ROSTER3;
-  SC.lines = { ravens: R.ravens.map(L => mkLine('ravens', L)), visitors: R.visitors.map(L => mkLine('visitors', L)) };
-  SC.cur = { ravens: 0, visitors: 0 };
+  if (SC.mode === '5') {                                                 // forward lines and D pairs, changing separately
+    SC.grp = {}; for (const t of ['ravens', 'visitors']) SC.grp[t] = { F: R[t].F.map(L => mkLine(t, L)), D: R[t].D.map(L => mkLine(t, L)) };
+    SC.lines = { ravens: [...SC.grp.ravens.F, ...SC.grp.ravens.D], visitors: [...SC.grp.visitors.F, ...SC.grp.visitors.D] };
+  } else { SC.grp = null; SC.lines = { ravens: R.ravens.map(L => mkLine('ravens', L)), visitors: R.visitors.map(L => mkLine('visitors', L)) }; }
+  SC.fPrev = 2; SC.fChgT = -99;
   for (const L of [...SC.lines.ravens, ...SC.lines.visitors]) for (const q of L) skShow(q, false);   // everyone starts on the bench
-  SC.sk = [...SC.lines.ravens[0], ...SC.lines.visitors[0]];
+  SC.sk = SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0], ...SC.grp.visitors.F[0], ...SC.grp.visitors.D[0]] : [...SC.lines.ravens[0], ...SC.lines.visitors[0]];
   for (const s of SC.sk) { skShow(s, true); s.shift = 0; s.chg = false; }
   Object.assign(SC, { my: { g: 0, a: 0, sh: 0, tk: 0 }, tc: { last: null, prev: null }, code: null, flip: 1, changes: 0, dOff: null, calls: {}, rpx: null, lastTeam: null, lastU: 0, on: true, score: [0, 0], shots: [0, 0], t: 0, per: 1, clk: PERLENS[st.perP] * 60, over: false, after: 0, inter: 0, chase: {}, press: {}, shotT: [-9, -9] });
   goalHomes();
-  scFaceoff((SC.mode === '5' ? '5 on 5' : '3 on 3') + ': Ravens attack the far net. You are left wing', [0, 0]);
+  Object.assign(BN, { on: false, t: 0, shift: 0, shift2: 0, called: false, callT: -99, zoneT: 0, upT: 0 });
+  if (SC.mode === '5') { benchRefresh(); croftyShow(true); croftyPrefetch(); } else croftyShow(false);
+  scFaceoff((SC.mode === '5' ? '5 on 5' : '3 on 3') + ': Ravens attack the far net. You are left wing' + (SC.mode === '5' ? '. Crofty calls the changes' : ''), [0, 0]);
 }
 function scStop(quiet) {
   if (!SC.on) return;
+  benchLeave(); benchClear();
   SC.on = false; for (const t in SKP) if (SKP[t].vis) skShow(SKP[t], false); g2Show(false);
   SC.flip = 1; goalHomes();
   MATE.drillHide = false; if (MATE.p) MATE.p.root.visible = MATE.on;
@@ -3134,9 +3161,9 @@ function scStop(quiet) {
 // the circle in their own). At a stoppage, a line that has been out a while changes.
 function scFaceoff(msg, dot) {
   dot = dot || [0, 0]; const [fx0, fz0] = dot;
-  if (SC.mode === '5') for (const team of ['ravens', 'visitors']) {
-    const on = SC.sk.filter(s => s.team === team), avg = on.reduce((a, s) => a + (s.shift || 0), 0) / Math.max(1, on.length);
-    if (avg > 40) scSwapLine(team);
+  if (SC.grp) for (const team of ['ravens', 'visitors']) for (const k of ['F', 'D']) {
+    const on = SC.sk.filter(s => s.team === team && isK(s, k)), avg = on.reduce((a, s) => a + (s.shift || 0), 0) / Math.max(1, on.length);
+    if (avg > 38) scSwapLine(team, k);
   }
   for (const s of SC.sk) {
     const dir = teamDir(s.team), du = dir * fx0, dv = dir * fz0; let u, v;
@@ -3147,29 +3174,38 @@ function scFaceoff(msg, dot) {
     else { u = du - 7.5; v = s.ln ? dv + s.ln * 3.5 : dv * 0.5; }
     let [x, z] = inRink(dir * u, dir * v, 1.5); skPlace(s, x, z, dir, 0); s.cool = 0.2;
   }
-  { const dr = teamDir('ravens'); let [x, z] = inRink(fx0 - dr * 1.6, fz0 - dr * 4.6, 1.5); teleportTo(x, z, dr > 0 ? 0 : Math.PI); }
+  if (!BN.on) { const dr = teamDir('ravens'); let [x, z] = inRink(fx0 - dr * 1.6, fz0 - dr * 4.6, 1.5); teleportTo(x, z, dr > 0 ? 0 : Math.PI); }
   resetPuck(fx0, fz0); SC.pause = 1.5; SC.dot = dot; SC.rpx = null; SC.lastTeam = null; SC.dOff = null; SC.msg = msg || 'Faceoff'; SC.chase = {}; SC.press = {}; toast(SC.msg, 2);
   goalHomes();
   boardText();
 }
-// a whole line changes (at a stoppage)
-function scSwapLine(team) {
-  const lines = SC.lines[team]; if (lines.length < 2) return;
-  const out = SC.sk.filter(s => s.team === team); SC.cur[team] = (SC.cur[team] + 1) % lines.length;
-  const inn = lines[SC.cur[team]];
-  for (const s of out) skShow(s, false);
-  SC.sk = SC.sk.filter(s => s.team !== team).concat(inn);
-  for (const s of inn) { skShow(s, true); s.shift = 0; s.chg = false; }
-  SC.changes++;
+// a forward line or a D pair changes all at once (at a stoppage). The Ravens' forwards never change onto your line by themselves: Crofty calls you.
+const isK = (s, k) => k === 'D' ? s.role === 'D' : s.role !== 'D';
+const grpOn = (team, k) => SC.grp ? SC.grp[team][k].findIndex(L => L.some(q => SC.sk.includes(q))) : 0;
+function grpNext(team, k, cur) { let nx = (cur + 1) % SC.grp[team][k].length; if (team === 'ravens' && k === 'F' && nx === 0) nx = -1; return nx; }
+function scSwapLine(team, k) {
+  if (!SC.grp) return;
+  const cur = grpOn(team, k), nx = grpNext(team, k, cur); if (nx < 0 || nx === cur) return;
+  if (team === 'ravens' && k === 'F' && !BN.on) return;
+  grpSwap(team, k, nx);
 }
-// one tired player goes to the bench on the fly, and the player for his spot on the other line jumps on there
+function grpSwap(team, k, nx) {
+  const G = SC.grp[team][k], out = SC.sk.filter(s => s.team === team && isK(s, k));
+  for (const s of out) { s.has = false; s.act = ''; s.chg = false; }
+  SC.sk = SC.sk.filter(s => !out.includes(s)).concat(G[nx]);
+  for (const s of G[nx]) { skShow(s, true); s.shift = 0; s.chg = false; s.bench = false; }
+  SC.changes++; benchRefresh();
+}
+// one tired player goes to the bench on the fly, and the player for his spot in the next line or pair jumps on there
 function scSwapOne(s) {
-  const lines = SC.lines[s.team], cur = lines.findIndex(L => L.includes(s)); if (cur < 0) return;
-  const rep = lines[(cur + 1) % lines.length].find(q => q.role === s.role && q.ln === s.ln); if (!rep || rep.vis) return;
+  if (!SC.grp) return;
+  const k = s.role === 'D' ? 'D' : 'F', G = SC.grp[s.team][k], cur = G.findIndex(L => L.includes(s)); if (cur < 0) return;
+  const nx = grpNext(s.team, k, cur); if (nx < 0) { s.chg = false; return; }
+  const rep = G[nx].find(q => q.role === s.role && q.ln === s.ln); if (!rep || rep.vis) { s.chg = false; return; }
   const [bx, bz] = BENCH[s.team];
   skShow(s, false); s.chg = false;
   skPlace(rep, bx, bz - 0.6, s.fx, s.fz); rep.vx = s.vx; rep.vz = s.vz; skShow(rep, true); rep.shift = 0; rep.chg = false;
-  SC.sk[SC.sk.indexOf(s)] = rep; SC.changes++;
+  SC.sk[SC.sk.indexOf(s)] = rep; rep.bench = false; SC.changes++; benchRefresh();
 }
 function scLines(dt, carrierTeam, stopped) {
   if (SC.mode !== '5' || stopped) return;
@@ -3177,10 +3213,139 @@ function scLines(dt, carrierTeam, stopped) {
   for (const team of ['ravens', 'visitors']) {
     const dir = teamDir(team), mine = SC.sk.filter(s => s.team === team), going = mine.filter(s => s.chg).length;
     const pinned = carrierTeam && carrierTeam !== team && dir * PK.x < -BLUEL;          // never change while they have it in your end
+    const fNow = team === 'ravens' ? grpOn('ravens', 'F') : 0;
     for (const s of mine) {
-      if (!s.chg && !pinned && going < 2 && !s.has && s.shift > SHIFT && Math.random() < dt * 0.6) { s.chg = true; if (team === 'ravens') say(s.p, 'Change!'); }
+      const isF = s.role !== 'D', may = !(team === 'ravens' && isF) || (BN.on && fNow === 1);   // your line goes off with you; line 2 hands over to line 3 by itself
+      if (!s.chg && may && !pinned && going < 3 && !s.has && s.shift > (isF ? SHIFT_F : SHIFT) && Math.random() < dt * 0.6) {
+        s.chg = true; if (team === 'ravens') { say(s.p, 'Change!'); if (isF && pClock - SC.fChgT > 20) { SC.fChgT = pClock; croftySay(pick(['Change, lads!', 'On you go, lads.'])); } }
+      }
       if (s.chg) { const [bx, bz] = BENCH[team]; if (Math.hypot(s.x - bx, s.z - bz) < 2) scSwapOne(s); }
     }
+  }
+}
+// ---- the bench (5 on 5): your line and the other Ravens line take turns. Crofty stands behind the bench and calls the changes. Skate to the
+// bench door to come off, and once you're there push the left stick forward (or lean over the boards) to go back on. The lads on the bench
+// watch the play, and you can talk to them properly there. The Visitors' spare line stands in their bench too.
+const BN = { on: false, t: 0, shift: 0, shift2: 0, called: false, callT: -99, zoneT: 0, upT: 0, hint: 0, sy: 0 };
+const SHIFT_D = 50, SHIFT_D2 = 45;
+const CROF = { p: null, on: false, x: 0, z: 0, buf: {}, poseT: 0 };
+const CROF_LINES = ["Drew's line, change!", "Change, Drew!", "Drew's line, you're up!", "Up you go, Drew.", "Change, lads!", "On you go, lads."];
+const benchSlot = (team, off) => [BNG[team].door + off, BNG.z0 + 0.55];
+const BOFF = [0, -0.85, 0.85, -1.7, 1.7, -2.55, 2.55, -3.4, 3.4, -4.25, 4.25, -4.65];
+function standerSet(s, x, z) {
+  skShow(s, false); skPlace(s, x, z, 0, -1); s.bench = true; s.bT = 1; s.p.root.visible = true;
+  const r = s.p.root.userData.ring; if (r) r.visible = false;
+}
+function stickVis(P, v) {                                               // sticks away on the bench, or they'd poke through the boards
+  if (P.shOn !== v) { P.shOn = v; P.root.traverse(o => { if (o.isMesh) o.castShadow = v; }); }    // and no shadows from the bench: it saves drawing
+  for (const k of ['shaft', 'sblade']) { const m = P.m[k]; if (!m) continue; m.visible = v && !P.far; if (P.full) { const i = P.full.indexOf(m); if (i >= 0) P.fullVis[i] = v; } }
+}
+function benchRefresh() {
+  if (!SC.on || SC.mode !== '5') return;
+  for (const team of ['ravens', 'visitors']) {
+    const off = SC.lines[team].flat().filter(s => !SC.sk.includes(s));
+    const offs = BOFF.filter(o => !(team === 'ravens' && BN.on && o === 0));
+    off.forEach((s, i) => { const [x, z] = benchSlot(team, offs[i] || 0); standerSet(s, x, z); });
+    for (const s of SC.sk) { s.bench = false; stickVis(s.p, true); }
+    for (const s of off) stickVis(s.p, false);
+  }
+}
+function benchClear() {
+  for (const k in SKP) { const s = SKP[k]; if (s.bench) { s.bench = false; stickVis(s.p, true); if (!s.vis) s.p.root.visible = false; } }
+  if (CROF.p) CROF.p.root.visible = false; CROF.on = false;
+}
+function croftyMake() {
+  if (CROF.p) return CROF.p;
+  const P = CROF.p = makePlayer('ravens', '24', 'left', false), M = P.m;
+  const coat = new THREE.MeshStandardMaterial({ color: 0x1c2230, roughness: 0.85 }), hat = new THREE.MeshStandardMaterial({ color: 0x2b2f38, roughness: 0.95 }), skin = M.neck.material;
+  for (const k of ['torso', 'shoulders', 'upL', 'upR', 'foL', 'foR', 'pants', 'thL', 'thR']) if (M[k]) M[k].material = coat;
+  for (const k of ['glL', 'glR']) if (M[k]) M[k].material = skin;
+  if (M.head) M.head.material = hat;                                      // a beanie, not a helmet
+  for (const k of ['visor', 'shaft', 'sblade', 'blL', 'blR']) if (M[k]) M[k].visible = false;
+  P.name = 'Crofty'; P.coach = true; P.root.visible = false;
+  if (P.full) P.fullVis = P.full.map(c => c.visible);
+  return P;
+}
+function croftyShow(v) {
+  if (v) { const P = croftyMake(); CROF.on = true; CROF.x = BNG.ravens.door + 0.7; CROF.z = BNG.z1 - 0.45; P.root.visible = true; const s = P.s; s.x = CROF.x; s.z = CROF.z; s.fx = 0; s.fz = -1; s.speed = 0; s.turn = 0; P.sm = null; }
+  else { CROF.on = false; if (CROF.p) CROF.p.root.visible = false; }
+}
+function croftyPrefetch() {
+  if (!brainOK() || !audio || !audio.ctx) return;
+  for (const t of CROF_LINES) {
+    if (CROF.buf[t]) continue;
+    brainFetch('/say', { text: t, to: 'Crofty' }, 12000).then(j => {
+      if (!j || !j.audio || !audio || !audio.ctx) return;
+      const b = Uint8Array.from(atob(j.audio), c => c.charCodeAt(0)).buffer; audio.ctx.decodeAudioData(b, buf => { CROF.buf[t] = buf; }, () => { });
+    }).catch(() => { });
+  }
+}
+function croftySay(t) {
+  if (!CROF.on || !CROF.p) { toast('Crofty: "' + t + '"', 2); return; }
+  const buf = CROF.buf[t], P = CROF.p;
+  say(P, t, { force: true, quiet: !!buf || !st.voices });
+  if (buf && audio && audio.ctx && st.sound && st.voices) { const d = voxBuf(P, buf, 1, 2.4); if (d) P.talkT = d + 0.1; }
+  run.crofty = (run.crofty || 0) + 1;
+}
+// everyone on the Ravens' current line goes off and the other line comes on (with you coming off or going on)
+function benchSwapRavens(drewOff) {
+  if (!SC.grp) return;
+  const G = SC.grp.ravens.F, cur = grpOn('ravens', 'F');
+  if (!drewOff && cur > 0) SC.fPrev = cur;
+  const inn = G[drewOff ? (SC.fPrev === 1 ? 2 : 1) : 0];
+  const out = SC.sk.filter(s => s.team === 'ravens' && s.role !== 'D');
+  for (const s of out) { s.has = false; s.act = ''; s.chg = false; }
+  SC.sk = SC.sk.filter(s => !out.includes(s)).concat(inn);
+  inn.forEach((s, i) => { skPlace(s, BNG.ravens.door + (i - (inn.length - 1) / 2) * 1.1, BNG.z0 - 1.3, 0, -1); s.vz = -2; skShow(s, true); s.bench = false; s.shift = 0; s.chg = false; });
+  SC.changes++;
+  benchRefresh();
+}
+function benchGo(off) {
+  const door = BNG.ravens.door;
+  if (off) {
+    teleportTo(door, BNG.z0 + 0.6, -Math.PI / 2); BN.on = true; BN.t = 0; BN.shift2 = 0; BN.called = false; BN.upT = 0; BN.zoneT = 0;
+    benchSwapRavens(true); run.benchOff = (run.benchOff || 0) + 1;
+    toast(BN.hint++ < 2 ? 'On the bench. Push the left stick forward to go back on' : 'On the bench', 2.5);
+    const m = SC.grp.ravens.F[0][Math.floor(Math.random() * SC.grp.ravens.F[0].length)]; if (m && Math.random() < 0.6) setTimeout(() => { if (BN.on) say(m.p, pick(['Nice!', 'Lovely!', 'Yes boys!'])); }, 900);
+  } else {
+    teleportTo(door, BNG.z0 - 1.25, -Math.PI / 2); BN.on = false; BN.shift = 0; BN.called = false; BN.zoneT = 0;
+    benchSwapRavens(false); run.benchOn = (run.benchOn || 0) + 1; toast('Over the boards. Go!', 1.4);
+  }
+  MENU.dirty = true;
+}
+function benchLeave() { if (BN.on) { BN.on = false; const d = BNG.ravens.door; teleportTo(d, BNG.z0 - 1.25, -Math.PI / 2); } }
+function benchFrame(dt) {
+  if (!SC.on || SC.mode !== '5') return;
+  // the lads standing in the benches watch the play (posed a few times a second, every frame while talking)
+  for (const k in SKP) {
+    const s = SKP[k]; if (!s.bench) continue;
+    s.bT = (s.bT || 0) + dt; if (s.bT < 0.15 && !(s.p.talkT > 0)) continue;
+    const ps = s.p.s; ps.x = s.x; ps.z = s.z; ps.fx = 0; ps.fz = -1; ps.speed = 0; ps.turn = 0; ps.lookX = PK.x; ps.lookZ = PK.z; ps.bx = ps.bz = null;
+    posePlayer(s.p, s.bT); s.bT = 0;
+    if (st.inVR && s.p.lod) setFar(s.p, Math.hypot(s.x - HEADW.x, s.z - HEADW.z) > (s.p.far ? 12.5 : 14.5));
+  }
+  if (CROF.on && CROF.p) { CROF.poseT += dt; if (CROF.poseT > 0.15 || CROF.p.talkT > 0) { const ps = CROF.p.s; ps.x = CROF.x; ps.z = CROF.z; ps.fx = 0; ps.fz = -1; ps.speed = 0; ps.turn = 0; ps.lookX = PK.x; ps.lookZ = PK.z; ps.bx = ps.bz = null; posePlayer(CROF.p, CROF.poseT); CROF.poseT = 0; }
+    if (st.inVR && CROF.p.lod) setFar(CROF.p, Math.hypot(CROF.x - HEADW.x, CROF.z - HEADW.z) > 14.5); }
+  if (!st.inVR || SC.over) return;
+  const stopped = SC.pause > 0 || SC.after > 0 || SC.inter > 0;
+  const opp = SC.sk.find(s => s.has && s.team === 'visitors'), pinned = !!opp && teamDir('ravens') * PK.x < -BLUEL;
+  const door = BNG.ravens.door;
+  if (!BN.on) {
+    if (!stopped) BN.shift += dt;
+    if (BN.shift > SHIFT_D && pClock - BN.callT > 20 && !pinned && !humanHas()) {
+      croftySay(BN.called ? "Change, Drew!" : "Drew's line, change!"); BN.callT = pClock; BN.called = true;
+      if (BN.hint < 2) toast('Line change: skate to the bench door', 2.5);
+    }
+    const inZone = H.z > BNG.z0 - 1.75 && Math.abs(H.x - door) < 3.3 && !humanHas() && Math.hypot(PK.x - H.x, PK.z - H.z) > 3 && Math.hypot(S.vx, S.vz) < 5 && (BN.called || BN.shift > 15 || stopped);
+    BN.zoneT = inZone ? BN.zoneT + dt : 0;
+    if (BN.zoneT > 0.4) benchGo(true);
+  } else {
+    BN.t += dt; if (!stopped) BN.shift2 += dt;
+    const fOn = SC.sk.filter(s => s.team === 'ravens' && s.role !== 'D'), fSh = fOn.reduce((a, s) => a + (s.shift || 0), 0) / Math.max(1, fOn.length);
+    if (grpOn('ravens', 'F') === 2 && fSh > SHIFT_D2 && pClock - BN.callT > 15) { croftySay(pClock - BN.callT > 40 ? "Drew's line, you're up!" : "Up you go, Drew."); BN.callT = pClock; }
+    const want = BN.sy < -0.6 || HEADW.z < BNG.z0 - 0.15;
+    BN.upT = want ? BN.upT + dt : 0;
+    if (BN.t > 2 && BN.upT > 0.25) benchGo(false);
   }
 }
 const nearestDot = (x, z) => DOTS.reduce((b, d) => Math.hypot(d[0] - x, d[1] - z) < Math.hypot(b[0] - x, b[1] - z) ? d : b, DOTS[0]);
@@ -3209,7 +3374,7 @@ function scPeriodEnd() {
   for (const s of SC.sk) { s.has = false; s.act = ''; }
   if (SC.per >= 3) {
     SC.over = true; SC.msg = 'Final: Ravens ' + SC.score[0] + ', Visitors ' + SC.score[1]; toast(SC.msg, 4);
-    showCode(careerDone({ mode: SC.mode === '5' ? '5v5' : '3v3', lvl: st.oppP, rs: SC.score[0], vs: SC.score[1], g: SC.my.g, a: SC.my.a, sh: SC.my.sh, tk: SC.my.tk, per: 3 }, (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final', { level: OPP_NAMES[st.oppP], shots: SC.shots.slice(), minutes: PERLENS[st.perP], events: (SC.log || []).slice(-8), mates: talkMates().map(q => q.p.name) }), (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final');
+    showCode(careerDone({ mode: SC.mode === '5' ? '5v5' : '3v3', lvl: st.oppP, rs: SC.score[0], vs: SC.score[1], g: SC.my.g, a: SC.my.a, sh: SC.my.sh, tk: SC.my.tk, per: 3 }, (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final', { level: OPP_NAMES[st.oppP], shots: SC.shots.slice(), minutes: PERLENS[st.perP], events: (SC.log || []).slice(-8), mates: (SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0]] : talkMates().filter(q => !q.coach)).map(q => q.p && q.p.name).filter(Boolean) }), (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' final');
     run.scrims = run.scrims || []; run.scrims.push('Final: Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ' (3 x ' + PERLENS[st.perP] + ' min, shots ' + SC.shots[0] + ' to ' + SC.shots[1] + (Object.keys(SC.calls).length ? ', whistles: ' + Object.entries(SC.calls).map(([k, n]) => k.split(':')[0].toLowerCase() + ' ' + n).join(', ') : '') + ')');
   } else { SC.inter = 6; SC.msg = 'End of the ' + ordN(SC.per) + ' period'; toast(SC.msg, 3); }
   boardText();
@@ -3223,7 +3388,7 @@ function scDecide(s, Q) {
   // pass: someone further up the ice and open, more so in front of their net; you, if you called for it
   let best = null, bs = -9;
   const mates = SC.sk.filter(o => o !== s && o.team === s.team && !o.chg).map(o => ({ o, x: o.x, z: o.z, vx: o.vx, vz: o.vz, bl: skBlade(o) }));
-  if (s.team === 'ravens') mates.push({ o: 'human', x: H.x, z: H.z, vx: S.vx, vz: S.vz, bl: humanBlade() });
+  if (s.team === 'ravens' && !BN.on) mates.push({ o: 'human', x: H.x, z: H.z, vx: S.vx, vz: S.vz, bl: humanBlade() });
   const call = s.team === 'ravens' && called();
   for (const m of mates) {
     const d = Math.hypot(m.bl[0] - s.x, m.bl[1] - s.z); if (d < 3 || d > 28) continue;
@@ -3301,7 +3466,7 @@ function scRoles(carrier, carrierTeam) {
     if (!carrier) {
       const px = PK.x + PK.vx * 0.35, pz = PK.z + PK.vz * 0.35, cost = s => Math.hypot(px - s.x, pz - s.z) + (s.role === 'D' && dir * px > 0 ? 3 : 0);
       let b = null, bc = 99; for (const s of mine) { const c = cost(s) - (SC.chase[team] === s ? 1.5 : 0); if (c < bc) { bc = c; b = s; } }
-      if (team === 'ravens' && Math.hypot(px - H.x, pz - H.z) < bc - 1) b = null;
+      if (team === 'ravens' && !BN.on && Math.hypot(px - H.x, pz - H.z) < bc - 1) b = null;
       SC.chase[team] = b; SC.press[team] = null;
     } else if (carrierTeam !== team) {
       const cx = carrier === 'human' ? H.x : carrier.x, cz = carrier === 'human' ? H.z : carrier.z, cu = dir * cx, cv = dir * cz, inZone = cu < -BLUEL;
@@ -3329,14 +3494,14 @@ function scRules(carrier, carrierTeam) {
     const dir = teamDir(team), line = BLUEL + PUCK.R;
     if (dir * px <= line && dir * x > line) {                                 // the puck has just gone over this team's attacking blue line
       const ahead = SC.sk.filter(q => q.team === team && q !== carrier && dir * q.x > BLUEL + 0.35).map(q => '#' + q.num);
-      if (team === 'ravens' && carrier !== 'human' && dir * H.x > BLUEL + 0.35) ahead.unshift('you');
+      if (team === 'ravens' && !BN.on && carrier !== 'human' && dir * H.x > BLUEL + 0.35) ahead.unshift('you');
       if (ahead.length) { SC.dOff = { team, who: ahead[0] }; SC.msg = 'Delayed offside: ' + (team === 'ravens' ? 'Ravens' : 'Visitors') + ' clear the zone'; toast(ahead[0] === 'you' ? 'Delayed offside: get out of the zone' : SC.msg, 1.6); boardText(); }
     }
   }
   // delayed offside: the attackers must all get back over the line before one of them plays the puck in the zone
   if (SC.dOff) {
     const team = SC.dOff.team, dir = teamDir(team);
-    const inZone = SC.sk.filter(q => q.team === team && dir * q.x > BLUEL + 0.35).length + (team === 'ravens' && dir * H.x > BLUEL + 0.35 ? 1 : 0);
+    const inZone = SC.sk.filter(q => q.team === team && dir * q.x > BLUEL + 0.35).length + (team === 'ravens' && !BN.on && dir * H.x > BLUEL + 0.35 ? 1 : 0);
     if (dir * PK.x < BLUEL || !inZone) { SC.dOff = null; SC.msg = inZone ? '' : 'Tagged up'; SC.msgT = pClock + 1.5; boardText(); }
     else if (carrierTeam === team || (pClock - PK.touch < 0.05 && PK.lastT === team)) { const w = SC.dOff.who; SC.dOff = null; scWhistle('Offside: ' + w + (w === 'you' ? ' were' : ' was') + ' over the line', [dir * 6.1, (PK.z >= 0 ? 1 : -1) * 6.71]); return true; }
   }
@@ -3349,6 +3514,7 @@ function scRules(carrier, carrierTeam) {
 function scFrame(dt) {
   if (!SC.on) return;
   const Q = OPPS[st.oppP] || OPPS[1]; SC.t += dt;
+  benchFrame(dt);
   // stoppages and the clock
   if (SC.after > 0) { SC.after -= dt; if (SC.after <= 0) scFaceoff('Faceoff at centre  ' + SC.score[0] + ' - ' + SC.score[1], [0, 0]); }
   if (SC.inter > 0) { SC.inter -= dt; if (SC.inter <= 0) { SC.per++; SC.clk = PERLENS[st.perP] * 60; SC.flip = SC.per === 2 ? -1 : 1; scFaceoff(ordN(SC.per) + ' period: ends changed, Ravens attack the ' + (teamDir('ravens') > 0 ? 'far' : 'near') + ' net now', [0, 0]); } }
@@ -3514,13 +3680,18 @@ function brainFetch(path, body, ms) {
     .finally(() => clearTimeout(tm));
 }
 // the line-up: the VR slots get real Ravens names and numbers (forwards in the forward slots, D in the D slots)
-const RN = { map: null, at: 0 }, RSLOTS = { F: ['17', '12', '19', '22'], D: ['44', '5', '2', '8'] };
+const RN = { map: null, at: 0, players: null }, RSLOTS = { F: ['17', '12', '19', '22', '27', '14', '16', '10'], D: ['44', '5', '2', '8', '3', '6'] };
+const LSLOTS = [['17', 'Line 1 centre'], ['12', 'Line 1 right wing'], ['27', 'Line 2 left wing'], ['19', 'Line 2 centre'], ['22', 'Line 2 right wing'], ['14', 'Line 3 left wing'], ['16', 'Line 3 centre'], ['10', 'Line 3 right wing'], ['44', 'D pair 1'], ['5', 'D pair 1'], ['2', 'D pair 2'], ['8', 'D pair 2'], ['3', 'D pair 3'], ['6', 'D pair 3']];
 function rosterApply(j) {
   if (!j || !Array.isArray(j.players)) return;
-  const F = j.players.filter(p => p.pos === 'F'), D = j.players.filter(p => p.pos === 'D'), m = {};
-  RSLOTS.F.forEach((s, i) => { if (F[i]) m[s] = { n: F[i].n, num: F[i].num }; });
-  RSLOTS.D.forEach((s, i) => { if (D[i]) m[s] = { n: D[i].n, num: D[i].num }; });
-  RN.map = m;
+  RN.players = j.players;
+  const byN = {}, used = new Set(), m = {}, lu = st.lineup || {}; for (const p of j.players) byN[p.n] = p;
+  for (const [sl] of LSLOTS) { const n = lu[sl]; if (n && byN[n] && byN[n].pos !== 'G' && !used.has(n)) { m[sl] = byN[n]; used.add(n); } }    // your picks first
+  const F = j.players.filter(p => p.pos === 'F' && !used.has(p.n)), D = j.players.filter(p => p.pos === 'D' && !used.has(p.n));
+  for (const sl of RSLOTS.F) if (!m[sl] && F.length) { const p = F.shift(); m[sl] = p; used.add(p.n); }
+  for (const sl of RSLOTS.D) if (!m[sl] && D.length) { const p = D.shift(); m[sl] = p; used.add(p.n); }
+  RN.map = {}; for (const k in m) RN.map[k] = { n: m[k].n, num: m[k].num };
+  if (typeof lineupUI === 'function') lineupUI();
   for (const k in SKP) { const s = SKP[k]; if (s.team === 'ravens') rosterLabel(s.p, s.num); }
 }
 function rosterLabel(P, slot) {
@@ -3638,7 +3809,11 @@ function wavB64(f) {
 }
 // who you are talking to: the teammate nearest the middle of your view, or the nearest one
 const _tf = new THREE.Vector3();
-function talkMates() { return (SC.on ? SC.sk : DR.on ? (DR.sk || []) : []).filter(q => q.team === 'ravens' && q.vis && q.p && q.p.name); }
+function talkMates() {
+  const L = (SC.on ? SC.lines.ravens.flat() : DR.on ? (DR.sk || []) : []).filter(q => q.team === 'ravens' && (q.vis || q.bench) && q.p && q.p.name);
+  if (SC.on && CROF.on && CROF.p) L.push({ team: 'ravens', vis: true, p: CROF.p, x: CROF.x, z: CROF.z, coach: true });
+  return L;
+}
 function talkTarget() {
   const ms = talkMates(); if (!ms.length) return null;
   camera.getWorldDirection(_tf); const fl = Math.hypot(_tf.x, _tf.z) || 1, fx = _tf.x / fl, fz = _tf.z / fl;
@@ -3656,11 +3831,11 @@ function talkCtx() {
   let now = 'Free skate at the rink with the puck.';
   if (SC.on) now = (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' scrimmage against the Visitors, ' + (SC.over ? 'just finished' : ordN(SC.per) + ' period, ' + clockStr(SC.clk) + ' left') + ', Ravens ' + SC.score[0] + ' Visitors ' + SC.score[1] + ', shots ' + SC.shots[0] + ' to ' + SC.shots[1] + '. Drew so far: ' + SC.my.g + ' goals, ' + SC.my.a + ' assists, ' + SC.my.sh + ' shots.' + (SC.msg ? ' Last thing that happened: ' + SC.msg + '.' : '');
   else if (DR.on && DR.d) now = 'Training, the ' + DR.d.name + ' drill' + (DR.rep ? ', rep ' + DR.rep + ' of ' + DR.d.reps : '') + '. ' + (DR.msg || '');
-  return { where: SC.on ? (live ? 'on the ice in the middle of play, so only a few words' : 'on the ice at a stoppage in the game') : DR.on ? 'on the ice at training, between reps' : 'on the ice', now };
+  return { where: SC.on && BN.on ? 'on the bench during the game, watching the play from behind the boards, so there is time for a proper chat' : SC.on ? (live ? 'on the ice in the middle of play, so only a few words' : 'on the ice at a stoppage in the game') : DR.on ? 'on the ice at training, between reps' : 'on the ice', now };
 }
 async function micSend(pcm) {
   if (MIC.busy || !brainOK()) return;
-  const T = talkTarget(), P = T && T.p, to = P && P.name || null, live = playLive();
+  const T = talkTarget(), P = T && T.p, to = P && P.name || null, live = playLive() && !BN.on;
   MIC.busy = true; MIC.sent++; const t0 = nowS(), rec = { heard: '', intent: '', to, ms: 0 }; MIC.qEnd = 0; MIC.dq = Promise.resolve();
   if (P && !live) say(P, '...', { force: true, quiet: true, hold: 8 });
   const hist = to ? (MIC.hist[to] || []) : [];
@@ -3742,10 +3917,10 @@ function puckFrame(dt) {
   pClock += dt;
   if (PK.out > 1.2) { EV.length = 0; run.pk.outs++; if (SC.on) scFaceoff('Puck out of play. Faceoff', nearestDot(clamp(PK.x, -25, 25), clamp(PK.z, -9, 9))); else { placePuck(); toast('Puck out of play'); } }
   PA.s = ASSISTS[st.assistP] || 0; if (st.arcade) PA.s = Math.max(PA.s, 2.2); PA.arc = st.arcade ? 1 : 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz; PA.aim = AIMS[st.aimP] || 0;
-  puckAdvance(dt, stickOn, POWERS[st.power], pClock);
+  puckAdvance(dt, stickOn && !BN.on, POWERS[st.power], pClock);
   othersFrame(dt);
   if (DR.autoT > 0) { DR.autoT -= dt; if (DR.autoT <= 0) { if (st.startDrill === 'scrim') scStart('5'); else if (st.startDrill === 'scrim3') scStart('3'); else drillStart(st.startDrill); } }
-  if (SC.on || DR.on) tapWatch();
+  if ((SC.on || DR.on) && !BN.on) tapWatch();
   drillFrame(dt);
   scFrame(dt);
   hudFrame(dt);
@@ -4292,6 +4467,22 @@ $('btest').addEventListener('click', async () => {
   if (st.talk !== 'off') { try { const m = await navigator.mediaDevices.getUserMedia({ audio: true }); m.getTracks().forEach(t => t.stop()); msg += '. Mic allowed.'; } catch (e) { msg += '. Mic: ' + (e.name === 'NotAllowedError' ? 'not allowed (check the browser\'s site settings)' : e.name || 'error'); } }
   n.textContent = msg; brainFlush(false);
 });
+function lineupUI() {
+  const box = $('lineup'), g = $('lineup-g'); if (!box || !g || !RN.players) return;
+  const sk = RN.players.filter(p => p.pos === 'F').concat(RN.players.filter(p => p.pos === 'D'));
+  g.innerHTML = '';
+  for (const [sl, lab] of LSLOTS) {
+    const l = document.createElement('label'); l.className = 'f'; l.textContent = lab; const sel = document.createElement('select');
+    for (const p of sk) { const o = document.createElement('option'); o.value = p.n; o.textContent = p.n + '  #' + p.num + (p.pos === 'D' ? '  (D)' : ''); sel.appendChild(o); }
+    sel.value = RN.map && RN.map[sl] ? RN.map[sl].n : ''; sel.addEventListener('change', () => {
+      const lu = {}; for (const [k] of LSLOTS) if (RN.map && RN.map[k]) lu[k] = RN.map[k].n;
+      const other = Object.keys(lu).find(k => k !== sl && lu[k] === sel.value); if (other) lu[other] = lu[sl];
+      lu[sl] = sel.value; st.lineup = lu; saveSettings(); rosterApply({ players: RN.players });
+    });
+    l.appendChild(sel); g.appendChild(l);
+  }
+  box.hidden = false;
+}
 rosterLoad().then(() => brainFlush(false));
 $('curve').addEventListener('change', e => { setCurve(e.target.value); saveSettings(); drawCurve(); MENU.dirty = true; });
 matchMedia('(prefers-color-scheme: dark)').addEventListener && matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawCurve());
@@ -4303,7 +4494,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
