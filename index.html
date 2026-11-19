@@ -326,7 +326,8 @@ details.rate[open]>summary{margin-bottom:10px}
     <summary>In the headset: controls</summary>
     <ol class="how">
       <li><b>Both hands hold the stick.</b> Your top hand (left, for a right shot) is on the butt end and your lower hand slides along the shaft. Your gloves stay on the shaft: the lower one slides up and down as your hand does, and moving your hand sideways steers the stick, like a real two-hand grip.</li>
-      <li><b>Holding the stick.</b> Your top hand always has the stick. <b>Hold the trigger (or grip) on your lower hand</b> to put that hand on the stick too; let go and you are one-handed, for a reach or a poke check. (The old A-button switch is still in the menu, Stick tab.)</li>
+      <li><b>Holding the stick.</b> Your top hand always has the stick. <b>Hold the grip on your lower hand</b> to put that hand on the stick too; let go and you are one-handed, for a reach or a poke check. (The old A-button switch is still in the menu, Stick tab.)</li>
+      <li><b>Passing and shooting.</b> Normally every puck you send is a <b>pass</b>: it goes flat along the ice onto the teammate you were aiming nearest to, at a good speed, however you swung. <b>Hold the trigger on your lower hand for a shot</b>: then the puck does exactly what your stick does (the ring round the puck turns red). You can switch pass mode off in the menu, Puck tab.</li>
       <li><b>The blade stays on the ice.</b> With your hands low the blade rests flat on the ice, and if your hands sit a little high the stick stretches a few centimetres so the blade still touches. Lift your hands on purpose (a saucer pass, a shot, a lift) and it comes off the ice at once. <b>Blade to ice</b> in the menu sets how much help you get.</li>
       <li><b>Shoot like you would on the ice.</b> With the puck on your blade, sweep the stick forward through it: the puck stays on the blade for the whole sweep and leaves as the sweep peaks. It goes up if you open the blade (turn your lower wrist so the face points up) and follow through high; keep the face closed and finish low and it stays low. A hard, fast sweep goes further and higher than a slow one. <b>Shot lift</b> in the menu sets how much the face angle counts: Real only is the plain angle.</li>
       <li><b>Pushing the puck ahead.</b> A gentle push forward sends the puck a metre or two ahead and it stops running away from you, so you can skate onto it.</li>
@@ -1960,12 +1961,14 @@ function pollInput(dt, hw, hy) {
     }
     if (role === 'free' && edge(1)) puckBack();
     if (!mh && h === handTop && edge(1)) callForPuck('grip');                 // top-hand grip: call for the puck
-    if (!mh && st.oneM === 'hold' && h === (st.shot === 'right' ? 'right' : 'left')) {                    // lower hand: hold the trigger (or grip) and it is on the stick; let go and the stick stays in your top hand
+    if (!mh && st.oneM === 'hold' && h === (st.shot === 'right' ? 'right' : 'left')) {                    // lower hand: hold the grip and it is on the stick; hold the trigger for shot mode
       const tv = gp.buttons[0] ? (gp.buttons[0].value || (gp.buttons[0].pressed ? 1 : 0)) : 0, gv = gp.buttons[1] ? (gp.buttons[1].value || (gp.buttons[1].pressed ? 1 : 0)) : 0;
-      const on = Math.max(tv, gv) > (handsOne ? 0.45 : 0.25);
+      const on = gv > (handsOne ? 0.45 : 0.25);
       if (on === handsOne && !MENU.open) setHands(!on);
+      shotMode(tv > (SHOT.on ? 0.25 : 0.4), h);
     }
     if (!mh && st.oneM === 'grip' && h === (st.shot === 'right' ? 'right' : 'left')) {                    // lower-hand grip: squeeze = two hands, let go = one hand
+      const tv0 = gp.buttons[0] ? (gp.buttons[0].value || (gp.buttons[0].pressed ? 1 : 0)) : 0; shotMode(tv0 > (SHOT.on ? 0.25 : 0.4), h);
       const gr = !!(gp.buttons[1] && gp.buttons[1].pressed);
       if (gr && !pb[1]) setHands(false); else if (!gr && pb[1]) setHands(true);
     }
@@ -2956,6 +2959,25 @@ function myCall(what) {
     if (o && c.act !== 'pass') { skPass(c, { bl: skBlade(o), vx: o.vx, vz: o.vz }); c.actT = 0.15; if (DR.on && DR.bo && (DR.bo.ph === 'call' || DR.bo.ph === 'up')) { DR.bo.S = o === DR.ld ? -1 : 1; DR.bo.ph = 'dd'; DR.bo.t = 0.31; } }
   } else if (what === 'over' && DR.on && DR.bo && (DR.bo.ph === 'call' || DR.bo.ph === 'in')) DR.bo.dd = true;                 // your call decides the breakout
 }
+// ---- pass mode and shot mode. Normally every puck you send is a pass: it goes flat along the ice onto the teammate you were nearest to aiming at,
+// at a good speed, however hard or high you swung. Hold the trigger on your lower hand and it's a shot: the stick and the puck do exactly what you do.
+const SHOT = { on: false, hint: 0 };
+function shotMode(v, h) {
+  if (v === SHOT.on) return; SHOT.on = v; buzz(h, v ? 0.25 : 0.1, v ? 30 : 15);
+  if (v && SHOT.hint++ < 2) toast('Shot mode: let it rip', 1.2);
+}
+const REL = { had: false, at: -9 };
+function passModeCheck() {                                                // the puck just left your stick: in pass mode, make it a good pass
+  const had = REL.had, has = humanHas(); REL.had = has;
+  if (st.passHelp === false || SHOT.on || BN.on || !stickOn) return;
+  if (SD.on && SD.acts && SD.acts.some(x => x.a.actor === SD.me && x.state === 'run' && x.a.type === 'shoot')) return;   // the drill wants a shot
+  if (DR.on && !SD.on && (DR.id === 'shoot' || DR.id === 'oneone' || DR.id === 'defend')) return;
+  const rel = Math.hypot(PK.vx - S.vx, PK.vz - S.vz), since = pClock - (PK.htouch || -9);
+  const released = (had && !has && rel > 2.5) || (!has && since > 0.015 && since < 0.13 && rel > 3.5 && PK.assistAt !== PK.htouch);
+  if (!released || pClock - REL.at < 0.25) return;
+  const hb = humanBlade(); if (Math.hypot(PK.x - hb[0], PK.z - hb[1]) > 2.5) return;
+  REL.at = pClock; PK.assistAt = PK.htouch; passHelp(true);
+}
 // ---- pass help: when the puck leaves your stick toward a teammate (not at a net), it goes flat and onto his stick
 function passMates() {
   const L = new Set();
@@ -2966,19 +2988,20 @@ function passMates() {
   if (MATE.p && MATE.p.root.visible && MATE.x != null) out.push({ bl: [MATE.x, MATE.z], vx: MATE.vx || 0, vz: MATE.vz || 0 });
   return out;
 }
-function passHelp() {
-  const sp = Math.hypot(PK.vx, PK.vz); if (sp < 3) return;
+function passHelp(strong) {
+  const sp = Math.hypot(PK.vx, PK.vz); if (sp < 2) return;
   const a0 = Math.atan2(PK.vz, PK.vx), wr = a => Math.atan2(Math.sin(a), Math.cos(a));
   const nets = SC.on ? [teamDir('ravens') * GX] : [GX, -GX];
   const atNet = nets.some(nx => Math.hypot(nx - PK.x, PK.z) < 24 && Math.abs(wr(Math.atan2(-PK.z, nx - PK.x) - a0)) < 0.32);
-  let best = null, be = 0.5, bd = 0;
-  for (const m of passMates()) { const dx = m.bl[0] - PK.x, dz = m.bl[1] - PK.z, d = Math.hypot(dx, dz); if (d < 2.5 || d > 38) continue; const e = Math.abs(wr(Math.atan2(dz, dx) - a0)); if (e < be) { be = e; best = m; bd = d; } }
-  if (atNet && (!best || be > 0.18)) return;                              // that's a shot
+  let best = null, be = strong ? 0.85 : 0.5, bd = 0, bsc = 99;
+  for (const m of passMates()) { const dx = m.bl[0] - PK.x, dz = m.bl[1] - PK.z, d = Math.hypot(dx, dz); if (d < 2 || d > 40) continue; const e = Math.abs(wr(Math.atan2(dz, dx) - a0)); if (e > be) continue; const sc = e + d * 0.006; if (sc < bsc) { bsc = sc; best = m; bd = d; } }
+  if (atNet && (!best || Math.abs(wr(Math.atan2(best.bl[1] - PK.z, best.bl[0] - PK.x) - a0)) > (strong ? 0.25 : 0.18))) return;   // straight at the net with nobody in the way: that's a shot
   if (best) {
-    const spd = clamp(Math.max(sp * 0.9, 7 + bd * 0.3), 8, 16), t = bd / spd, tx = best.bl[0] + best.vx * t * 0.8, tz = best.bl[1] + best.vz * t * 0.8, a = Math.atan2(tz - PK.z, tx - PK.x);
+    const spd = strong ? clamp(7 + bd * 0.32, 8, 16) : clamp(Math.max(sp * 0.9, 7 + bd * 0.3), 8, 16), t = bd / spd, tx = best.bl[0] + best.vx * t * 0.8, tz = best.bl[1] + best.vz * t * 0.8, a = Math.atan2(tz - PK.z, tx - PK.x);
     PK.vx = Math.cos(a) * spd; PK.vz = Math.sin(a) * spd; if (PK.y > PUCK.HH + 0.03) PK.vy = Math.min(PK.vy, -0.4); else { PK.y = PUCK.HH; PK.vy = 0; }
     run.passHelp = (run.passHelp || 0) + 1;
-  } else if (sp < 17 && PK.vy > 1.0) PK.vy *= 0.35;                       // nobody there: at least keep it out of the seats
+  } else if (strong) { const k = Math.min(1, 15 / sp); PK.vx *= k; PK.vz *= k; if (PK.y > PUCK.HH + 0.03) PK.vy = Math.min(PK.vy, -0.4); else { PK.y = PUCK.HH; PK.vy = 0; } }   // nobody there: a firm flat pass that way
+  else if (sp < 17 && PK.vy > 1.0) PK.vy *= 0.35;                       // nobody there: at least keep it out of the seats
 }
 // ---- calling for the puck
 const CALL = { t: -9, taps: [], hi: false };
@@ -2989,6 +3012,7 @@ function callForPuck(how) {
   toast(how === 'tap' ? 'Stick tap: you want it' : 'Calling for the puck', 1.1);
 }
 const called = w => pClock - CALL.t < (w || 1.8);
+Object.assign(CALL, { voiceT: -9 });
 // two quick taps of the blade on the ice, while you do not have the puck: the blade's low point drops 6 cm or more in a moment and comes back up
 const TAPB = [];
 function tapWatch() {
@@ -3639,6 +3663,11 @@ function scFrame(dt) {
   const hum = humanHas();
   if (hum) for (const s of SC.sk) if (s.has) { s.has = false; s.act = ''; s.cool = 0.7; }
   let carrier = hum ? 'human' : SC.sk.find(s => s.has) || null;
+  if (!stopped && carrier && carrier !== 'human' && carrier.team === 'ravens' && !BN.on && called(1.6) && carrier.act !== 'pass' && carrier.act !== 'shoot' && !(carrier.callT > CALL.t)) {   // you called for it
+    const s = carrier, hb = humanBlade(), d = Math.hypot(hb[0] - s.x, hb[1] - s.z), dir = teamDir('ravens');
+    const offside = st.rulesOn && dir * s.x < BLUEL && dir * H.x > BLUEL + 0.3;
+    if (d > 2 && d < 34 && !offside && laneOpen(s.x, s.z, hb[0], hb[1], 'ravens') > 0.35) { s.callT = pClock; skPass(s, { o: 'human', bl: hb, vx: S.vx, vz: S.vz }); s.actT = 0.1; if (Math.random() < 0.5) say(s.p, pick(['Yours!', 'Drew!', 'Heads up!']), { gap: 0.4 }); }
+  }
   for (const s of SC.sk) {
     if (stopped) continue;
     if (!carrier && SC.pause <= 0 && !s.chg && skCanPick(s)) { skPick(s); carrier = s; }
@@ -4849,7 +4878,7 @@ function hudFrame(dt) {
   for (const k in SKP) { const q = SKP[k]; if (q.vis) ringSet(ringFor(q.p, q.team), q.has, !!q.pw); }
   if (DFN.on && DFN.p) ringSet(ringFor(DFN.p, 'visitors'), false, !!DFN.pw);
   if (MATE.p && MATE.p.root.visible) ringSet(ringFor(MATE.p, 'ravens'), MATE.st === 'hold', false);
-  puckRing.visible = st.arcade && st.inVR && PK.y < 0.5; if (puckRing.visible) puckRing.position.set(PK.x, 0.01, PK.z);
+  puckRing.visible = st.arcade && st.inVR && PK.y < 0.5; if (puckRing.visible) { puckRing.position.set(PK.x, 0.01, PK.z); puckRing.material.color.setHex(SHOT.on ? 0xff4a3a : 0x5fe3ff); }
   // blink after a teleport
   if (HUDS.fade > 0) { HUDS.fade -= dt; fadeM.visible = true; fadeM.material.opacity = clamp(HUDS.fade / 0.35, 0, 1); } else fadeM.visible = false;
 }
@@ -4860,7 +4889,7 @@ function puckFrame(dt) {
   if (PK.out > 1.2) { EV.length = 0; run.pk.outs++; if (SC.on) scFaceoff('Puck out of play. Faceoff', nearestDot(clamp(PK.x, -25, 25), clamp(PK.z, -9, 9))); else { placePuck(); toast('Puck out of play'); } }
   PA.s = ASSISTS[st.assistP] || 0; if (st.arcade) PA.s = Math.max(PA.s, 2.2); PA.arc = st.arcade ? 1 : 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz; PA.aim = AIMS[st.aimP] || 0;
   puckAdvance(dt, stickOn && !BN.on, POWERS[st.power], pClock);
-  if (st.passHelp !== false && !BN.on) for (const e of EV) if (e.k === 'launch' && pClock - (PK.htouch || -9) < 0.35) { passHelp(); break; }
+  passModeCheck();
   othersFrame(dt);
   if (DR.autoT > 0) { DR.autoT -= dt; if (DR.autoT <= 0) { if (st.startDrill === 'random') scStart('5', randomFx()); else if (st.startDrill === 'scrim') scStart('5'); else if (st.startDrill === 'scrim3') scStart('3'); else drillStart(st.startDrill); } }
   if ((SC.on || DR.on) && !BN.on) tapWatch();
@@ -5037,7 +5066,7 @@ function menuRows(tab) {
     { l: 'Set up the mount (the menu closes)', v: () => st.mountH === 'off' ? 'Mount is off' : st.mAx ? 'Set up. Again?' : 'Start', s: () => { if (st.mountH === 'off') { toast('Choose which controller is on the stick first'); return; } closeMenu(); mountCalStart(); } }
   ];
   if (tab === 1) return [
-    { l: 'Pass help (flat, onto his stick)', v: () => st.passHelp !== false ? 'On' : 'Off', s: () => setSetting('passHelp', st.passHelp === false) },
+    { l: 'Pass mode (hold lower trigger to shoot)', v: () => st.passHelp !== false ? 'On' : 'Off: every hit is real', s: () => setSetting('passHelp', st.passHelp === false) },
     { l: 'Puck help', v: () => ASSIST_NAMES[st.assistP], s: d => setSetting('assistP', cyc(4, st.assistP, d)) },
     { l: 'Shot lift', v: () => LIFT_NAMES[st.liftP], s: d => setSetting('liftP', cyc(4, st.liftP, d)) },
     { l: 'Shot power', v: () => POWER_NAMES[st.power], s: d => setSetting('power', cyc(3, st.power, d)) },
@@ -5480,7 +5509,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
