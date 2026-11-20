@@ -1308,6 +1308,21 @@ function capSpeed() {
   const rx = PK.vx - PA.svx, rz = PK.vz - PA.svz, r = Math.hypot(rx, rz);
   if (r > 10) { const k = (10 + (r - 10) * 0.55) / r; PK.vx = PA.svx + rx * k; PK.vz = PA.svz + rz * k; }
 }
+// Tips and soft hands. In front of the net you're attacking (or anywhere with the shot trigger held) a hard pass that hits your blade is deflected,
+// turned toward the net. Everywhere else, with the blade still, a pass is cushioned: it dies on your blade and you have it, however hard it came.
+function tipZone() { const gx = (SC.on ? teamDir('ravens') : 1) * GX; return Math.hypot(gx - PA.hx, PA.hz) < 3.8 && Math.sign(gx) * PA.hx < GX - 0.2; }
+function tipDeflect(nx, nz, rx, rz, bvx, bvz, now) {
+  const inSp = Math.hypot(rx, rz), vn = rx * nx + rz * nz;
+  let vx = rx - 1.45 * vn * nx, vz = rz - 1.45 * vn * nz;                          // off the face, keeping most of the pace along it
+  const gx = (SC.on ? teamDir('ravens') : 1) * GX, wr = a => Math.atan2(Math.sin(a), Math.cos(a));
+  const aim = clamp(PK.z + (Math.random() - 0.5) * 0.6, -NETW + 0.25, NETW - 0.25), want = Math.atan2(aim - PK.z, gx - PK.x), a0 = Math.atan2(vz, vx), e = wr(want - a0);
+  const d = Math.hypot(gx - PK.x, PK.z), zone = tipZone(), k = zone ? 1 : (d < 9 && Math.abs(e) < 0.6 ? 0.6 : 0);   // in front of the net, any touch is a tip on goal
+  const a = a0 + e * k + (zone ? (Math.random() - 0.5) * 0.12 : 0), sp = zone ? clamp(0.75 * inSp, 7, 17) : clamp(Math.max(Math.hypot(vx, vz), 0.65 * inSp), 5, 19);
+  PK.vx = bvx * 0.3 + Math.cos(a) * sp; PK.vz = bvz * 0.3 + Math.sin(a) * sp; PK.vy = 0.3 + Math.random() * 1.6; PK.y = PUCK.HH + 0.003;
+  // it carries on past the blade, not into it again
+  PK.att = 0; PK.cr = 0; PK.sh = 0; PK.rel = now + 0.4; PK.hopT = now + 0.18; PK.hop0 = now; PK.touch = now; PK.htouch = now; PK.tipAt = now; PK.lastT = 'ravens'; PK.soft = false; PK.tips = (PK.tips || 0) + 1;
+  PK.watch = 0.1; PK.wPeak = 0; EV.push({ k: 'tap', v: 6, x: PK.x, y: PK.y, z: PK.z });
+}
 // Arcade stickhandling: once the puck is caught it stays on your blade instead of bouncing off it. It sits on whichever face leads the way the blade is
 // moving side to side, so sweeping the blade back the other way brings the puck over to the other face (forehand to backhand and back, no physics
 // to fight). It leaves the blade with a real push, pass or shot (handed to the ride-and-release code below), when you lift the blade, or when
@@ -1320,7 +1335,8 @@ function attachStep(dt, now) {
     if (!grab && !PK.sh && now >= PK.rel && PK.y < PUCK.HH + 0.05) {         // a loose puck within 30 cm of the blade, on either side, even skating fast past it (off the wall, a bad pass)
       const ul = Math.hypot(Fn.Ux, Fn.Uz) || 1, u = clamp(((PK.x - Fn.Ox) * Fn.Ux + (PK.z - Fn.Oz) * Fn.Uz) / ul, 0.08 * bp.Lb, 0.92 * bp.Lb), ii = clamp(Math.round(u / bp.Lb * bp.n), 0, bp.n);
       bpt(Fn, u, PUCK.HH, -bp.c[ii] - BL.TB / 2, _T); pointVel(Fn, Fp, u, PUCK.HH, 0, dt, _vp);
-      if (Math.hypot(PK.x - _T[0], PK.z - _T[2]) < 0.3 && Math.hypot(PK.vx - _vp[0], PK.vz - _vp[2]) < 14 && Math.abs(_T[1] - PUCK.HH) < 0.12) {
+      const rIn = Math.hypot(PK.vx - _vp[0], PK.vz - _vp[2]), tipping = rIn > 5 && (SHOT.on || tipZone());
+      if (!tipping && Math.hypot(PK.x - _T[0], PK.z - _T[2]) < 0.3 && rIn < 30 && Math.abs(_T[1] - PUCK.HH) < 0.12) {
         grab = acq = true; PK.lastU = u; PK.side = (PK.x - _T[0]) * Fn.Wx + (PK.z - _T[2]) * Fn.Wz >= 0 ? 1 : -1; PK.grabs = (PK.grabs || 0) + 1;
       }
     }
@@ -1465,6 +1481,17 @@ function puckAdvance(dt, haveBlade, power, now) {
         PK.x += nx * _C.pen; PK.y += ny * _C.pen; PK.z += nz * _C.pen;
         pointVel(Fn, Fp, _C.cu, _C.cv, _C.cw, dt, _vb); _vb[1] += STK.dvy;
         const rx = PK.vx - _vb[0], ry = PK.vy - _vb[1], rz = PK.vz - _vb[2], vn = rx * nx + ry * ny + rz * nz;
+        if (vn < 0 && !PK.sh && PK.y < PUCK.HH + 0.08 && (PA.arc || PA.s > 0)) {
+          const bRel = Math.hypot(_vb[0] - PA.svx, _vb[2] - PA.svz), inSp = Math.hypot(rx, rz);
+          if (inSp > 6 && bRel < 4 && (SHOT.on || tipZone()) && now - (PK.tipAt || -9) > 0.3) { tipDeflect(nx, nz, rx, rz, _vb[0], _vb[2], now); break; }
+          if (!SHOT.on && bRel < 2.5 && -vn > 1.2 && PK.cr < 0.5) {               // soft hands: the pass dies on your blade
+            const tx0 = rx - vn * nx, tz0 = rz - vn * nz;
+            PK.vx = _vb[0] + tx0 * 0.1; PK.vz = _vb[2] + tz0 * 0.1; PK.vy = Math.min(PK.vy, 0);
+            PK.touch = now; PK.htouch = now; PK.lastT = 'ravens'; PK.soft = true; PK.rel = Math.min(PK.rel, now); PK.catches = (PK.catches || 0) + 1;
+            if (now - PK.tapAt > 0.07) { PK.tapAt = now; EV.push({ k: 'tap', v: Math.min(2, -vn * 0.2), x: PK.x, y: PK.y, z: PK.z }); }
+            break;
+          }
+        }
         if (vn < 0) {
           const glued = PA.keep && PK.cr > 0.4 && -vn < 6, e = glued ? 0 : 0.35 * clamp((-vn - 1.2) / 4.3, 0, 1) * (PA.s > 0 ? 1 - (1 - Math.max(0.3, 1 - 0.4 * PA.s)) * (1 - sstep((-vn - 4) / 6)) : 1), bn = _vb[0] * nx + _vb[1] * ny + _vb[2] * nz;
           const dvn = -(1 + e) * vn, extra = power > 1 && !glued ? (power - 1) * Math.max(0, bn - 2.5) : 0, imp = dvn + extra;
@@ -3010,6 +3037,8 @@ function passModeCheck() {                                                // the
   if (st.passHelp === false || SHOT.on || BN.on || !stickOn) return;
   if (SD.on && SD.acts && SD.acts.some(x => x.a.actor === SD.me && x.state === 'run' && x.a.type === 'shoot')) return;   // the drill wants a shot
   if (DR.on && !SD.on && (DR.id === 'shoot' || DR.id === 'oneone' || DR.id === 'defend')) return;
+  if (FD.on && FD.b && FD.b.do === 'shoot') return;                                                   // the drill wants a shot
+  if (pClock - (PK.tipAt || -9) < 0.3) return;                                                        // a tip, not a pass
   const rel = Math.hypot(PK.vx - S.vx, PK.vz - S.vz), since = pClock - (PK.htouch || -9);
   const released = (had && !has && rel > 2.5) || (!has && since > 0.015 && since < 0.13 && rel > 3.5 && PK.assistAt !== PK.htouch);
   if (!released || pClock - REL.at < 0.25) return;
@@ -4053,6 +4082,7 @@ function talkCtx() {
   else if (SC.on) now = (SC.fx ? 'This week\'s league game, played in VR, against ' + SC.fx.opp + (SC.fx.cup ? ' (Talon Cup)' : '') + ', ' : (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' scrimmage against the Visitors, ') + (SC.over ? 'just finished' : ordN(SC.per) + ' period, ' + clockStr(SC.clk) + ' left') + ', Ravens ' + SC.score[0] + ' ' + oppN() + ' ' + SC.score[1] + ', shots ' + SC.shots[0] + ' to ' + SC.shots[1] + '. Drew so far: ' + SC.my.g + ' goals, ' + SC.my.a + ' assists, ' + SC.my.sh + ' shots.' + (SC.msg ? ' Last thing that happened: ' + SC.msg + '.' : '');
   else if (DR.on && DR.d) now = 'Training, the ' + DR.d.name + ' drill' + (DR.rep ? ', rep ' + DR.rep + ' of ' + DR.d.reps : '') + '. ' + (DR.msg || '');
   const fr = fxNow && CAR.vc ? fxNow() : null;
+  if (CAR.place === 'room' && RM.phase === 'speech') return { where: 'in the dressing room before the game: Drew is giving a quick speech to the whole team. React to what he said in one short line, like a teammate geeing everyone up', now, live: false };
   if (CAR.place === 'room') return { where: RM.kind === 'post' ? 'in the dressing room just after the game, taking your gear off' : RM.kind === 'train' ? 'in the dressing room before Thursday training, getting your gear on' : 'in the dressing room before tonight\'s game' + (fr ? ' against ' + fr.opp : '') + ', getting your gear on', now, live: false };
   return { where: CAR.place === 'pub' ? (CAR.pubSoc ? 'at the team social night in the pub, round a table with a drink' : 'at the pub after tonight\'s game, round a table with a drink, so plenty of time to chat') : SC.on && BN.on ? 'on the bench during the game, watching the play from behind the boards, so there is time for a proper chat' : SC.on ? (live ? 'on the ice in the middle of play, so only a few words' : 'on the ice at a stoppage in the game') : DR.on ? 'on the ice at training, between reps' : 'on the ice', now };
 }
@@ -5457,7 +5487,7 @@ function pvFrame(dt) {
 // pub or home. Talk to anyone the way you do at the pub: look at them and speak.
 const ROOM = { x: 0, z: 640, W: 7.2, D: 6.4 };
 const ROOMP = [];
-const RM = { kind: null, t: 0, talkT: 0, talked: false, talking: false, said: 0, lastSent: -1, hov: -1, arm: true, poseT: 0 };
+const RM = { kind: null, phase: 'chat', t: 0, talkT: 0, quietT: 0, talked: false, talking: false, said: 0, lastSent: -1, hov: -1, arm: true, poseT: 0, topic: 0 };
 const roomWbC = document.createElement('canvas'); roomWbC.width = 1024; roomWbC.height = 640;
 const roomWbTex = new THREE.CanvasTexture(roomWbC); if ('colorSpace' in roomWbTex) roomWbTex.colorSpace = THREE.SRGBColorSpace;
 const roomDoorC = document.createElement('canvas'); roomDoorC.width = 512; roomDoorC.height = 320;
@@ -5525,7 +5555,8 @@ function roomDoor() {                                                    // the 
   const btn = (x, y, w, h, label, sub, act) => { const k = RM.hits.length; RM.hits.push({ x, y, w, h, act }); g.fillStyle = RM.hov === k ? '#6b35d0' : '#3d1d78'; g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, 26); else g.rect(x, y, w, h); g.fill(); g.lineWidth = 6; g.strokeStyle = RM.hov === k ? '#e0a928' : '#9b86c9'; g.stroke();
     g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '800 46px system-ui, sans-serif'; g.fillText(label, x + w / 2, y + h / 2 - (sub ? 16 : 0)); if (sub) { g.font = '600 24px system-ui, sans-serif'; g.fillStyle = '#e0c88a'; g.fillText(sub, x + w / 2, y + h / 2 + 30); } };
   if (RM.kind === 'post') { btn(8, 8, 496, 146, CAR.vc.week % 4 === 0 ? 'Social night' : 'To the pub', 'point + trigger, or Y', () => roomLeave('pub')); btn(8, 166, 496, 146, 'Head home', '', () => roomLeave('home')); }
-  else btn(8, 8, 496, 304, 'Out to the ice', RM.talked ? 'point + trigger, or press Y' : 'after Crofty\'s talk, or press Y now', () => roomLeave('ice'));
+  else if (RM.phase === 'chat') { btn(8, 8, 496, 146, RM.kind === 'train' ? 'What\'s on tonight?' : 'Team talk', 'Crofty starts when you\'re ready', () => roomTeamTalk()); btn(8, 166, 496, 146, 'Straight out', 'or press Y', () => roomLeave('ice')); }
+  else btn(8, 8, 496, 304, 'Out to the ice', 'point + trigger, or press Y', () => roomLeave('ice'));
   roomDoorTex.needsUpdate = true;
 }
 function roomPlayer(i, name) {
@@ -5539,7 +5570,7 @@ function roomPlayer(i, name) {
 function carRoom(kind) {
   phoneClose(); if (DR.on) drillStop(true); if (SC.on) scStop(true);
   if (CAR.place === 'pub') { for (const o of PUBP) o.p.root.visible = false; }
-  CAR.place = 'room'; Object.assign(RM, { kind, t: 0, talkT: 0, talked: false, talking: false, said: 0, lastSent: MIC.sent, hov: -1, poseT: 1 });
+  CAR.place = 'room'; Object.assign(RM, { kind, phase: 'chat', t: 0, talkT: 0, quietT: 0, talked: false, talking: false, said: 0, lastSent: MIC.sent, hov: -1, poseT: 1, heard: '' });
   const m0 = lineMates().filter(n => n !== 'Drew' && n !== 'Crofty'), mates = m0.length ? m0 : Object.entries(DEFAULT_LU).filter(([k]) => k !== 'G').map(([, v]) => v), gN = (st.lineup && st.lineup.G) || 'Craig';
   const people = (kind === 'train' ? mates.slice(0, 7) : mates.slice(0, 12)).concat(kind === 'train' ? [] : [gN]);
   const order = [2, 4, 1, 5, 0, 6, 7, 8, 9, 10, 11, 12, 13, 14];          // seats round the room, the ones beside you first (seat 3 is yours)
@@ -5558,7 +5589,7 @@ function carRoom(kind) {
   teleportTo(ROOM.x, ROOM.z - ROOM.D / 2 + 1.15, Math.PI / 2);
   roomBoard(); roomDoor(); homeTvDraw();
   const f = fxNow();
-  toast(kind === 'post' ? 'Back in the room' : kind === 'train' ? 'The dressing room. Crofty will tell you what\'s on tonight' : 'The dressing room. Talk to the lads: Crofty\'s team talk is coming', 3.5);
+  toast(kind === 'post' ? 'Back in the room. Have a chat, then the pub or home' : kind === 'train' ? 'The dressing room. Chat away: Crofty will tell you what\'s on tonight' : 'The dressing room. Chat with the lads: look at someone and talk. Crofty\'s talk comes later', 4);
   if (kind === 'post') { const last = CAR.vc.last, won = last && last.gf > last.ga, lost = last && last.gf < last.ga; setTimeout(() => { if (CAR.place !== 'room') return; const o = ROOMP[0]; if (!o) return; roomLine(o.p, '(The game against ' + (last ? last.opp : 'them') + ' just finished ' + (last ? last.gf + '-' + last.ga : '') + '. You\'re back in the dressing room taking your gear off. React to it with Drew, briefly and naturally.)', won ? 'Get in! What a game, Drew!' : lost ? 'Heads up, mate. We\'ll get them next time.' : 'A draw. We\'ll take it.'); }, 1500); }
   else if (kind === 'pre') setTimeout(() => { if (CAR.place !== 'room' || RM.talked) return; const o = ROOMP[0]; if (o) roomLine(o.p, '(You\'re in the dressing room getting your gear on before tonight\'s game against ' + (f ? f.opp : 'them') + '. Drew has just sat down next to you. Say something short to him.)', pick(['Big one tonight, Drew.', 'Feeling sharp?', 'Who\'s got spare tape?', 'Let\'s start fast tonight.'])); }, 2500);
 }
@@ -5567,14 +5598,51 @@ async function roomLine(P, typed, stock) {                              // one o
   if (!brainOK()) { say(P, stock, { force: true }); return; }
   await pubLine(P, typed);
 }
-async function roomTeamTalk() {                                         // Crofty stands up at the whiteboard
-  if (RM.talking || RM.talked) return; RM.talking = true; const P = RM.crof && RM.crof.p, f = fxNow(); if (!P) return;
-  const ok = RM.kind === 'train'
-    ? (CAR.train ? CAR.train.msg.replace(/^Training tonight: /, 'Right lads, tonight it\'s ') : 'Right lads, let\'s get on the ice.')
-    : CAR.pre || 'Right lads. Work hard, keep it simple, enjoy it.';
-  if (brainOK() && RM.kind === 'pre') await pubLine(P, '(Everyone is ready in the dressing room before tonight\'s game against ' + (f ? f.opp : 'them') + '. Give the team talk, out loud to the whole room: 3 or 4 short sentences, warm and positive. Mention how they play and one or two simple things to do: ' + (CAR.pre || '') + ')');
-  else { say(P, ok, { force: true, hold: Math.min(12, 1 + ok.length * 0.06) }); await new Promise(r => setTimeout(r, Math.min(11000, 800 + ok.length * 55))); }
-  RM.talking = false; RM.talked = true; roomDoor(); if (CAR.place === 'room') toast('Out the door when you\'re ready', 2);
+const sleepMs = ms => new Promise(r => setTimeout(r, ms));
+async function roomSay(P, text) {                                       // a set line, in his own voice when your server can speak it
+  if (!P || CAR.place !== 'room') return;
+  const voice = brainOK() && audio && audio.ctx && st.sound && st.voices;
+  say(P, text, { force: true, quiet: !!voice, hold: 1.5 + text.length * 0.07 });
+  if (!voice) return sleepMs(900 + text.length * 50);
+  try {
+    const j = await brainFetch('/say', { text, to: P.name }, 12000);
+    if (j && j.audio) await new Promise(res => { const b = Uint8Array.from(atob(j.audio), c => c.charCodeAt(0)).buffer; audio.ctx.decodeAudioData(b, buf => { const d = voxBuf(P, buf, 1, 1.9) || 1; P.talkT = d + 0.1; MIC.gate = Math.max(MIC.gate, nowS() + d + 0.3); setTimeout(res, d * 1000 + 150); }, () => res()); });
+    else await sleepMs(900 + text.length * 50);
+  } catch (e) { await sleepMs(900 + text.length * 50); }
+}
+async function roomTeamTalk() {                                         // Crofty stands up at the whiteboard, has his say, then hands it to you
+  if (RM.phase !== 'chat' || CAR.place !== 'room') return; RM.phase = 'talk'; RM.talking = true; roomDoor();
+  const P = RM.crof && RM.crof.p, f = fxNow(); if (!P) return;
+  for (let k = 0; k < 40 && MIC.busy; k++) await sleepMs(250);           // let whoever's talking finish
+  if (CAR.place !== 'room') return;
+  await roomSay(P, RM.kind === 'train' ? 'Right lads, listen in.' : 'Right lads, listen up.');
+  if (RM.kind === 'train') {
+    const ok = CAR.train ? CAR.train.msg.replace(/^Training tonight: /, 'Tonight it\'s ') : 'Let\'s get on the ice.';
+    await roomSay(P, ok);
+    RM.talking = false; RM.talked = true; RM.phase = 'out'; roomDoor(); if (CAR.place === 'room') toast('Out the door when you\'re ready', 2); return;
+  }
+  if (brainOK()) { await pubLine(P, '(Everyone is ready in the dressing room before tonight\'s game against ' + (f ? f.opp : 'them') + '. Give the team talk, out loud to the whole room: 3 or 4 short sentences, warm and positive. Mention how they play and one or two simple things to do: ' + (CAR.pre || '') + ' Do not ask anyone a question.)'); await sleepMs(400); for (let k = 0; k < 60 && (P.talkT > 0); k++) await sleepMs(200); }
+  else await roomSay(P, CAR.pre || 'Work hard, keep it simple, enjoy it.');
+  if (CAR.place !== 'room') return;
+  RM.talking = false; RM.talked = true;
+  await roomSay(P, pick(['Drew, anything you want to say to the boys?', 'Drew, you want to say a few words?', 'Drew, over to you. Anything to add?']));
+  if (CAR.place !== 'room') return;
+  RM.phase = 'speech'; RM.speechSent = MIC.sent; RM.speechT = 0; roomDoor();
+  toast(brainOK() ? 'Your turn: say something to the lads' : 'Your turn (needs your server to hear you). Press Y to head out', 3);
+}
+async function roomReact(heard) {                                       // the room reacts to what you said, then out we go
+  RM.phase = 'react'; roomDoor();
+  const used = MIC.last && MIC.last.to, pool = ROOMP.slice(0, RM.n).filter(o => o.p.root.visible && o.p.name !== used), o = pool[Math.floor(Math.random() * pool.length)];
+  for (let k = 0; k < 40 && MIC.busy; k++) await sleepMs(250);
+  if (o && heard && brainOK()) { await pubLine(o.p, '(Drew just said this to the whole dressing room before the game: "' + heard.slice(0, 300) + '". React out loud in one short line, like a teammate geeing everyone up.)'); for (let k = 0; k < 40 && o.p.talkT > 0; k++) await sleepMs(200); }
+  if (CAR.place !== 'room') return;
+  const cheer = ['Let\'s go!', 'Come on, boys!', 'Yes, Drew!', 'Let\'s have it!', 'Ravens!'];
+  pool.filter(q => q !== o).slice(0, 4).forEach((q, k) => setTimeout(() => { if (CAR.place === 'room') say(q.p, cheer[k % cheer.length], { force: true, quiet: true, hold: 1.6 }); }, 250 + k * 280));
+  await sleepMs(1500);
+  if (RM.crof) await roomSay(RM.crof.p, pick(['Right, out we go. Enjoy it.', 'Let\'s go, lads. Out we go.', 'Brilliant. Right, on the ice.']));
+  if (CAR.place !== 'room') return;
+  RM.phase = 'out'; roomDoor(); await sleepMs(1800);
+  if (CAR.place === 'room' && RM.phase === 'out') roomLeave('ice');
 }
 function roomHide() { for (const o of ROOMP) o.p.root.visible = false; if (CROF.p && !CROF.on) CROF.p.root.visible = false; if (CAR.place === 'room') CAR.place = null; }
 function roomLeave(where) {
@@ -5593,13 +5661,25 @@ function roomFrame(dt) {
     if (RM.talking) { ps.lookX = RM.crof.x; ps.lookZ = RM.crof.z; }
     if (pose || P.talkT > 0) posePlayer(P, pose ? 0.12 : dt); }
   if (RM.crof) { const P = RM.crof.p, ps = P.s; ps.lookX = HEADW.x; ps.lookZ = HEADW.z; posePlayer(P, dt); }
-  // the team talk: after a bit of chat (or straight away if it's gone quiet)
-  if (RM.kind !== 'post' && !RM.talked && !RM.talking && (RM.t > (RM.kind === 'train' ? 4 : 16) || (RM.t > 8 && MIC.sent === RM.lastSent && !MIC.busy))) roomTeamTalk();
-  if (MIC.sent !== RM.lastSent) { RM.lastSent = MIC.sent; RM.talkT = 0; }
-  RM.talkT += dt;
-  if (RM.kind === 'post' && RM.talkT > 9 && RM.said < 2 && !MIC.busy && nowS() > MIC.gate + 6) { RM.talkT = 0; RM.said++; const last = CAR.vc.last;
-    if (RM.said === 1 && RM.crof) roomLine(RM.crof.p, '(Back in the dressing room after the game against ' + (last ? last.opp + ', ' + last.gf + '-' + last.ga : 'them') + '. Say a few words to the whole team about the game: warm and honest, never harsh.)', last && last.gf > last.ga ? 'Brilliant, lads. Proper team performance.' : last && last.gf < last.ga ? 'Heads up. Plenty to build on. Same again next week, but better.' : 'Hard-earned point, lads. Good effort.');
-    else { const o = ROOMP[1 + Math.floor(Math.random() * Math.max(1, RM.n - 1))]; if (o) roomLine(o.p, '(In the dressing room after the game. Say something short to Drew, about the game or the pub.)', pick(['Pint?', 'Good shift out there, Drew.', 'My legs are done.'])); } }
+  // free chat until Crofty starts (when you ask, or after a good while once it goes quiet); the lads start conversations when it's quiet
+  if (MIC.sent !== RM.lastSent) { RM.lastSent = MIC.sent; RM.talkT = 0; RM.quietT = 0; }
+  RM.talkT += dt; if (!MIC.busy) RM.quietT += dt; else RM.quietT = 0;
+  if (RM.kind !== 'post' && RM.phase === 'chat' && ((RM.t > (RM.kind === 'train' ? 45 : 80) && RM.quietT > 7) || RM.t > (RM.kind === 'train' ? 90 : 170))) roomTeamTalk();
+  if (RM.phase === 'chat' && RM.quietT > (RM.said ? 22 : 9) && nowS() > MIC.gate + 4 && !MIC.busy) {
+    RM.quietT = 0; const kind = RM.kind, last = CAR.vc.last, f = fxNow();
+    if (kind === 'post' && RM.said === 0 && RM.crof) { RM.said++; roomLine(RM.crof.p, '(Back in the dressing room after the game against ' + (last ? last.opp + ', ' + last.gf + '-' + last.ga : 'them') + '. Say a few words to the whole team about the game: warm and honest, never harsh.)', last && last.gf > last.ga ? 'Brilliant, lads. Proper team performance.' : last && last.gf < last.ga ? 'Heads up. Plenty to build on.' : 'Hard-earned point, lads.'); }
+    else {
+      RM.said++; const near = ROOMP.slice(0, RM.n).filter(o => o.p.root.visible).sort((a, b) => Math.hypot(a.x - HEADW.x, a.z - HEADW.z) - Math.hypot(b.x - HEADW.x, b.z - HEADW.z)).slice(0, 6), o = near[Math.floor(Math.random() * near.length)];
+      const topics = kind === 'post' ? ['the game', 'a moment from the game', 'the pub', 'how knackered you are'] : ['the weekend', 'football', 'something on telly', 'the weather', 'tonight\'s game' + (f ? ' against ' + f.opp : ''), 'last week', 'sticks, tape or skates', 'the pub after'];
+      const tp = topics[RM.topic++ % topics.length];
+      if (o) roomLine(o.p, '(You\'re in the dressing room ' + (kind === 'post' ? 'after the game, taking your gear off' : 'getting your gear on') + '. Start a bit of casual chat with Drew about ' + tp + '. One or two short sentences, and ask him something.)', pick(kind === 'post' ? ['Pint?', 'Good shift out there, Drew.', 'My legs are done.'] : ['Big one tonight, Drew.', 'Feeling sharp?', 'Anyone got spare tape?', 'You watch the football at the weekend?']));
+    }
+  }
+  if (RM.phase === 'speech') {
+    RM.speechT += dt;
+    if (MIC.sent > RM.speechSent && !MIC.busy && MIC.last) { const h = (MIC.last.heard || '').trim(); if (h) roomReact(h); else RM.speechSent = MIC.sent; }
+    else if (RM.speechT > 15 && !MIC.busy) { RM.phase = 'react'; (async () => { if (RM.crof) await roomSay(RM.crof.p, 'Nothing? Fair enough. Right lads, out we go!'); RM.phase = 'out'; roomDoor(); await sleepMs(1500); if (CAR.place === 'room' && RM.phase === 'out') roomLeave('ice'); })(); }
+  }
   // the door
   const ray = h => panelRay(h, roomDoorM, 0.8, 0.5, 512, 320, RM.hits || []);
   const hv = { left: ray('left'), right: ray('right') }, hov = hv.right >= 0 ? hv.right : hv.left;
@@ -6334,7 +6414,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, roomReact, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
