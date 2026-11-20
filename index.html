@@ -541,7 +541,7 @@ const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
 const DEFAULT_LU = { '17': 'Nicky', '12': 'Robbins', '27': 'Will', '19': 'Crofty', '22': 'Mids', '14': 'Tony', '16': 'Iain M.', '10': 'Ewan O.', '44': 'Samy', '5': 'Aidan', '2': 'Callum', '8': 'Mickey', '3': 'Oliver K.', '6': 'Grant', G: 'Craig' };
-const DEF = { passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 5, rulesOn: true, scrimM: '5', voices: true };
+const DEF = { realP: true, passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 5, rulesOn: true, scrimM: '5', voices: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -2337,12 +2337,14 @@ function applyLook(P, key) {
   if (M.shoulders) M.shoulders.scale.x = 0.265 * L.build; if (M.pants) M.pants.scale.x = L.build;
   P.root.scale.setScalar(P.hgt); P.sm = null;
   setHelmet(P, P.helm);
+  avAttach(P, key);
 }
 function setHelmet(P, on) {
   const M = P.m, L = P.look2; if (!M.face || !L) return; P.helm = on;
   M.head.visible = on || !!P.hat; M.visor.visible = on && L.visor;
   P.hairTop.visible = !on && !P.hat && L.style !== 3; P.beard.visible = L.beard >= 2;
   if (P.full) P.fullVis = P.full.map(c => c.visible);
+  P.avMode = null;
 }
 // off the ice: no stick, bare hands, helmet off (or a hat), and a body that does what people do
 function offIce(P, mode) {
@@ -2404,6 +2406,7 @@ function faceFrame(P, dt, look, hy, hz) {
       yaw += L.sx; ep += L.sy;
     }
     for (const e of ey) { e.rotation.set(-ep - pitch * 0.3, yaw, 0, 'YXZ'); e.scale.y = bl / 1.1; }
+    const gz = P.gz || (P.gz = {}); gz.y = yaw; gz.p = -ep - pitch * 0.3; gz.bl = bl < 1;
   }
   if (P.mouth) {
     P.talkT = Math.max(0, P.talkT - dt);
@@ -2416,6 +2419,150 @@ function faceFrame(P, dt, look, hy, hz) {
   }
   return pitch;
 }
+// ---- Phase 13b: real people. Each teammate is one of the Microsoft Rocketbox avatars (MIT licence, github.com/microsoft/Microsoft-Rocketbox):
+// photo-textured, fully rigged, with face bones. The files sit in people/ next to this page and load the first time someone is needed; until then (or if
+// they can't load) the drawn figure stands in. The bones follow the same pose the drawn figure works out, so whatever moves him (skating, sitting, the
+// pint, nods, laughs, his eyes on whoever's talking) moves the real body too. Off the ice you see the whole person in his own clothes; on the ice his
+// real head sits inside the helmet on top of the kit.
+const AV = { base: 'people/', tmpl: {}, wait: {}, fail: {}, map: null, mapN: -1, on: true };
+const AV_M = ['m01', 'm02', 'm03', 'm04', 'm05', 'm06', 'm07', 'm08', 'm09', 'm10', 'm11', 'm12', 'm13', 'm14', 'm16', 'm17', 'm18', 'm20'], AV_F = ['f01', 'f08', 'f13', 'f14'];
+const AV_FEMALE = new Set(['Vicky', 'Steph', 'Manuela']);
+function avFile(name) {
+  const pool = AV_FEMALE.has(name) ? AV_F : AV_M, roster = RN.players || [];
+  if (!AV.map || AV.mapN !== roster.length) {                         // a different model for everyone on the roster, the same one every time
+    AV.map = {}; AV.mapN = roster.length; const used = { m: new Set(), f: new Set() };
+    const names = roster.map(p => p.n).concat(['Crofty']).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => hashStr(a) - hashStr(b));
+    for (const n of names) { const f = AV_FEMALE.has(n), pl = f ? AV_F : AV_M, u = f ? used.f : used.m; let k = hashStr(n) % pl.length; for (let t = 0; t < pl.length && u.has(k); t++) k = (k + 1) % pl.length; u.add(k); AV.map[n] = pl[k]; }
+  }
+  return AV.map[name] || pool[hashStr(String(name)) % pool.length];
+}
+function avLoad(id) {
+  if (AV.tmpl[id]) return Promise.resolve(AV.tmpl[id]); if (AV.fail[id]) return Promise.resolve(null);
+  return AV.wait[id] || (AV.wait[id] = fetch(AV.base + id + '.glb').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }).then(avParse)
+    .then(t => (AV.tmpl[id] = t)).catch(e => { AV.fail[id] = true; run.avFail = (run.avFail || 0) + 1; if (/HTTP 404/.test(e.message)) AV.dead = true; return null; }));   // (no people/ folder on the site: stop asking)
+}
+async function avParse(buf) {                                          // our own glb files: plain accessors, embedded jpeg/png images
+  const dv = new DataView(buf), jl = dv.getUint32(12, true), j = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jl))), bo = 20 + jl + 8;
+  const N = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 }, C = { 5126: Float32Array, 5125: Uint32Array, 5123: Uint16Array, 5121: Uint8Array };
+  const acc = i => { const a = j.accessors[i], v = j.bufferViews[a.bufferView], T = C[a.componentType], off = bo + (v.byteOffset || 0) + (a.byteOffset || 0); return new T(buf.slice(off, off + a.count * N[a.type] * T.BYTES_PER_ELEMENT)); };
+  const tex = await Promise.all((j.textures || []).map(async t => {
+    const im = j.images[t.source], v = j.bufferViews[im.bufferView], blob = new Blob([new Uint8Array(buf, bo + (v.byteOffset || 0), v.byteLength)], { type: im.mimeType });
+    const bmp = await createImageBitmap(blob, { imageOrientation: 'none', premultiplyAlpha: 'none' });
+    const tx = new THREE.Texture(bmp); tx.flipY = false; if ('colorSpace' in tx) tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 2; tx.needsUpdate = true; return tx;
+  }));
+  const mats = j.materials.map(m => { const pb = m.pbrMetallicRoughness || {}, map = pb.baseColorTexture ? tex[pb.baseColorTexture.index] : null, op = /_opacity$/.test(m.name);
+    return { kind: op ? 'opacity' : /_head$/.test(m.name) ? 'head' : 'body', has: !!map, mat: new THREE.MeshStandardMaterial({ map, roughness: op ? 0.9 : 0.72, metalness: 0, alphaTest: op ? 0.4 : 0, side: op ? THREE.DoubleSide : THREE.FrontSide }) }; });
+  const meshNode = j.nodes.findIndex(n => n.mesh !== undefined), skin = j.skins[j.nodes[meshNode].skin || 0];
+  const prims = j.meshes[j.nodes[meshNode].mesh].primitives.map(p => { const g = new THREE.BufferGeometry(), at = p.attributes;
+    g.setAttribute('position', new THREE.BufferAttribute(acc(at.POSITION), 3)); g.setAttribute('normal', new THREE.BufferAttribute(acc(at.NORMAL), 3)); g.setAttribute('uv', new THREE.BufferAttribute(acc(at.TEXCOORD_0), 2));
+    g.setAttribute('skinIndex', new THREE.BufferAttribute(acc(at.JOINTS_0), 4)); g.setAttribute('skinWeight', new THREE.BufferAttribute(acc(at.WEIGHTS_0), 4)); g.setIndex(new THREE.BufferAttribute(acc(p.indices), 1));
+    return { g, m: mats[p.material] }; });
+  const ibm = acc(skin.inverseBindMatrices), inv = skin.joints.map((_, k) => new THREE.Matrix4().fromArray(ibm, k * 16));
+  let top = 0, wide = 0; for (const p of prims) if (p.m.kind === 'head') { const a = p.g.attributes.position.array; for (let i = 0; i < a.length; i += 3) { if (a[i + 2] > top) top = a[i + 2]; if (a[i + 2] > 1.6 && Math.abs(a[i]) > wide) wide = Math.abs(a[i]); } }   // (the file is z-up)
+  return { j, meshNode, skin, prims, inv, top, wide };
+}
+const AVB = { pel: 'Bip01 Pelvis', sp: 'Bip01 Spine', neck: 'Bip01 Neck', head: 'Bip01 Head', jaw: 'Bip01 MJaw', eL: 'Bip01 LEye', eR: 'Bip01 REye', lidL: 'Bip01 LEyeBlinkTop', lidR: 'Bip01 REyeBlinkTop',
+  upL: 'Bip01 L UpperArm', foL: 'Bip01 L Forearm', haL: 'Bip01 L Hand', upR: 'Bip01 R UpperArm', foR: 'Bip01 R Forearm', haR: 'Bip01 R Hand',
+  fiR: 'Bip01 R Finger2', thL: 'Bip01 L Thigh', caL: 'Bip01 L Calf', ftL: 'Bip01 L Foot', thR: 'Bip01 R Thigh', caR: 'Bip01 R Calf', ftR: 'Bip01 R Foot' };
+function avMake(t) {
+  const j = t.j, jointSet = new Set(t.skin.joints), root = new THREE.Group();
+  const objs = j.nodes.map((n, i) => { const o = jointSet.has(i) ? new THREE.Bone() : new THREE.Object3D(); o.name = n.name || ''; if (n.translation) o.position.fromArray(n.translation); if (n.rotation) o.quaternion.fromArray(n.rotation); if (n.scale) o.scale.fromArray(n.scale); return o; });
+  j.nodes.forEach((n, i) => (n.children || []).forEach(c => objs[i].add(objs[c])));
+  for (const r of j.scenes[j.scene || 0].nodes) root.add(objs[r]);
+  root.updateMatrixWorld(true);
+  const skel = new THREE.Skeleton(t.skin.joints.map(k => objs[k]), t.inv), meshes = {}, mn = objs[t.meshNode];
+  for (const p of t.prims) { if (!p.m.has) continue; const m = new THREE.SkinnedMesh(p.g, p.m.mat); m.frustumCulled = false; root.add(m); m.updateMatrixWorld(true); m.bind(skel, new THREE.Matrix4()); meshes[p.m.kind] = m; }   // (glTF skinning ignores the mesh node's own transform)
+  const B = {}; for (const k in AVB) B[k] = objs.find(o => o.name === AVB[k]) || null;
+  // the rest pose, in the avatar's own space: local turns, world turns, and the directions each limb runs
+  const R = { q: {}, wq: {}, dir: {} }, wv = new THREE.Vector3(), wv2 = new THREE.Vector3();
+  for (const k in B) if (B[k]) { R.q[k] = B[k].quaternion.clone(); R.wq[k] = B[k].getWorldQuaternion(new THREE.Quaternion()); }
+  const along = (k, to) => { if (!B[k] || !B[to]) return; B[to].getWorldPosition(wv); R.dir[k] = B[k].worldToLocal(wv.clone()).normalize(); };
+  along('sp', 'neck'); along('upL', 'foL'); along('foL', 'haL'); along('upR', 'foR'); along('foR', 'haR'); along('thL', 'caL'); along('caL', 'ftL'); along('thR', 'caR'); along('caR', 'ftR');
+  B.eL.getWorldPosition(wv); B.eR.getWorldPosition(wv2); const eyes = wv.clone().add(wv2).multiplyScalar(0.5);
+  R.anchor = B.head.worldToLocal(new THREE.Vector3(0, eyes.y - 0.018, eyes.z - 0.085));    // the middle of his skull, in head space
+  R.footY = B.ftL.getWorldPosition(wv).y;
+  R.helm = clamp(t.wide / 0.105, 1, 1.16); R.helmUp = Math.max(0, t.top - (eyes.y - 0.018) + 0.008 - 0.012 - 0.113 * R.helm);   // the helmet sits up at his brow, wider only for big hair
+  return { root, B, R, skel, meshes };
+}
+// a teammate gets his avatar: loads it if needed and swaps it in when it arrives
+function avAttach(P, key) {
+  if (!AV.on || AV.dead || st.realP === false || location.protocol === 'file:' || P.goalie || !P.m.face) return;
+  const id = avFile(String(key).replace(/^(ravens|visitors)#/, m => m)); if (P.avId === id) return; P.avId = id;
+  avLoad(id).then(t => {
+    if (!t || P.avId !== id) return;
+    if (P.av) P.root.remove(P.av.root);
+    const A = P.av = avMake(t); P.root.add(A.root); A.root.visible = !P.far; P.avMode = null; P.sm = null;
+  });
+}
+// what shows: the whole person off the ice, only his head (inside the helmet) on it
+function avSetMode(P, mode) {
+  const A = P.av, M = P.m; P.avMode = mode;
+  const full = mode === 'full';
+  if (A.meshes.body) A.meshes.body.visible = full; if (A.meshes.opacity) A.meshes.opacity.visible = full; if (A.meshes.head) A.meshes.head.visible = true;
+  if (full) { for (const c of P.full) c.visible = false; }
+  else { for (let i = 0; i < P.full.length; i++) P.full[i].visible = P.fullVis[i]; if (M.face) M.face.visible = false; if (M.neck) M.neck.visible = false; const k = A.R.helm; P.helmUp = A.R.helmUp; if (M.head) M.head.scale.set(k, 0.95 * k, 1.1 * k); if (M.visor) M.visor.scale.set(0.93 * k, 1, 0.98 * k); P.sm = null; }
+  P.fullVis = P.full.map(c => c.visible);
+}
+const _aq = new THREE.Quaternion(), _aq2 = new THREE.Quaternion(), _aq3 = new THREE.Quaternion(), _rq = new THREE.Quaternion(), _av = new THREE.Vector3(), _av2 = new THREE.Vector3(), _ae = new THREE.Euler();
+const _tq1 = new THREE.Quaternion(), _tq2 = new THREE.Quaternion();
+function avTurn(b, wq, k) {                                            // give bone b this world turn (eased by k)
+  b.parent.getWorldQuaternion(_tq1); _tq2.copy(_tq1).invert().multiply(wq);
+  if (k >= 1) b.quaternion.copy(_tq2); else b.quaternion.slerp(_tq2, k);
+}
+function avAim(A, k, dirRoot, ease) {                                  // point limb k along a direction in his own (root) frame
+  const b = A.B[k], rd = A.R.dir[k]; if (!b || !rd) return;
+  b.quaternion.copy(A.R.q[k]); b.parent.getWorldQuaternion(_aq2); _aq.copy(_aq2).multiply(b.quaternion);
+  _av.copy(rd).applyQuaternion(_aq); _av2.copy(dirRoot).applyQuaternion(_rq).normalize();
+  _aq3.setFromUnitVectors(_av.normalize(), _av2).multiply(_aq);
+  if (ease == null || ease >= 1) avTurn(b, _aq3, 1); else { const prev = b.userData.pq || (b.userData.pq = b.quaternion.clone()); b.quaternion.copy(prev); avTurn(b, _aq3, ease); prev.copy(b.quaternion); }
+}
+function avPose(P, dt) {
+  const A = P.av, jp = P.jp; if (!A || !jp) return;
+  if (AV.noPose) { const want = P.off ? 'full' : 'head'; if (P.avMode !== want) avSetMode(P, want); return; }
+  const want = P.off ? 'full' : 'head'; if (P.avMode !== want) avSetMode(P, want);
+  const B = A.B, R = A.R, e = 1 - Math.exp(-Math.min(dt, 0.12) / 0.07);
+  P.root.updateWorldMatrix(true, false); P.root.getWorldQuaternion(_rq);
+  // hips and spine: leaning as he leans
+  _ae.set(jp.lean * 0.4, 0, 0); _aq.setFromEuler(_ae); avTurn(B.pel, _aq.premultiply(_rq).multiply(R.wq.pel), 1);
+  avAim(A, 'sp', _av.set(0, Math.cos(jp.lean), Math.sin(jp.lean)).clone(), e);
+  // head: where he looks, nods and laughs; the neck takes some of it
+  const hp = -jp.lean * 0.3 + jp.hp;
+  _ae.set(hp, P.look, 0, 'YXZ'); const hq = new THREE.Quaternion().setFromEuler(_ae);
+  if (B.neck) { _aq.copy(hq).premultiply(_rq).multiply(R.wq.neck); B.neck.parent.getWorldQuaternion(_aq2); _aq2.multiply(R.q.neck); _aq2.slerp(_aq, 0.4); avTurn(B.neck, _aq2, 1); }
+  avTurn(B.head, _aq.copy(hq).premultiply(_rq).multiply(R.wq.head), 1);
+  // arms and legs: along the drawn figure's limbs
+  for (const s of ['L', 'R']) {
+    const J = jp[s];
+    avAim(A, 'up' + s, _av2.subVectors(J.el, J.sh).clone(), e); avAim(A, 'fo' + s, _av2.subVectors(J.ha, J.el).clone(), e);
+    avAim(A, 'th' + s, _av2.subVectors(J.kn, J.hip).clone(), e); avAim(A, 'ca' + s, _av2.subVectors(J.an, J.kn).clone(), e);
+    const ft = B['ft' + s]; if (ft) avTurn(ft, _aq.copy(_rq).multiply(R.wq['ft' + s]), 1);   // feet flat on the floor
+  }
+  // the face: eyes, blinks and the jaw with his voice
+  const g = P.gz;
+  if (g) {
+    for (const k of ['eL', 'eR']) if (B[k]) { _ae.set(g.p, g.y, 0, 'YXZ'); _aq.setFromEuler(_ae); avTurn(B[k], _aq.premultiply(hq).premultiply(_rq).multiply(R.wq[k]), 1); }
+    for (const k of ['lidL', 'lidR']) if (B[k]) { B[k].quaternion.copy(R.q[k]); B[k].position.copy(B[k].userData.p0 || (B[k].userData.p0 = B[k].position.clone())); if (g.bl) { B[k].getWorldPosition(_av); P.root.worldToLocal(_av); _av.y -= 0.0075; P.root.localToWorld(_av); B[k].parent.worldToLocal(_av); B[k].position.copy(_av); } }
+  }
+  if (B.jaw) { _ae.set(0.32 * (P.mOpen || 0), 0, 0); _aq.setFromEuler(_ae); avTurn(B.jaw, _aq.premultiply(hq).premultiply(_rq).multiply(R.wq.jaw), 1); }
+  // stand him on the floor (or the ice, in skates), or on the ice put his head where the drawn head is
+  A.root.updateMatrixWorld(true);
+  if (P.avMode === 'full') {
+    const yl = P.root.worldToLocal(B.ftL.getWorldPosition(_av)).y, yr = P.root.worldToLocal(B.ftR.getWorldPosition(_av2)).y;
+    A.root.position.y += R.footY - Math.min(yl, yr);
+  } else {
+    const an = P.root.worldToLocal(B.head.localToWorld(_av.copy(R.anchor)));
+    A.root.position.x += jp.hx - an.x; A.root.position.y += jp.hy - an.y; A.root.position.z += jp.hz - an.z;
+  }
+  A.root.updateMatrixWorld(true);
+  if (P.pint && B.haR) {                                              // the pint in his palm, fingers round it
+    if (!A.curl) { A.curl = []; B.haR.traverse(o => { if (/R Finger[1-4]/.test(o.name)) A.curl.push([o, o.quaternion.clone()]); else if (/R Finger0/.test(o.name)) A.curl.push([o, o.quaternion.clone(), 1]); }); }
+    for (const [o, q0, th] of A.curl) { _ae.set(0, 0, th ? 0.35 : 0.95); o.quaternion.copy(q0).multiply(_aq.setFromEuler(_ae)); }
+    B.haR.updateMatrixWorld(true);
+    const h = P.root.worldToLocal(B.haR.getWorldPosition(_av)), f = B.fiR ? P.root.worldToLocal(B.fiR.getWorldPosition(_av2)) : h;
+    P.pint.position.set(h.x + (f.x - h.x) * 0.7, h.y + (f.y - h.y) * 0.7 - 0.01, h.z + (f.z - h.z) * 0.7 + 0.02);
+  }
+}
+
 // off-ice hands: on the knees in the room, one on the table and a pint in the other in the pub, on the boards for Crofty; the free hand talks
 const _hl = new THREE.Vector3(), _hr = new THREE.Vector3();
 function offArms(P, dt, by, cl, sl, hipY, hy, hz) {
@@ -2429,6 +2576,7 @@ function offArms(P, dt, by, cl, sl, hipY, hy, hz) {
   if (L.drink > 0) { const p = L.drink > 1.9 ? (2.4 - L.drink) / 0.5 : L.drink < 0.5 ? L.drink / 0.5 : 1, k = sstep(clamp(p, 0, 1)); _hr.lerp(_T2.set(-0.03, hy - 0.1, hz + 0.1), k); }
   for (const [sh, hand, nm, sx] of [[_shL, _hl, 'L', 1], [_shR, _hr, 'R', -1]]) {
     ik2(sh, hand, 0.3, 0.29, _P2.set(sx * 1, -0.9, -0.3), _J, _E);
+    if (P.jp) { P.jp[nm].sh.copy(sh); P.jp[nm].el.copy(_J); P.jp[nm].ha.copy(_E); }
     segTo(M['up' + nm], sh, _J, 0.32); segTo(M['fo' + nm], _J, _E, 0.28);
     M['gl' + nm].position.copy(_E); M['gl' + nm].quaternion.copy(M['fo' + nm].quaternion);
   }
@@ -2484,7 +2632,7 @@ function makePlayer(team, num, shoots, goalie) {
 }
 const LODG = { torso: new THREE.CapsuleGeometry(0.2, 0.32, 3, 8), pants: new THREE.BoxGeometry(0.38, 0.26, 0.27), legs: new THREE.BoxGeometry(0.32, 0.78, 0.2), head: new THREE.SphereGeometry(0.13, 10, 8), stick: new THREE.BoxGeometry(0.03, 0.03, 1.45) };
 function setFar(P, far) {
-  if (!P.lod || P.far === far) return; P.far = far; P.lod.visible = far;
+  if (!P.lod || P.far === far) return; P.far = far; P.lod.visible = far; if (P.av) P.av.root.visible = !far;
   P.full.forEach((c, i) => { c.visible = far ? false : P.fullVis[i]; });
 }
 const _A = new THREE.Vector3(), _B = new THREE.Vector3(), _J = new THREE.Vector3(), _E = new THREE.Vector3(), _T2 = new THREE.Vector3(), _P2 = new THREE.Vector3(), _W2 = new THREE.Vector3(), _U2 = new THREE.Vector3();
@@ -2495,6 +2643,7 @@ function posePlayer(P, dt) {
   if (P.far) { const s = P.s; P.root.position.set(s.x, 0, s.z); P.root.rotation.set(0, Math.atan2(s.fx, s.fz), 0); P.sm = null; return; }   // far away: just place the stand-in
   const lean0 = P.root.rotation.z;
   if (P.goalie) poseGoalie(P, dt); else poseSkater2(P, dt);
+  if (P.av) avPose(P, dt);
   if (P.leanS == null) P.leanS = P.root.rotation.z; P.leanS += (P.root.rotation.z - P.leanS) * (1 - Math.exp(-dt / 0.18)); P.root.rotation.z = P.leanS;
   smoothPose(P, dt);
 }
@@ -2515,8 +2664,9 @@ function smoothPose(P, dt) {
     }
   }
 }
+const avJP = () => { const v = () => new THREE.Vector3(); return { L: { hip: v(), kn: v(), an: v(), sh: v(), el: v(), ha: v() }, R: { hip: v(), kn: v(), an: v(), sh: v(), el: v(), ha: v() }, lean: 0, hp: 0, hx: 0, hy: 0, hz: 0 }; };
 function poseSkater2(P, dt) {
-  const s = P.s, M = P.m, sd = P.side, k = clamp(s.speed / 7.5, 0, 1);
+  const s = P.s, M = P.m, sd = P.side, k = clamp(s.speed / 7.5, 0, 1), jp = P.jp || (P.jp = avJP());
   P.root.position.set(s.x, 0, s.z); P.root.rotation.set(0, Math.atan2(s.fx, s.fz), 0);
   P.root.rotation.z = clamp(-s.turn * 0.09, -0.3, 0.3) * k;                                        // lean into turns
   // legs: a push out and back with each stride, the other skate gliding under him; standing still both skates sit under the hips
@@ -2529,7 +2679,7 @@ function poseSkater2(P, dt) {
     if (P.seat) { fx = sx * 0.19; fz = 0.44; fy = 0.12; }
     else if (t < 0.55) { const p = t / 0.55; fx = sx * (0.13 + 0.3 * p * k); fz = 0.12 - 0.5 * p * k; }
     else { const p = (t - 0.55) / 0.45; fx = sx * (0.13 + 0.3 * k * (1 - p) * (1 - p)); fz = 0.12 - 0.5 * k * (1 - p); fy += 0.08 * Math.sin(Math.PI * p) * k; }
-    _T2.set(fx, fy, fz); ik2(hip, _T2, 0.43, 0.43, _P2.set(sx * 0.2, 0, 1), _J, _E);
+    _T2.set(fx, fy, fz); ik2(hip, _T2, 0.43, 0.43, _P2.set(sx * 0.2, 0, 1), _J, _E); jp[nm].hip.copy(hip); jp[nm].kn.copy(_J); jp[nm].an.copy(_E);
     segTo(M['th' + nm], hip, _J, 0.42); segTo(M['sh' + nm], _J, _E, 0.43);
     M['bo' + nm].position.set(_E.x, 0.075, _E.z + 0.04); M['bo' + nm].rotation.set(0, sx * 0.25 * k * (t < 0.55 ? 1 : 0.3), 0);
     M['bl' + nm].position.set(_E.x, 0.018, _E.z + 0.04); M['bl' + nm].rotation.copy(M['bo' + nm].rotation);
@@ -2546,8 +2696,8 @@ function poseSkater2(P, dt) {
   let look = 0; if (s.lookX != null) { const l = toLocal(P, s.lookX, s.lookZ, {}); look = clamp(Math.atan2(l.x, l.z), -1, 1); }
   P.look += (look - P.look) * (1 - Math.exp(-dt * 6));
   if (P.off) lifeTick(P, dt);
-  const hp = faceFrame(P, dt, look, hy, hz);
-  M.head.position.set(hx, hy + 0.012, hz - 0.004); M.head.rotation.set(-lean * 0.6 - 0.38 + hp, P.look, 0, 'YXZ');
+  const hp = faceFrame(P, dt, look, hy, hz); jp.lean = lean; jp.hp = hp; jp.hx = hx; jp.hy = hy; jp.hz = hz;
+  M.head.position.set(hx, hy + 0.012 + (P.helmUp || 0), hz - 0.004); M.head.rotation.set(-lean * 0.6 - 0.38 + hp, P.look, 0, 'YXZ');
   M.face.position.set(hx, hy, hz); M.face.rotation.set(-lean * 0.6 + hp, P.look, 0, 'YXZ');
   M.torso.scale.x = (P.build || 1) * (1 + Math.sin(pClock * (1.6 + 0.4 * k) + P.ph) * 0.015); M.visor.position.set(hx, hy + 0.012, hz + 0.004); M.visor.rotation.set(-lean * 0.6 + hp, P.look, 0, 'YXZ');
   if (P.off) { offArms(P, dt, by, cl, sl, hipY, hy, hz); return; }
@@ -2572,6 +2722,7 @@ function poseSkater2(P, dt) {
   const lowSh = sd > 0 ? _shL : _shR, topSh = sd > 0 ? _shR : _shL, lowN = sd > 0 ? 'L' : 'R', topN = sd > 0 ? 'R' : 'L';
   for (const [sh, hand, nm, sx] of [[lowSh, lowH, lowN, sd], [topSh, top, topN, -sd]]) {
     ik2(sh, hand, 0.3, 0.29, _P2.set(sx * 1, -0.8, -0.4), _J, _E);
+    if (P.jp) { P.jp[nm].sh.copy(sh); P.jp[nm].el.copy(_J); P.jp[nm].ha.copy(_E); }
     segTo(M['up' + nm], sh, _J, 0.32); segTo(M['fo' + nm], _J, _E, 0.28);
     M['gl' + nm].position.copy(_E); M['gl' + nm].quaternion.copy(M['fo' + nm].quaternion);
   }
@@ -6397,7 +6548,8 @@ function menuRows(tab) {
     { l: 'Keep puck (right trigger)', v: () => KEEP_NAMES[st.keepM], s: d => setSetting('keepM', ['hold', 'toggle', 'off'][cyc(3, ['hold', 'toggle', 'off'].indexOf(st.keepM), d)]) },
     { l: 'Blade to ice', v: () => ICE_NAMES[st.iceP], s: d => setSetting('iceP', cyc(4, st.iceP, d)) },
     { l: 'Aim help', v: () => AIM_NAMES[st.aimP], s: d => setSetting('aimP', cyc(3, st.aimP, d)) },
-    { l: 'Puck buzz', v: () => HAP_NAMES[st.hapP], s: d => setSetting('hapP', cyc(4, st.hapP, d)) }
+    { l: 'Puck buzz', v: () => HAP_NAMES[st.hapP], s: d => setSetting('hapP', cyc(4, st.hapP, d)) },
+    { l: 'Real people (photo models)', v: () => st.realP !== false ? 'On' : 'Off', s: () => { setSetting('realP', st.realP === false); toast('Real people ' + (st.realP !== false ? 'on' : 'off') + ': reload the page for it to take effect', 2.5); } }
   ];
   if (tab === 4) return [
     ...(CAR.mode === 'career' ? [{ l: 'Career', v: () => CAR.step ? 'Stop and go back to your phone' : 'Back to your phone', s: () => { closeMenu(); carAbort(); carHub(); } }] : []),
@@ -6844,7 +6996,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, setFar, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
