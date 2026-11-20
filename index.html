@@ -2260,21 +2260,179 @@ function ik2(A, T, l1, l2, pole, J, E) {
 const STICK_BP = {};
 const SKINS = [0xf1c6a5, 0xe8b896, 0xd9a888, 0xc68f6a, 0xa86f4c, 0x7d4f33], HAIRS = [0x2b1d14, 0x4a3020, 0x7a4a24, 0xc89a5a, 0x151515, 0x8f8f8f, 0xa0522d];
 const hashStr = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
-function faceTex(seed, skin, hair) {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d'), r = n => ((seed >>> n) & 255) / 255;
-  const hex = n => '#' + n.toString(16).padStart(6, '0'), cx = 64;
-  g.fillStyle = hex(skin); g.fillRect(0, 0, 256, 128);
-  const sh = g.createRadialGradient(cx, 64, 6, cx, 64, 70); sh.addColorStop(0, 'rgba(255,255,255,0.10)'); sh.addColorStop(1, 'rgba(0,0,0,0.22)'); g.fillStyle = sh; g.fillRect(0, 0, 256, 128);
-  if (r(3) > 0.55) { g.fillStyle = hex(hair); g.globalAlpha = 0.28 + r(11) * 0.4; g.beginPath(); g.ellipse(cx, 92, 30, 20, 0, 0, Math.PI * 2); g.fill(); g.fillRect(cx - 34, 74, 68, 14); g.globalAlpha = 1; }   // a beard or stubble
-  const ey = 54, ex = 13 + r(5) * 3, eyeC = ['#3b2a1a', '#4a6a8a', '#5a6b3a', '#2a2a2a'][(seed >>> 8) % 4];
-  for (const sx of [-1, 1]) {
-    g.fillStyle = '#f4f1ea'; g.beginPath(); g.ellipse(cx + sx * ex, ey, 5.5, 3.2, 0, 0, Math.PI * 2); g.fill();
-    g.fillStyle = eyeC; g.beginPath(); g.arc(cx + sx * ex, ey, 2.6, 0, Math.PI * 2); g.fill(); g.fillStyle = '#000'; g.beginPath(); g.arc(cx + sx * ex, ey, 1.2, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = hex(hair); g.lineWidth = 2.4 + r(13) * 1.6; g.beginPath(); g.moveTo(cx + sx * (ex - 6), ey - 7 - r(7) * 2); g.quadraticCurveTo(cx + sx * ex, ey - 10, cx + sx * (ex + 7), ey - 6); g.stroke();
-  }
-  g.strokeStyle = 'rgba(0,0,0,0.25)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(cx - 1, ey + 2); g.lineTo(cx - 3, ey + 15); g.lineTo(cx + 3, ey + 16); g.stroke();   // nose
-  g.fillStyle = 'rgba(150,60,60,0.35)'; g.beginPath(); g.ellipse(cx, ey + 26, 8, 2.4, 0, 0, Math.PI * 2); g.fill();                                          // lips
+// ---- Phase 13: people who look and act like people. Every player's look comes from his name, so he's the same man on the ice, in the room and in the
+// pub: skin, hair colour and style, a beard or not, eye colour, height and build. Faces have real eyes that look at whoever is talking and blink, a
+// mouth that moves with the loudness of his actual voice, and off the ice (the room, the pub, Crofty on the bench) the stick goes away: hands on knees,
+// a pint on the table, gestures while talking, nods and laughs when someone finishes a line, a sip now and then.
+const EYEC = ['#3b2a1a', '#4a6a8a', '#5a6b3a', '#2a2a2a', '#6b4a2a'];
+function lookFor(key) {
+  const h = hashStr(String(key)), r = n => (Math.imul(h ^ Math.imul(n + 1, 2654435761), 2246822519) >>> 0) / 4294967296;
+  const style = [0, 0, 0, 1, 1, 2, 2, 4, 5, 3][Math.floor(r(1) * 10)];
+  const hr = r(2), hair = hr < 0.3 ? 0x2b1d14 : hr < 0.55 ? 0x4a3020 : hr < 0.68 ? 0x7a4a24 : hr < 0.76 ? 0xc89a5a : hr < 0.84 ? 0x151515 : hr < 0.92 ? 0x8f8f8f : 0xa0522d;
+  const sr = r(3), skin = sr < 0.3 ? SKINS[0] : sr < 0.58 ? SKINS[1] : sr < 0.78 ? SKINS[2] : sr < 0.9 ? SKINS[3] : sr < 0.96 ? SKINS[4] : SKINS[5];
+  const br = r(4), beard = br < 0.5 ? 0 : br < 0.72 ? 1 : br < 0.92 ? 2 : 3;   // none, stubble, full, goatee
+  return { seed: h, skin, hair, style, beard, eye: Math.floor(r(5) * EYEC.length), brow: 2.4 + r(6) * 2, hgt: 0.95 + r(7) * 0.1, build: 0.94 + r(8) * 0.16, visor: r(9) < 0.6, freck: r(10) < 0.12 };
+}
+const hexC = n => '#' + n.toString(16).padStart(6, '0');
+function faceTex(L) {                                                   // skin, shading, brows, nose, lips, stubble (the eyes are real, not painted)
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d'), cx = 64, ey = 56;
+  g.fillStyle = hexC(L.skin); g.fillRect(0, 0, 256, 128);
+  const sh = g.createRadialGradient(cx, 66, 8, cx, 66, 74); sh.addColorStop(0, 'rgba(255,255,255,0.10)'); sh.addColorStop(1, 'rgba(0,0,0,0.24)'); g.fillStyle = sh; g.fillRect(0, 0, 256, 128);
+  for (const sx of [-1, 1]) { const so = g.createRadialGradient(cx + sx * 14, ey, 2, cx + sx * 14, ey, 10); so.addColorStop(0, 'rgba(60,30,20,0.28)'); so.addColorStop(1, 'rgba(60,30,20,0)'); g.fillStyle = so; g.fillRect(cx + sx * 14 - 11, ey - 11, 22, 22); }   // eye sockets
+  for (const sx of [-1, 1]) { const ck = g.createRadialGradient(cx + sx * 20, ey + 17, 1, cx + sx * 20, ey + 17, 11); ck.addColorStop(0, 'rgba(200,80,70,0.16)'); ck.addColorStop(1, 'rgba(200,80,70,0)'); g.fillStyle = ck; g.fillRect(cx + sx * 20 - 12, ey + 5, 24, 24); }   // cheeks
+  if (L.beard) { g.fillStyle = hexC(L.hair); g.globalAlpha = L.beard === 1 ? 0.32 : 0.5; g.beginPath(); g.ellipse(cx, ey + 37, 31, 22, 0, 0, Math.PI * 2); g.fill(); g.fillRect(cx - 35, ey + 18, 70, 14); g.globalAlpha = 1; }
+  if (L.beard >= 2) { g.fillStyle = hexC(L.hair); g.globalAlpha = 0.75; g.beginPath(); g.ellipse(cx, ey + 24, 10, 2.6, 0, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; }   // moustache
+  g.strokeStyle = hexC(L.hair); g.lineCap = 'round';
+  for (const sx of [-1, 1]) { g.lineWidth = L.brow; g.beginPath(); g.moveTo(cx + sx * 7, ey - 8); g.quadraticCurveTo(cx + sx * 14, ey - 12, cx + sx * 21, ey - 8); g.stroke(); }
+  g.strokeStyle = 'rgba(70,35,25,0.32)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(cx - 1.5, ey + 2); g.lineTo(cx - 3.5, ey + 15); g.quadraticCurveTo(cx, ey + 18, cx + 3.5, ey + 15); g.stroke();   // nose
+  g.fillStyle = 'rgba(150,60,60,0.42)'; g.beginPath(); g.ellipse(cx, ey + 28.5, 8.5, 2.6, 0, 0, Math.PI * 2); g.fill();          // lips
+  if (L.freck) { g.fillStyle = 'rgba(140,80,50,0.35)'; for (let i = 0; i < 26; i++) { const a = (L.seed >>> (i % 24)) & 31; g.fillRect(cx - 24 + (a + i * 7) % 48, ey + 6 + (i * 5) % 12, 1.4, 1.4); } }
   const t = new THREE.CanvasTexture(c); if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const _eyeM = {};
+function eyeMat(i) {
+  if (_eyeM[i]) return _eyeM[i];
+  const c = document.createElement('canvas'); c.width = 64; c.height = 32; const g = c.getContext('2d');
+  g.fillStyle = '#ece6dc'; g.fillRect(0, 0, 64, 32); g.fillStyle = EYEC[i]; g.beginPath(); g.ellipse(16, 16, 5.6, 5.8, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#080808'; g.beginPath(); g.ellipse(16, 16, 2, 2.1, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect(17, 13.5, 1.3, 1.3);
+  const t = new THREE.CanvasTexture(c); if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace;
+  return (_eyeM[i] = new THREE.MeshStandardMaterial({ map: t, roughness: 0.25 }));
+}
+const capG = (r, th, w, h) => new THREE.SphereGeometry(r, w || 18, h || 9, 0, Math.PI * 2, 0, th);
+const PG3 = {
+  eye: new THREE.SphereGeometry(0.0118, 12, 8),
+  lids: (() => {                                                        // both upper eyelids in one mesh
+    const parts = [-1, 1].map(sx => { const g = new THREE.SphereGeometry(0.0124, 10, 4, 0, Math.PI * 2, 0, Math.PI * 0.34); g.rotateX(0.1); g.translate(sx * 0.034, 0.018, 0.0835); return g.toNonIndexed(); });
+    const out = new THREE.BufferGeometry(); for (const k of ['position', 'normal', 'uv']) { const a = parts[0].attributes[k], b = parts[1].attributes[k], arr = new Float32Array(a.array.length + b.array.length); arr.set(a.array); arr.set(b.array, a.array.length); out.setAttribute(k, new THREE.BufferAttribute(arr, a.itemSize)); }
+    return out;
+  })(),
+  hair: [capG(0.109, Math.PI * 0.45), capG(0.105, Math.PI * 0.44), capG(0.115, Math.PI * 0.52), null, capG(0.118, Math.PI * 0.47, 12, 6), capG(0.108, Math.PI * 0.32)],   // short, buzz, longer, bald, curly, receding
+  beard: new THREE.SphereGeometry(0.105, 18, 7, Math.PI / 2 - 1.3, 2.6, Math.PI * 0.6, Math.PI * 0.33),
+  goatee: new THREE.SphereGeometry(0.105, 10, 5, Math.PI / 2 - 0.42, 0.84, Math.PI * 0.68, Math.PI * 0.25),
+  pint: new THREE.CylinderGeometry(0.041, 0.033, 0.15, 12), foam: new THREE.CylinderGeometry(0.042, 0.041, 0.02, 12)
+};
+const HAIR_TILT = [-0.35, -0.3, -0.45, 0, -0.35, -0.75];
+const pintM = new THREE.MeshStandardMaterial({ color: 0x2a1408, roughness: 0.15, transparent: true, opacity: 0.88 }), foamM = new THREE.MeshStandardMaterial({ color: 0xefe6d0, roughness: 0.9 });
+// the parts of a face that come on top of the skull: two eyes, the hair on top (with the helmet off) and a beard
+function headParts(P) {
+  const M = P.m, f = M.face; if (!f) return;
+  P.eyes = [-1, 1].map(sx => { const e = new THREE.Mesh(PG3.eye, eyeMat(0)); e.position.set(sx * 0.034, 0.018, 0.0835); e.scale.set(1 / 0.9, 1 / 1.1, 1 / 0.98); f.add(e); return e; });
+  P.lids = new THREE.Mesh(PG3.lids, plMat(0xe8b896, 0.8)); P.lids.scale.set(1 / 0.9, 1 / 1.1, 1 / 0.98); f.add(P.lids);
+  P.hairTop = new THREE.Mesh(PG3.hair[0], plMat(0x2b1d14, 0.95)); P.hairTop.position.set(0, 0.004, -0.004); P.hairTop.visible = false; f.add(P.hairTop);
+  P.beard = new THREE.Mesh(PG3.beard, plMat(0x2b1d14, 0.95)); P.beard.visible = false; f.add(P.beard);
+  P.ears = f.children.filter(c => c.geometry === PG2.ear); P.hairBack = f.children.find(c => c.geometry === PG2.hair);
+  if (P.mouth) P.mouth.position.set(0, -0.052, 0.097);
+  P.helm = true;
+}
+function applyLook(P, key) {
+  if (P.goalie || !P.m.face || P.lookKey === key) return;
+  const L = P.look2 = lookFor(key), M = P.m; P.lookKey = key; P.seed = L.seed; P.skinC = L.skin; P.hairC = L.hair; P.hgt = L.hgt; P.build = L.build;
+  const fm = M.face.material; if (fm.map) fm.map.dispose(); fm.map = faceTex(L); fm.needsUpdate = true;
+  const skinM = plMat(L.skin, 0.8), hairM = plMat(L.hair, 0.95);
+  if (M.neck) M.neck.material = skinM; for (const e of P.ears || []) e.material = skinM; if (P.lids) P.lids.material = plMat(((((L.skin >> 16) & 255) * 0.84) << 16) | ((((L.skin >> 8) & 255) * 0.8) << 8) | ((L.skin & 255) * 0.8), 0.8); if (P.hairBack) P.hairBack.material = hairM;
+  if (P.bare) for (const k of ['glL', 'glR']) if (M[k]) M[k].material = skinM;
+  const hg = PG3.hair[L.style]; if (hg) { P.hairTop.geometry = hg; P.hairTop.rotation.x = HAIR_TILT[L.style]; } P.hairTop.material = hairM;
+  P.beard.geometry = L.beard === 3 ? PG3.goatee : PG3.beard; P.beard.material = hairM;
+  for (const e of P.eyes) e.material = eyeMat(L.eye);
+  if (M.shoulders) M.shoulders.scale.x = 0.265 * L.build; if (M.pants) M.pants.scale.x = L.build;
+  P.root.scale.setScalar(P.hgt); P.sm = null;
+  setHelmet(P, P.helm);
+}
+function setHelmet(P, on) {
+  const M = P.m, L = P.look2; if (!M.face || !L) return; P.helm = on;
+  M.head.visible = on || !!P.hat; M.visor.visible = on && L.visor;
+  P.hairTop.visible = !on && !P.hat && L.style !== 3; P.beard.visible = L.beard >= 2;
+  if (P.full) P.fullVis = P.full.map(c => c.visible);
+}
+// off the ice: no stick, bare hands, helmet off (or a hat), and a body that does what people do
+function offIce(P, mode) {
+  const M = P.m; P.off = mode; P.bare = true;
+  for (const k of ['shaft', 'sblade', 'blL', 'blR']) if (M[k]) M[k].visible = false;
+  const skinM = plMat(P.skinC, 0.8); for (const k of ['glL', 'glR']) if (M[k]) M[k].material = skinM;
+  if (mode === 'seat') for (const k of ['foL', 'foR']) if (M[k] && M.upL) M[k].material = M.upL.material;   // jersey sleeves, not gloves
+  setHelmet(P, false);
+  if (mode === 'pub' && !P.pint) { P.pint = new THREE.Mesh(PG3.pint, pintM); const fo = new THREE.Mesh(PG3.foam, foamM); fo.position.y = 0.083; P.pint.add(fo); P.root.add(P.pint); }
+  // his helmet goes up on the shelf of his stall
+  if (mode === 'seat' && !P.hprop) { P.hprop = new THREE.Mesh(PG2.hcap, M.head.material); P.hprop.scale.set(1, 0.95, 1.1); P.hprop.position.set(P.side * 0.2, 1.93 / (P.hgt || 1), -0.14); P.hprop.rotation.set(0, 0.5 * P.side, 0); P.root.add(P.hprop); }
+  if (P.full) P.fullVis = P.full.map(c => c.visible);
+  P.life = null; P.sm = null;
+}
+// who is talking, and what they said, so the others can look at him and react when he finishes
+const LIFE = { who: null, endT: -9, funny: false, drewT: -9 };
+function lifeSaid(P, text, dur) { if (!text || text === '...') return; LIFE.who = P; LIFE.endT = pClock + dur; LIFE.funny = /\b(ha|haha|lol)\b|!|🤣|😂/i.test(text); }
+function lifeHeard(text) { if (!text) return; LIFE.who = 'drew'; LIFE.endT = pClock + 0.3; LIFE.funny = /\b(ha|haha|lol)\b|!/i.test(text); LIFE.drewT = pClock; }
+function lifeTick(P, dt) {
+  const L = P.life || (P.life = { blink: 1 + Math.random() * 3, sacc: 0, sx: 0, sy: 0, nod: 0, laugh: 0, drink: 0, drinkIn: 6 + Math.random() * 20, seen: LIFE.endT, att: ((P.seed >>> 4) % 10) / 10 });
+  if (pClock > LIFE.endT && LIFE.endT > L.seen) {                        // a line just finished: a nod, a laugh, or nothing
+    L.seen = LIFE.endT;
+    if (LIFE.who !== P && P.talkT <= 0) { const r = Math.random(); if (LIFE.funny && r < 0.45) L.laugh = 1.1 + Math.random() * 0.7; else if (r < 0.35) L.nod = 0.9; }
+  }
+  L.nod = Math.max(0, L.nod - dt); L.laugh = Math.max(0, L.laugh - dt);
+  if (P.off === 'pub') { L.drinkIn -= dt; if (L.drinkIn <= 0 && P.talkT <= 0 && L.laugh <= 0) { L.drink = 2.4; L.drinkIn = 14 + Math.random() * 26; } if (P.talkT > 0) L.drink = Math.min(L.drink, 0.3); L.drink = Math.max(0, L.drink - dt); }
+  // listening: most look at whoever is talking (you, when you've just spoken)
+  const s = P.s, w = LIFE.who;
+  if (P.talkT <= 0 && L.att < 0.75) {
+    if (w === 'drew' && pClock - LIFE.drewT < 4 || (MIC.ptt && P.off)) { s.lookX = HEADW.x; s.lookZ = HEADW.z; L.ty = HEADW.y; }
+    else if (w && w !== P && w.talkT > 0 && w.root && w.root.visible) { s.lookX = w.s.x; s.lookZ = w.s.z; L.ty = (w.seat || w.off === 'seat' ? 1.2 : 1.65) * (w.hgt || 1); }
+  }
+  if (P.talkT > 0) L.ty = HEADW.y;
+  return L;
+}
+// eyes, blinks, nods and laughs: a pitch for the head, and the eyes turned to what he looks at
+const _mbuf = new Uint8Array(128);
+function mouthAmp(P) {
+  const q = P.voxQ, ctx = audio && audio.ctx; if (!q || !q.length || !ctx) return -1;
+  const t = ctx.currentTime; while (q.length && q[0].t1 < t) q.shift(); if (!q.length) return -1;
+  const v = q[0]; if (t < v.t0) return 0;
+  v.an.getByteTimeDomainData(_mbuf); let sum = 0; for (let i = 0; i < _mbuf.length; i++) { const d = (_mbuf[i] - 128) / 128; sum += d * d; }
+  return Math.sqrt(sum / _mbuf.length);
+}
+function faceFrame(P, dt, look, hy, hz) {
+  const L = P.life, ey = P.eyes; let pitch = 0;
+  if (L) {
+    if (L.nod > 0) pitch += Math.sin((0.9 - L.nod) * 14) * 0.12 * Math.min(1, L.nod * 3);
+    if (L.laugh > 0) pitch -= 0.16 * Math.min(1, L.laugh * 2) + Math.abs(Math.sin(L.laugh * 18)) * 0.05;
+    if (L.drink > 0) { const p = L.drink > 1.9 ? (2.4 - L.drink) / 0.5 : L.drink < 0.5 ? L.drink / 0.5 : 1; pitch -= 0.3 * clamp(p, 0, 1); }
+  }
+  if (ey) {
+    P.blinkT = (P.blinkT == null ? Math.random() * 3 : P.blinkT) - dt; if (P.blinkT < -0.13) P.blinkT = 2 + Math.random() * 4.5;
+    const bl = P.blinkT < 0 ? 0.12 : 1;
+    let yaw = clamp(look - P.look, -0.5, 0.5), ep = 0;
+    if (L) {
+      L.sacc -= dt; if (L.sacc <= 0) { L.sacc = 0.5 + Math.random() * 2; L.sx = (Math.random() - 0.5) * (P.talkT > 0 ? 0.12 : 0.3); L.sy = (Math.random() - 0.5) * 0.12; }
+      const tx = P.s.lookX, tz = P.s.lookZ; if (L.ty != null && tx != null) { const d = Math.hypot(tx - P.s.x, tz - P.s.z) || 1; ep = clamp(Math.atan2(L.ty - hy * (P.hgt || 1), d), -0.4, 0.35); }
+      yaw += L.sx; ep += L.sy;
+    }
+    for (const e of ey) { e.rotation.set(-ep - pitch * 0.3, yaw, 0, 'YXZ'); e.scale.y = bl / 1.1; }
+  }
+  if (P.mouth) {
+    P.talkT = Math.max(0, P.talkT - dt);
+    const a = mouthAmp(P); let open;
+    if (a >= 0) open = clamp(a * 7 - 0.05, 0, 1);
+    else if (P.talkT > 0) open = 0.15 + 0.6 * Math.abs(Math.sin(pClock * 13 + P.ph)) * (0.6 + 0.4 * Math.sin(pClock * 3.7));
+    else open = L && L.laugh > 0 ? 0.55 + 0.25 * Math.abs(Math.sin(L.laugh * 18)) : 0;
+    P.mOpen = (P.mOpen || 0) + (open - (P.mOpen || 0)) * (1 - Math.exp(-dt * 22));
+    P.mouth.scale.set(1.25 - 0.25 * P.mOpen, 0.22 + 0.95 * P.mOpen, 1);
+  }
+  return pitch;
+}
+// off-ice hands: on the knees in the room, one on the table and a pint in the other in the pub, on the boards for Crofty; the free hand talks
+const _hl = new THREE.Vector3(), _hr = new THREE.Vector3();
+function offArms(P, dt, by, cl, sl, hipY, hy, hz) {
+  const M = P.m, L = P.life || {}, sd = P.side;
+  if (P.off === 'seat') { _hl.set(0.17, hipY + 0.06, 0.36); _hr.set(-0.17, hipY + 0.06, 0.36); }
+  else if (P.off === 'pub') { _hl.set(0.16, 1.07, 0.36); _hr.set(-0.21, 0.99 + 0.02 * Math.sin(pClock * 0.7 + P.ph), 0.27); }
+  else { _hl.set(0.2, 1.1, 0.36); _hr.set(-0.2, 1.1, 0.36); }
+  const t = pClock + P.ph;
+  if (P.talkT > 0 && !(L.drink > 0)) { const free = P.off === 'pub' ? _hl : _hr; free.set((free === _hl ? 0.1 : -0.1) + Math.sin(t * 4.3) * 0.05, by + 0.27 * cl + Math.sin(t * 2.9) * 0.04, 0.32 + Math.sin(t * 3.4) * 0.04); }
+  if (L.laugh > 0 && P.off === 'seat') { _hl.y += 0.03; _hr.y += 0.03; }
+  if (L.drink > 0) { const p = L.drink > 1.9 ? (2.4 - L.drink) / 0.5 : L.drink < 0.5 ? L.drink / 0.5 : 1, k = sstep(clamp(p, 0, 1)); _hr.lerp(_T2.set(-0.03, hy - 0.1, hz + 0.1), k); }
+  for (const [sh, hand, nm, sx] of [[_shL, _hl, 'L', 1], [_shR, _hr, 'R', -1]]) {
+    ik2(sh, hand, 0.3, 0.29, _P2.set(sx * 1, -0.9, -0.3), _J, _E);
+    segTo(M['up' + nm], sh, _J, 0.32); segTo(M['fo' + nm], _J, _E, 0.28);
+    M['gl' + nm].position.copy(_E); M['gl' + nm].quaternion.copy(M['fo' + nm].quaternion);
+  }
+  if (P.pint) { const pr = L.drink > 0 ? clamp((L.drink > 1.9 ? (2.4 - L.drink) / 0.5 : L.drink < 0.5 ? L.drink / 0.5 : 1), 0, 1) : 0; P.pint.position.set(_E.x - 0.01, _E.y + 0.02, _E.z + 0.02); P.pint.rotation.set(-1.1 * sstep(pr), 0, 0); }
 }
 const PG2 = { skull: new THREE.SphereGeometry(0.103, 20, 16), hcap: new THREE.SphereGeometry(0.119, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), ear: new THREE.SphereGeometry(0.026, 8, 6), hair: new THREE.SphereGeometry(0.108, 16, 8, Math.PI * 1.1, Math.PI * 0.8, Math.PI * 0.3, Math.PI * 0.32), mouth: new THREE.CircleGeometry(0.016, 12), strap: new THREE.TorusGeometry(0.075, 0.005, 4, 16, Math.PI) };
 function stickBladeGeo(curveId) { if (!STICK_BP[curveId]) { const bp = makeProfile(curveById(curveId)); STICK_BP[curveId] = { bp, geo: buildBladeGeo(bp) }; } return STICK_BP[curveId]; }
@@ -2302,12 +2460,13 @@ function makePlayer(team, num, shoots, goalie) {
   if (goalie) { add(PG.helmet, plMat(0xf2f2ee, 0.3, 0.1), 'head'); M.head.scale.set(1.05, 1.08, 1.2); add(PG.cage, plMat(0x222226, 0.4, 0.6), 'visor'); M.visor.material.wireframe = true; }
   else {
     add(PG2.hcap, new THREE.MeshStandardMaterial({ color: T.helmet, roughness: 0.35, metalness: 0.1, side: THREE.DoubleSide }), 'head'); M.head.scale.set(1.0, 0.95, 1.1);   // a helmet that sits on top, face open from the brow down
-    const fm = new THREE.MeshStandardMaterial({ map: faceTex(P.seed, P.skinC, P.hairC), roughness: 0.75 }); add(PG2.skull, fm, 'face'); M.face.scale.set(0.9, 1.1, 0.98);
+    const fm = new THREE.MeshStandardMaterial({ roughness: 0.75 }); add(PG2.skull, fm, 'face'); M.face.scale.set(0.9, 1.1, 0.98);
     const skinM = plMat(P.skinC, 0.8), hairM = plMat(P.hairC, 0.9);
     for (const sx of [-1, 1]) { const e = new THREE.Mesh(PG2.ear, skinM); e.position.set(sx * 0.095, -0.005, -0.005); e.scale.set(0.45, 1, 0.8); M.face.add(e); }
     const hr = new THREE.Mesh(PG2.hair, hairM); hr.position.set(0, 0.0, -0.004); M.face.add(hr);
     const mo = new THREE.Mesh(PG2.mouth, plMat(0x3a1616, 0.9)); mo.position.set(0, -0.052, 0.09); mo.rotation.x = 0.5; mo.scale.set(1.25, 0.25, 1); M.face.add(mo); P.mouth = mo;
     add(PG.visor, visor, 'visor'); M.visor.scale.set(0.93, 1, 0.98); M.visor.visible = (P.seed >>> 3) % 5 < 3;   // most wear a visor
+    headParts(P);
   }
   // the stick
   if (goalie) { add(PG.shaft, plMat(0x18181c, 0.4), 'shaft'); add(PG.paddle, plMat(0x18181c, 0.4), 'paddle'); add(PG.gBlade, mTape, 'sblade'); }
@@ -2320,6 +2479,7 @@ function makePlayer(team, num, shoots, goalie) {
     q(LODG.torso, jm, 0, 1.24, 0).scale.z = 0.72; q(LODG.pants, pm, 0, 0.9, 0); q(LODG.legs, sock, 0, 0.42, 0.02); q(LODG.head, hm, 0, 1.66, 0.01); q(LODG.stick, mShaft, -P.side * 0.28, 0.5, 0.5, 1.05);
   }
   root.scale.setScalar(goalie ? 1 : P.hgt);
+  if (!goalie) applyLook(P, RR ? RR.n : team + '#' + num);
   scene.add(root); return P;
 }
 const LODG = { torso: new THREE.CapsuleGeometry(0.2, 0.32, 3, 8), pants: new THREE.BoxGeometry(0.38, 0.26, 0.27), legs: new THREE.BoxGeometry(0.32, 0.78, 0.2), head: new THREE.SphereGeometry(0.13, 10, 8), stick: new THREE.BoxGeometry(0.03, 0.03, 1.45) };
@@ -2385,10 +2545,12 @@ function poseSkater2(P, dt) {
   if (P.talkT > 0 && st.inVR) { s.lookX = HEADW.x; s.lookZ = HEADW.z; }
   let look = 0; if (s.lookX != null) { const l = toLocal(P, s.lookX, s.lookZ, {}); look = clamp(Math.atan2(l.x, l.z), -1, 1); }
   P.look += (look - P.look) * (1 - Math.exp(-dt * 6));
-  M.head.position.set(hx, hy + 0.012, hz - 0.004); M.head.rotation.set(-lean * 0.6 - 0.38, P.look, 0, 'YXZ');
-  M.face.position.set(hx, hy, hz); M.face.rotation.set(-lean * 0.6, P.look, 0, 'YXZ');
-  if (P.mouth) { P.talkT = Math.max(0, P.talkT - dt); P.mouth.scale.y = P.talkT > 0 ? 0.3 + 0.75 * Math.abs(Math.sin(pClock * 16 + P.ph)) : 0.25; }
-  M.torso.scale.x = 1 + Math.sin(pClock * (1.6 + 0.4 * k) + P.ph) * 0.015; M.visor.position.set(hx, hy + 0.012, hz + 0.004); M.visor.rotation.set(-lean * 0.6, P.look, 0, 'YXZ');
+  if (P.off) lifeTick(P, dt);
+  const hp = faceFrame(P, dt, look, hy, hz);
+  M.head.position.set(hx, hy + 0.012, hz - 0.004); M.head.rotation.set(-lean * 0.6 - 0.38 + hp, P.look, 0, 'YXZ');
+  M.face.position.set(hx, hy, hz); M.face.rotation.set(-lean * 0.6 + hp, P.look, 0, 'YXZ');
+  M.torso.scale.x = (P.build || 1) * (1 + Math.sin(pClock * (1.6 + 0.4 * k) + P.ph) * 0.015); M.visor.position.set(hx, hy + 0.012, hz + 0.004); M.visor.rotation.set(-lean * 0.6 + hp, P.look, 0, 'YXZ');
+  if (P.off) { offArms(P, dt, by, cl, sl, hipY, hy, hz); return; }
   // the stick: blade target on the ice (where the puck is, or out in front on his forehand), with a wind-up, sweep and follow-through when he shoots
   let bx = sd * 0.36, bz = 0.85, by2 = 0;
   if (s.bx != null) { const l = toLocal(P, s.bx, s.bz, {}); bx = clamp(l.x, -0.9, 0.9); bz = clamp(l.z, 0.3, 1.2); }
@@ -3469,11 +3631,12 @@ function croftyMake() {
   const P = CROF.p = makePlayer('ravens', '24', 'left', false), M = P.m;
   const coat = new THREE.MeshStandardMaterial({ color: 0x1c2230, roughness: 0.85 }), hat = new THREE.MeshStandardMaterial({ color: 0x2b2f38, roughness: 0.95 }), skin = M.neck.material;
   for (const k of ['torso', 'shoulders', 'upL', 'upR', 'foL', 'foR', 'pants', 'thL', 'thR']) if (M[k]) M[k].material = coat;
+  const trou = new THREE.MeshStandardMaterial({ color: 0x24262c, roughness: 0.85 }); for (const k of ['shL', 'shR']) if (M[k]) M[k].material = trou;   // trousers, not hockey socks
   for (const k of ['glL', 'glR']) if (M[k]) M[k].material = skin;
   if (M.head) M.head.material = hat;                                      // a beanie, not a helmet
   for (const k of ['visor', 'shaft', 'sblade', 'blL', 'blR']) if (M[k]) M[k].visible = false;
-  P.name = 'Crofty'; P.coach = true; P.casual = true; P.root.visible = false;
-  if (P.full) P.fullVis = P.full.map(c => c.visible);
+  P.name = 'Crofty'; P.coach = true; P.casual = true; P.root.visible = false; P.hat = true;
+  applyLook(P, 'Crofty'); offIce(P, 'coach');
   return P;
 }
 const crofPlays = () => !!(RN.map && Object.values(RN.map).some(m => m.n === 'Crofty'));
@@ -4035,7 +4198,8 @@ function voxBuf(P, buf, rate, gain, at) {                                    // 
     src.buffer = buf; src.playbackRate.value = rate; g.gain.value = gain;
     pn.panningModel = 'HRTF'; pn.distanceModel = 'inverse'; pn.refDistance = 3; pn.rolloffFactor = 0.8; pn.maxDistance = 80;
     const y = 1.7 * (P.hgt || 1); if (pn.positionX) { pn.positionX.value = P.s.x; pn.positionY.value = y; pn.positionZ.value = P.s.z; } else pn.setPosition(P.s.x, y, P.s.z);
-    src.connect(g); g.connect(pn); pn.connect(ctx.destination); src.start(at || 0);
+    const an = ctx.createAnalyser(); an.fftSize = 256; src.connect(g); g.connect(an); an.connect(pn); pn.connect(ctx.destination); src.start(at || 0);
+    { const t0 = Math.max(ctx.currentTime, at || 0); (P.voxQ = P.voxQ || []).push({ an, t0, t1: t0 + buf.duration / rate }); P.voxQ.sort((a, b) => a.t0 - b.t0); }
     MIC.gate = Math.max(MIC.gate, nowS() + Math.max(0, (at || 0) - ctx.currentTime) + buf.duration / rate + 0.3);       // the mic doesn't take his voice for yours
     return buf.duration / rate;
   } catch (e) { return 0; }
@@ -4061,7 +4225,7 @@ function bubbleLines(g, t, w) {                                          // the 
 function say(P, text, o) {
   o = o || {}; if (!P || !st.inVR) return false;
   if (pClock - TALK.last < (o.gap || 1.0) && !o.force) return false; TALK.last = pClock;
-  const dur = o.hold || (0.5 + text.length * 0.06); P.talkT = o.quiet ? (text === '...' ? 0 : dur) : dur;
+  const dur = o.hold || (0.5 + text.length * 0.06); P.talkT = o.quiet ? (text === '...' ? 0 : dur) : dur; lifeSaid(P, text, dur);
   bubbleClear(P);
   const b = bubbleFor(), g = b.g; b.P = P; b.t = dur + 0.8;
   const label = P.goalie ? '' : P.name ? P.name + ':  ' : '#' + P.num + '  ', fit = bubbleLines(g, label + text, 470), H = fit.L.length === 1 ? 84 : fit.L.length * fit.px * 1.15 + 22;
@@ -4305,7 +4469,7 @@ async function micSend(pcm) {
   const on = o => {                                                       // each part as it arrives
     if (o.error) throw new Error(o.error);
     if (o.quota) quotaNote();
-    if (o.heard !== undefined) { rec.heard = o.heard; rec.intent = o.intent; rec.tHeard = Math.round((nowS() - t0) * 1000); if (o.heard && o.intent !== 'none') toast('You: "' + o.heard.slice(0, 60) + '"', 1.6);
+    if (o.heard !== undefined) { rec.heard = o.heard; rec.intent = o.intent; rec.tHeard = Math.round((nowS() - t0) * 1000); if (o.heard && o.intent !== 'none') { toast('You: "' + o.heard.slice(0, 60) + '"', 1.6); lifeHeard(o.heard); }
       if (o.intent === 'command') { voiceCommand(o.command); if (P) bubbleClear(P); } else if (o.intent === 'none' && P) bubbleClear(P); }
     if (o.reply !== undefined && P) { rec.tReply = Math.round((nowS() - t0) * 1000); if (o.reply) { say(P, o.reply, { force: true, quiet: true, hold: 1.5 + o.reply.length * 0.07 }); hist.push({ role: 'user', content: rec.heard }, { role: 'assistant', content: o.reply }); MIC.hist[to] = hist.slice(-12); scnAdd('Drew', rec.heard); scnAdd(to, o.reply); } else bubbleClear(P); }
     if (o.audio && P) { if (rec.tVoice === undefined) rec.tVoice = Math.round((nowS() - t0) * 1000); replyAudio(P, o.audio); }
@@ -4741,10 +4905,9 @@ function pubPeople(names) {
   const tx = PUB.x - 1.2, tz = PUB.z - 0.3, shirts = [0x2e4a7a, 0x6b2b2b, 0x2f5d3a, 0x55406e, 0x3d3d44, 0x7a5a2a];
   names.forEach((n, i) => {
     let o = PUBP[i]; if (!o) { const P = makePlayer('ravens', String(90 + i), i % 2 ? 'left' : 'right', false); P.root.traverse(m => { if (m.isMesh) m.castShadow = false; }); o = PUBP[i] = { team: 'ravens', vis: true, p: P }; }
-    const P = o.p, M = P.m, shirt = new THREE.MeshStandardMaterial({ color: shirts[(i + n.length) % shirts.length], roughness: 0.9 }), jeans = new THREE.MeshStandardMaterial({ color: 0x2b3446, roughness: 0.9 });
+    const P = o.p, M = P.m; applyLook(P, n); const shirt = new THREE.MeshStandardMaterial({ color: shirts[P.seed % shirts.length], roughness: 0.9 }), jeans = new THREE.MeshStandardMaterial({ color: 0x2b3446, roughness: 0.9 });
     for (const k of ['torso', 'shoulders', 'upL', 'upR', 'foL', 'foR']) if (M[k]) M[k].material = shirt; for (const k of ['pants', 'thL', 'thR', 'shL', 'shR']) if (M[k]) M[k].material = jeans;
-    for (const k of ['glL', 'glR']) if (M[k]) M[k].material = M.neck.material; if (M.head) M.head.material = new THREE.MeshStandardMaterial({ color: P.hairC || 0x2a1d14, roughness: 0.95 });
-    for (const k of ['visor', 'shaft', 'sblade', 'blL', 'blR']) if (M[k]) M[k].visible = false; if (P.full) P.fullVis = P.full.map(c => c.visible);
+    offIce(P, 'pub');
     const a = -Math.PI / 2 + (i - 1.5) * 0.95; o.x = tx + Math.cos(a) * 0.85; o.z = tz + Math.sin(a) * 0.85; P.name = n; P.root.visible = true; P.casual = true;
     const s = P.s; s.x = o.x; s.z = o.z; const fx = tx - o.x, fz = tz - o.z, fl = Math.hypot(fx, fz); s.fx = fx / fl; s.fz = fz / fl; s.speed = 0; s.turn = 0; s.lookX = tx; s.lookZ = tz; s.bx = s.bz = null; P.sm = null;
   });
@@ -5809,7 +5972,7 @@ function roomPlayer(i, name) {
   if (!o) { const P = makePlayer('ravens', String(70 + i), i % 2 ? 'left' : 'right', false); P.root.traverse(m => { if (m.isMesh) m.castShadow = false; }); o = ROOMP[i] = { team: 'ravens', vis: true, p: P, x: 0, z: 0 }; }
   const P = o.p, pl = RN.players && RN.players.find(q => q.n === name);
   if (pl && P.shown !== pl.num) { P.shown = pl.num; const t = P.m.torso; if (t && t.material && t.material.map) { const old = t.material.map; t.material.map = jerseyTex('ravens', String(pl.num), false); t.material.needsUpdate = true; try { old.dispose(); } catch (e) { } } }
-  P.name = name; P.seat = true; P.casual = false; P.root.visible = true; return o;
+  P.name = name; P.seat = true; P.casual = false; applyLook(P, name); if (P.off !== 'seat') offIce(P, 'seat'); P.root.visible = true; return o;
 }
 // in you go: the lads are already in, in their kit
 function carRoom(kind) {
@@ -5925,7 +6088,8 @@ function roomFrame(dt) {
   for (let i = 0; i < RM.n; i++) { const o = ROOMP[i], P = o.p, ps = P.s; if (!P.root.visible) continue;
     if (P.talkT > 0) { ps.lookX = HEADW.x; ps.lookZ = HEADW.z; } else if (Math.random() < dt * 0.25) { const q = Math.random() < 0.3 ? null : ROOMP[Math.floor(Math.random() * RM.n)]; ps.lookX = q && q !== o ? q.x : RM.talking ? RM.crof.x : HEADW.x; ps.lookZ = q && q !== o ? q.z : RM.talking ? RM.crof.z : HEADW.z; }
     if (RM.talking) { ps.lookX = RM.crof.x; ps.lookZ = RM.crof.z; }
-    if (pose || P.talkT > 0) posePlayer(P, pose ? 0.12 : dt); }
+    const near = P.talkT > 0 || (P.life && (P.life.laugh > 0 || P.life.nod > 0)) || Math.hypot(o.x - HEADW.x, o.z - HEADW.z) < 3.2;
+    if (near) posePlayer(P, dt); else if (pose) posePlayer(P, 0.12); }
   if (RM.crof) { const P = RM.crof.p, ps = P.s; ps.lookX = HEADW.x; ps.lookZ = HEADW.z; posePlayer(P, dt); }
   // free chat until Crofty starts (when you ask, or after a good while once it goes quiet); the lads start conversations when it's quiet
   if (MIC.sent !== RM.lastSent) { RM.lastSent = MIC.sent; RM.talkT = 0; RM.quietT = 0; }
@@ -6680,7 +6844,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
