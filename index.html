@@ -2332,12 +2332,13 @@ function poseSkater2(P, dt) {
   P.root.rotation.z = clamp(-s.turn * 0.09, -0.3, 0.3) * k;                                        // lean into turns
   // legs: a push out and back with each stride, the other skate gliding under him; standing still both skates sit under the hips
   P.ph += dt * Math.PI * 2 * (0.35 + 0.12 * s.speed) * (s.speed > 0.4 ? 1 : 0) * (s.bk ? -0.75 : 1);   // backwards: C-cuts the other way
-  const hipY = P.casual ? 0.99 : 0.93 - 0.15 * k;                                                // off the ice (the pub, the coach) they stand up straight
+  const hipY = P.seat ? 0.52 : P.casual ? 0.99 : 0.93 - 0.15 * k;                               // off the ice (the pub, the coach) they stand up straight; in the room they sit
   _hipL.set(0.1, hipY, -0.03); _hipR.set(-0.1, hipY, -0.03);
   for (const [sx, hip, nm, off] of [[1, _hipL, 'L', 0], [-1, _hipR, 'R', Math.PI]]) {
     const t = ((P.ph + off) % (Math.PI * 2)) / (Math.PI * 2);
     let fx, fz, fy = 0.13;
-    if (t < 0.55) { const p = t / 0.55; fx = sx * (0.13 + 0.3 * p * k); fz = 0.12 - 0.5 * p * k; }
+    if (P.seat) { fx = sx * 0.19; fz = 0.44; fy = 0.12; }
+    else if (t < 0.55) { const p = t / 0.55; fx = sx * (0.13 + 0.3 * p * k); fz = 0.12 - 0.5 * p * k; }
     else { const p = (t - 0.55) / 0.45; fx = sx * (0.13 + 0.3 * k * (1 - p) * (1 - p)); fz = 0.12 - 0.5 * k * (1 - p); fy += 0.08 * Math.sin(Math.PI * p) * k; }
     _T2.set(fx, fy, fz); ik2(hip, _T2, 0.43, 0.43, _P2.set(sx * 0.2, 0, 1), _J, _E);
     segTo(M['th' + nm], hip, _J, 0.42); segTo(M['sh' + nm], _J, _E, 0.43);
@@ -2345,7 +2346,7 @@ function poseSkater2(P, dt) {
     M['bl' + nm].position.set(_E.x, 0.018, _E.z + 0.04); M['bl' + nm].rotation.copy(M['bo' + nm].rotation);
   }
   // body: leaning forward more as he goes faster
-  const lean = (P.casual ? 0.04 : 0.18) + 0.45 * k, cl = Math.cos(lean), sl = Math.sin(lean), by = hipY + 0.04;
+  const lean = (P.seat ? 0.22 : P.casual ? 0.04 : 0.18) + 0.45 * k, cl = Math.cos(lean), sl = Math.sin(lean), by = hipY + 0.04;
   M.pants.position.set(0, hipY - 0.02, 0); M.pants.rotation.set(lean * 0.4, 0, 0);
   M.torso.position.set(0, by + 0.27 * cl, 0.27 * sl); M.torso.rotation.set(lean, 0, 0);
   M.shoulders.position.set(0, by + 0.5 * cl, 0.5 * sl); M.shoulders.rotation.set(lean, 0, 0);
@@ -4028,6 +4029,7 @@ function wavB64(f) {
 const _tf = new THREE.Vector3();
 function talkMates() {
   if (CAR.place === 'pub') return PUBP.slice(0, CAR.pubN);
+  if (CAR.place === 'room') return ROOMP.slice(0, RM.n).filter(o => o.p.root.visible).concat(RM.crof ? [RM.crof] : []);
   const L = (SC.on ? SC.lines.ravens.flat() : DR.on ? (DR.sk || []) : []).filter(q => q.team === 'ravens' && (q.vis || q.bench) && q.p && q.p.name);
   if (SC.on && CROF.on && CROF.p && !crofPlays()) L.push({ team: 'ravens', vis: true, p: CROF.p, x: CROF.x, z: CROF.z, coach: true });
   return L;
@@ -4047,9 +4049,11 @@ function playLive() { return SC.on ? (!SC.over && !(SC.pause > 0) && !(SC.after 
 function talkCtx() {
   const live = playLive();
   let now = 'Free skate at the rink with the puck.';
-  if (CAR.place === 'pub' || PH.open) now = carNowText();
+  if (CAR.place === 'pub' || CAR.place === 'room' || PH.open) now = carNowText();
   else if (SC.on) now = (SC.fx ? 'This week\'s league game, played in VR, against ' + SC.fx.opp + (SC.fx.cup ? ' (Talon Cup)' : '') + ', ' : (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' scrimmage against the Visitors, ') + (SC.over ? 'just finished' : ordN(SC.per) + ' period, ' + clockStr(SC.clk) + ' left') + ', Ravens ' + SC.score[0] + ' ' + oppN() + ' ' + SC.score[1] + ', shots ' + SC.shots[0] + ' to ' + SC.shots[1] + '. Drew so far: ' + SC.my.g + ' goals, ' + SC.my.a + ' assists, ' + SC.my.sh + ' shots.' + (SC.msg ? ' Last thing that happened: ' + SC.msg + '.' : '');
   else if (DR.on && DR.d) now = 'Training, the ' + DR.d.name + ' drill' + (DR.rep ? ', rep ' + DR.rep + ' of ' + DR.d.reps : '') + '. ' + (DR.msg || '');
+  const fr = fxNow && CAR.vc ? fxNow() : null;
+  if (CAR.place === 'room') return { where: RM.kind === 'post' ? 'in the dressing room just after the game, taking your gear off' : RM.kind === 'train' ? 'in the dressing room before Thursday training, getting your gear on' : 'in the dressing room before tonight\'s game' + (fr ? ' against ' + fr.opp : '') + ', getting your gear on', now, live: false };
   return { where: CAR.place === 'pub' ? (CAR.pubSoc ? 'at the team social night in the pub, round a table with a drink' : 'at the pub after tonight\'s game, round a table with a drink, so plenty of time to chat') : SC.on && BN.on ? 'on the bench during the game, watching the play from behind the boards, so there is time for a proper chat' : SC.on ? (live ? 'on the ice in the middle of play, so only a few words' : 'on the ice at a stoppage in the game') : DR.on ? 'on the ice at training, between reps' : 'on the ice', now };
 }
 async function micSend(pcm) {
@@ -4292,7 +4296,7 @@ function phGame(y) {
   pg.fillStyle = '#9a8fb3'; pg.font = '500 22px system-ui, sans-serif'; pg.fillText('They ' + (STYLE_TXT[f.style] || 'play their own way') + '.', 44, y + 134);
   pRect(34, y + 160, W - 68, 250, 24, '#2a2140'); pg.fillStyle = '#e0a928'; pg.font = '700 22px system-ui, sans-serif'; pg.fillText('Crofty', 58, y + 192);
   pg.fillStyle = '#ffffff'; pWrap(g, W - 116, '500 27px system-ui, sans-serif').slice(0, 6).forEach((l, k) => pg.fillText(l, 58, y + 232 + k * 34));
-  pBtn(34, y + 450, W - 68, 92, 'Play it in VR', '#5a2bb0', () => carGameGo(), 32);
+  pBtn(34, y + 450, W - 68, 92, 'To the dressing room', '#5a2bb0', () => carRoom('pre'), 32);
   pBtn(34, y + 560, W - 68, 70, 'Sim it (no time tonight)', '#2a1a44', () => carGameSim(), 25);
   if (CAR.cl) pBtn(34, y + 690, W - 68, 70, "Use Crofty's lines", '#3d1778', () => { st.lineup = Object.assign({}, CAR.cl.lu); saveSettings(); if (RN.players) rosterApply({ players: RN.players }); CAR.vc.lineNews = 'Crofty\'s new lines: ' + CAR.cl.ch.join('; '); CAR.pre = 'Done, new lines are in. ' + CAR.pre.replace(/^Lines: [^.]*\. /, ''); CAR.cl = null; toast("Crofty's lines are in", 1.5); }, 25);
   pg.fillStyle = '#7d70a0'; pg.font = '500 20px system-ui, sans-serif'; pg.textAlign = 'center'; pg.fillText('Periods: ' + PER_NAMES[st.perP] + ' (Drills tab in Settings)', W / 2, y + 660 + (CAR.cl ? 120 : 0));
@@ -4557,7 +4561,7 @@ function pubFrame(dt) {
   }
   talkFrame(dt); updateToast(dt);
 }
-function carTrainGo() { const t = CAR.train; phoneClose(); CAR.step = 'train'; drillStart(t.id); }
+function carTrainGo() { phoneClose(); carRoom('train'); }
 function carTrainSkip() { const vc = CAR.vc; vc.wk.train = 2; vc.conf = clamp(vc.conf - 2, 0, 100); PH.note = 'Crofty: "No bother, see you Saturday."'; PH.scr = 'home'; carSave(); }
 function carTrainDone(sc, reps) {
   const vc = CAR.vc; CAR.step = null; vc.wk.train = 1; vc.conf = clamp(vc.conf + (sc * 2 >= reps ? 6 : 3), 0, 100);
@@ -4602,7 +4606,7 @@ function carGameSim() { const f = fxNow(), s = simScore(RAV_R + (CAR.vc.conf - 5
 function carGameDone() {
   CAR.step = null; carRecord(SC.score[0], SC.score[1], { g: SC.my.g, a: SC.my.a, sh: SC.my.sh }, false, (SC.goals || []).filter(g => g.t === 'R').map(g => ({ sc: g.sc, as: g.as })));
   PH.note = CAR.vc.last.line;
-  setTimeout(() => { if (SC.on) scStop(true); carHub(); }, 6000);
+  setTimeout(() => { if (SC.on) scStop(true); if (CAR.mode === 'career' && st.inVR) carRoom('post'); else carHub(); }, 6000);
 }
 function carAbort() { if (CAR.step === 'train' || CAR.step === 'game') { CAR.step = null; PH.note = 'Stopped part way: start it again when you\'re ready.'; } }
 function carNextWeek() {
@@ -4613,6 +4617,7 @@ function carNextWeek() {
 function carHub() {
   if (!st.inVR || CAR.mode !== 'career') return;
   if (CAR.place === 'pub') { CAR.place = null; for (const o of PUBP) o.p.root.visible = false; }
+  if (CAR.place === 'room') roomHide();
   if (DR.on) drillStop(true); if (SC.on) scStop(true);
   teleportTo(HOME.x, HOME.z + 0.6, -Math.PI / 2); croftyShow(false); homeTvDraw();
   phoneOpen();
@@ -5027,8 +5032,8 @@ function fdPass(id, to) {                                                // a pa
   const side = sdNetSide(ox, oz, bl[0], bl[1]);
   if (side && !e.stepT) { e.stepT = 1; e.glide = null; e.seg = { poly: sdPoly(sdSmooth([[s.x, s.z], side])), t0: FD.T, dur: 0.7, back: false }; FD.q.push({ at: FD.T + 0.75, fn: () => { e.stepT = 0; fdPass(id, to); } }); return; }
   const d = Math.hypot(bl[0] - ox, bl[1] - oz), spd = clamp(8 + d * 0.32, 9, 16); let t = d / spd * 1.08, tg = [bl[0] + vx * t * 0.9, bl[1] + vz * t * 0.9];
-  if (meTo && FD.b && FD.b.path && FD.trail && FD.prog < FD.trail.length) {                 // you're skating a route: lead you along it, to where you'll be
-    const v0 = Math.max(Math.hypot(S.vx, S.vz), 2.5), ofx = bl[0] - S.x, ofz = bl[1] - S.z;
+  if (meTo && FD.b && FD.b.path && FD.trail && FD.prog < FD.trail.length && Math.hypot(S.vx, S.vz) > 1.2) {   // you're skating your route: lead you along it, to where you'll be
+    const v0 = Math.hypot(S.vx, S.vz), ofx = bl[0] - S.x, ofz = bl[1] - S.z;
     for (let k = 0; k < 2; k++) { let left = v0 * t, px = S.x, pz = S.z; for (let i = FD.prog; i < FD.trail.length && left > 0; i++) { const q = FD.trail[i], sg = Math.hypot(q[0] - px, q[1] - pz); if (sg >= left) { px += (q[0] - px) * left / sg; pz += (q[1] - pz) * left / sg; left = 0; } else { left -= sg; px = q[0]; pz = q[1]; } }
       if (left > 0) { const n = FD.trail.length, a = FD.trail[n - 2] || [S.x, S.z], c = FD.trail[n - 1], L = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1; px += (c[0] - a[0]) / L * left * 0.5; pz += (c[1] - a[1]) / L * left * 0.5; }
       tg = [px + ofx, pz + ofz]; t = Math.hypot(tg[0] - ox, tg[1] - oz) / spd * 1.08; }
@@ -5444,6 +5449,176 @@ function pvFrame(dt) {
   }
   DBD.drawT += dt; if (DBD.open && DBD.drawT > 1 / 20) { DBD.drawT = 0; pvDraw(); }
   fdMoveAll(dt); updateToast(dt);
+}
+
+// ---------------------------------------------------------------- the dressing room
+// Between home and the ice. Before a game: the lads in their stalls in full kit, the lines on the whiteboard, a bit of chat, then Crofty's team
+// talk, then out the door to the ice. Before training: Crofty says what the drill is. After a game: the result sinks in for a minute, then the
+// pub or home. Talk to anyone the way you do at the pub: look at them and speak.
+const ROOM = { x: 0, z: 640, W: 7.2, D: 6.4 };
+const ROOMP = [];
+const RM = { kind: null, t: 0, talkT: 0, talked: false, talking: false, said: 0, lastSent: -1, hov: -1, arm: true, poseT: 0 };
+const roomWbC = document.createElement('canvas'); roomWbC.width = 1024; roomWbC.height = 640;
+const roomWbTex = new THREE.CanvasTexture(roomWbC); if ('colorSpace' in roomWbTex) roomWbTex.colorSpace = THREE.SRGBColorSpace;
+const roomDoorC = document.createElement('canvas'); roomDoorC.width = 512; roomDoorC.height = 320;
+const roomDoorTex = new THREE.CanvasTexture(roomDoorC); if ('colorSpace' in roomDoorTex) roomDoorTex.colorSpace = THREE.SRGBColorSpace;
+const roomDoorM = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.5), new THREE.MeshBasicMaterial({ map: roomDoorTex, toneMapped: false }));
+const ROOMSEATS = [];                                                     // [x, z, facing x, facing z] in the room, Drew's stall is the middle of the back wall
+const ROOMPLATES = [];
+{
+  const R = new THREE.Group(); R.position.set(ROOM.x, 0, ROOM.z); scene.add(R);
+  const W = ROOM.W, D = ROOM.D, H = 2.7, M = (c, r, e) => new THREE.MeshStandardMaterial({ color: c, roughness: r == null ? 0.8 : r, emissive: e || 0x000000 });
+  const box = (w, h, d, x, y, z, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); R.add(o); return o; };
+  const floor = M(0x1c1d22, 0.95, 0x050506), wall = M(0x4b4f5c, 0.9, 0x0f1014), purple = M(0x3d1d78, 0.8, 0x0c0418), wood = M(0x9a7448, 0.6, 0x1a1006), dark = M(0x23252c, 0.7, 0x050506);
+  box(W, 0.05, D, 0, -0.025, 0, floor); box(W, 0.05, D, 0, H, 0, M(0x5a5d66, 1, 0x16171b));
+  box(W, H, 0.1, 0, H / 2, -D / 2, wall); box(W, H, 0.1, 0, H / 2, D / 2, wall); box(0.1, H, D, -W / 2, H / 2, 0, wall); box(0.1, H, D, W / 2, H / 2, 0, wall);
+  box(W, 0.35, 0.02, 0, 2.3, -D / 2 + 0.06, purple); box(0.02, 0.35, D, -W / 2 + 0.06, 2.3, 0, purple); box(0.02, 0.35, D, W / 2 - 0.06, 2.3, 0, purple);   // a purple band round the walls
+  // stalls: a bench, dividers, a shelf with a name plate, a hook with a jersey
+  const stall = (x, z, ax, az) => {
+    const along = Math.abs(ax) > 0.5;                                     // bench along a side wall (facing x) or the back wall (facing z)
+    const bw = 0.9, sx = along ? 0.46 : bw, sz = along ? bw : 0.46, wx = x - ax * 0.12, wz = z - az * 0.12;
+    box(sx, 0.06, sz, wx, 0.46, wz, wood); box(along ? 0.06 : bw, 0.42, along ? bw : 0.06, x - ax * 0.32, 0.23, z - az * 0.32, dark);
+    box(along ? 0.5 : 0.03, 1.9, along ? 0.03 : 0.5, x - ax * 0.12 + (along ? 0 : bw / 2), 1.0, z - az * 0.12 + (along ? bw / 2 : 0), wood);
+    box(sx, 0.03, sz, wx, 1.9, wz, wood);
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.15), new THREE.MeshBasicMaterial({ map: null, color: 0xf3efe6, toneMapped: false }));
+    pl.position.set(x - ax * 0.33, 2.02, z - az * 0.33); pl.rotation.y = Math.atan2(ax, az); R.add(pl); ROOMPLATES.push(pl);
+    const jer = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.55), M(0x4a2a8a, 0.9, 0x0e0620)); jer.position.set(x - ax * 0.34, 1.45, z - az * 0.34); jer.rotation.y = Math.atan2(ax, az); R.add(jer);
+    const bag = box(along ? 0.35 : 0.7, 0.32, along ? 0.7 : 0.35, x + ax * 0.15, 0.16, z + az * 0.15, M(0x15161a, 0.9)); bag.visible = false; ROOMSEATS.push([x, z, ax, az, bag]);
+  };
+  for (const x of [-2.7, -1.8, -0.9, 0, 0.9, 1.8, 2.7]) stall(x, -D / 2 + 0.4, 0, 1);
+  for (const z of [-1.7, -0.75, 0.2, 1.15]) { stall(-W / 2 + 0.4, z, 1, 0); stall(W / 2 - 0.4, z, -1, 0); }
+  // the whiteboard and the door to the ice
+  box(2.3, 1.3, 0.04, -0.6, 1.55, D / 2 - 0.07, M(0xdedede, 0.4));
+  const wb = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.375), new THREE.MeshBasicMaterial({ map: roomWbTex, toneMapped: false })); wb.position.set(-0.6, 1.55, D / 2 - 0.1); wb.rotation.y = Math.PI; R.add(wb);
+  box(1.0, 2.1, 0.06, 2.4, 1.05, D / 2 - 0.06, M(0x6a6f7a, 0.5));
+  roomDoorM.position.set(2.4, 1.35, D / 2 - 0.1); roomDoorM.rotation.y = Math.PI; R.add(roomDoorM);
+  // lights and a few sticks
+  for (const [lx, lz] of [[-1.6, -1], [1.6, -1], [-1.6, 1.4], [1.6, 1.4]]) { const l = box(1.2, 0.04, 0.2, lx, H - 0.04, lz, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xf4f0e6, emissiveIntensity: 1 })); l.castShadow = false; }
+  for (let i = 0; i < 6; i++) { const st0 = box(0.03, 1.5, 0.03, -W / 2 + 0.12, 0.75, 2.0 + i * 0.06, M(i % 2 ? 0x1a1a1a : 0x5a2bb0, 0.5)); st0.rotation.z = 0.12; }
+}
+function roomPlate(i, name, num) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64; const g = c.getContext('2d');
+  g.fillStyle = '#f3efe6'; g.fillRect(0, 0, 256, 64); g.fillStyle = '#3d1d78'; g.font = '800 30px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText((num ? num + '  ' : '') + String(name || '').toUpperCase(), 128, 34);
+  const m = ROOMPLATES[i].material; if (m.map) m.map.dispose(); m.map = new THREE.CanvasTexture(c); m.color.set(0xffffff); m.needsUpdate = true;
+}
+function roomBoard() {                                                   // the whiteboard: who we're playing, the lines, Crofty's points (or the score after)
+  const g = roomWbC.getContext('2d'), f = fxNow(), vc = CAR.vc; g.fillStyle = '#fbfbf8'; g.fillRect(0, 0, 1024, 640);
+  g.fillStyle = '#1b3e9e'; g.font = '700 58px "Comic Sans MS", "Marker Felt", system-ui, sans-serif'; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  if (RM.kind === 'post' && vc.last) { g.fillText('FINAL', 60, 110); g.fillStyle = '#b01e2a'; g.font = '700 74px "Comic Sans MS", system-ui, sans-serif'; g.fillText('Ravens ' + vc.last.gf + ' - ' + vc.last.ga + ' ' + (vc.last.opp || ''), 60, 220);
+    g.fillStyle = '#1b3e9e'; g.font = '600 40px "Comic Sans MS", system-ui, sans-serif'; const L = pWrapC(g, vc.last.line || '', 900); L.slice(0, 4).forEach((l, k) => g.fillText(l, 60, 310 + k * 54)); roomWbTex.needsUpdate = true; return; }
+  if (RM.kind === 'train') { g.fillText('TRAINING', 60, 110); g.fillStyle = '#b01e2a'; g.font = '700 64px "Comic Sans MS", system-ui, sans-serif'; g.fillText(CAR.train ? CAR.train.name : '', 60, 210);
+    const d = CAR.train && DRILLS.find(x => x.id === CAR.train.id), P = d && (d.fd ? d.fd.points : d.board && d.board.points) || [];
+    g.fillStyle = '#1b3e9e'; g.font = '600 40px "Comic Sans MS", system-ui, sans-serif'; P.slice(0, 3).forEach((p, k) => g.fillText('- ' + p, 60, 300 + k * 60)); roomWbTex.needsUpdate = true; return; }
+  g.fillText('vs ' + (f ? f.opp : ''), 60, 96);
+  const lu = st.lineup || {}, n = sl => firstN(lu[sl] || (RN.map && RN.map[sl] && RN.map[sl].n) || '?');
+  g.font = '600 40px "Comic Sans MS", system-ui, sans-serif'; g.fillStyle = '#222222';
+  const rows = [['1', 'Drew - ' + n('17') + ' - ' + n('12')], ['2', n('27') + ' - ' + n('19') + ' - ' + n('22')], ['3', n('14') + ' - ' + n('16') + ' - ' + n('10')], ['D', n('44') + ' - ' + n('5') + '   ' + n('2') + ' - ' + n('8') + '   ' + n('3') + ' - ' + n('6')], ['G', firstN(lu.G || 'Craig')]];
+  rows.forEach(([k, t], i) => { g.fillStyle = '#b01e2a'; g.fillText(k, 60, 170 + i * 62); g.fillStyle = '#222222'; g.fillText(t, 120, 170 + i * 62); });
+  g.fillStyle = '#1b3e9e'; g.font = '600 36px "Comic Sans MS", system-ui, sans-serif';
+  const tip = f ? (f.style === 'forecheck' ? 'They forecheck hard: move it quick' : f.style === 'rush' ? 'They love a rush: backcheck!' : f.style === 'cycle' ? 'They grind low: win the wall' : 'Patient team: make them chase') : '';
+  g.fillText(tip, 60, 520); g.fillText('Short shifts. Talk!', 60, 578);
+  roomWbTex.needsUpdate = true;
+}
+function pWrapC(g, t, maxW) { const L = []; let cur = ''; for (const w of String(t).split(' ')) { const tr = cur ? cur + ' ' + w : w; if (g.measureText(tr).width <= maxW || !cur) cur = tr; else { L.push(cur); cur = w; } } if (cur) L.push(cur); return L; }
+function roomDoor() {                                                    // the sign on the door: what's next
+  const g = roomDoorC.getContext('2d'); g.clearRect(0, 0, 512, 320); RM.hits = [];
+  const btn = (x, y, w, h, label, sub, act) => { const k = RM.hits.length; RM.hits.push({ x, y, w, h, act }); g.fillStyle = RM.hov === k ? '#6b35d0' : '#3d1d78'; g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, 26); else g.rect(x, y, w, h); g.fill(); g.lineWidth = 6; g.strokeStyle = RM.hov === k ? '#e0a928' : '#9b86c9'; g.stroke();
+    g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '800 46px system-ui, sans-serif'; g.fillText(label, x + w / 2, y + h / 2 - (sub ? 16 : 0)); if (sub) { g.font = '600 24px system-ui, sans-serif'; g.fillStyle = '#e0c88a'; g.fillText(sub, x + w / 2, y + h / 2 + 30); } };
+  if (RM.kind === 'post') { btn(8, 8, 496, 146, CAR.vc.week % 4 === 0 ? 'Social night' : 'To the pub', 'point + trigger, or Y', () => roomLeave('pub')); btn(8, 166, 496, 146, 'Head home', '', () => roomLeave('home')); }
+  else btn(8, 8, 496, 304, 'Out to the ice', RM.talked ? 'point + trigger, or press Y' : 'after Crofty\'s talk, or press Y now', () => roomLeave('ice'));
+  roomDoorTex.needsUpdate = true;
+}
+function roomPlayer(i, name) {
+  let o = ROOMP[i];
+  if (!o) { const P = makePlayer('ravens', String(70 + i), i % 2 ? 'left' : 'right', false); P.root.traverse(m => { if (m.isMesh) m.castShadow = false; }); o = ROOMP[i] = { team: 'ravens', vis: true, p: P, x: 0, z: 0 }; }
+  const P = o.p, pl = RN.players && RN.players.find(q => q.n === name);
+  if (pl && P.shown !== pl.num) { P.shown = pl.num; const t = P.m.torso; if (t && t.material && t.material.map) { const old = t.material.map; t.material.map = jerseyTex('ravens', String(pl.num), false); t.material.needsUpdate = true; try { old.dispose(); } catch (e) { } } }
+  P.name = name; P.seat = true; P.casual = false; P.root.visible = true; return o;
+}
+// in you go: the lads are already in, in their kit
+function carRoom(kind) {
+  phoneClose(); if (DR.on) drillStop(true); if (SC.on) scStop(true);
+  if (CAR.place === 'pub') { for (const o of PUBP) o.p.root.visible = false; }
+  CAR.place = 'room'; Object.assign(RM, { kind, t: 0, talkT: 0, talked: false, talking: false, said: 0, lastSent: MIC.sent, hov: -1, poseT: 1 });
+  const m0 = lineMates().filter(n => n !== 'Drew' && n !== 'Crofty'), mates = m0.length ? m0 : Object.entries(DEFAULT_LU).filter(([k]) => k !== 'G').map(([, v]) => v), gN = (st.lineup && st.lineup.G) || 'Craig';
+  const people = (kind === 'train' ? mates.slice(0, 7) : mates.slice(0, 12)).concat(kind === 'train' ? [] : [gN]);
+  const order = [2, 4, 1, 5, 0, 6, 7, 8, 9, 10, 11, 12, 13, 14];          // seats round the room, the ones beside you first (seat 3 is yours)
+  ROOMSEATS.forEach((s, i) => { s[4].visible = i !== 3; });
+  roomPlate(3, 'Drew', 11);
+  people.forEach((n, k) => {
+    const si = order[k]; if (si == null || !ROOMSEATS[si]) return; const [x, z, ax, az] = ROOMSEATS[si], o = roomPlayer(k, n), P = o.p, s = P.s;
+    o.x = ROOM.x + x; o.z = ROOM.z + z; s.x = o.x + ax * 0.02; s.z = o.z + az * 0.02; s.fx = ax; s.fz = az; s.speed = 0; s.turn = 0; s.lookX = ROOM.x; s.lookZ = ROOM.z; s.bx = o.x + ax * 0.8; s.bz = o.z + az * 0.8; P.sm = null;
+    const pl = RN.players && RN.players.find(q => q.n === n); roomPlate(si, firstN(n), pl && pl.num);
+  });
+  for (let k = people.length; k < ROOMP.length; k++) ROOMP[k].p.root.visible = false;
+  RM.n = Math.min(people.length, ROOMP.length);
+  ROOMSEATS.forEach((s, i) => { if (i !== 3 && !people.some((_, k) => order[k] === i)) { roomPlate(i, '', 0); } });
+  const P = croftyMake(); P.root.visible = true; const cs = P.s; cs.x = ROOM.x + 0.9; cs.z = ROOM.z + ROOM.D / 2 - 0.8; cs.fx = 0; cs.fz = -1; cs.speed = 0; cs.turn = 0; cs.lookX = ROOM.x; cs.lookZ = ROOM.z; cs.bx = cs.bz = null; P.sm = null; RM.crof = { team: 'ravens', vis: true, p: P, x: cs.x, z: cs.z, coach: true };
+  stickOn = false; showStick(false); for (const k of ['left', 'right']) { const g0 = hands[k] && hands[k].grip.children[0]; if (g0) g0.visible = true; }
+  teleportTo(ROOM.x, ROOM.z - ROOM.D / 2 + 1.15, Math.PI / 2);
+  roomBoard(); roomDoor(); homeTvDraw();
+  const f = fxNow();
+  toast(kind === 'post' ? 'Back in the room' : kind === 'train' ? 'The dressing room. Crofty will tell you what\'s on tonight' : 'The dressing room. Talk to the lads: Crofty\'s team talk is coming', 3.5);
+  if (kind === 'post') { const last = CAR.vc.last, won = last && last.gf > last.ga, lost = last && last.gf < last.ga; setTimeout(() => { if (CAR.place !== 'room') return; const o = ROOMP[0]; if (!o) return; roomLine(o.p, '(The game against ' + (last ? last.opp : 'them') + ' just finished ' + (last ? last.gf + '-' + last.ga : '') + '. You\'re back in the dressing room taking your gear off. React to it with Drew, briefly and naturally.)', won ? 'Get in! What a game, Drew!' : lost ? 'Heads up, mate. We\'ll get them next time.' : 'A draw. We\'ll take it.'); }, 1500); }
+  else if (kind === 'pre') setTimeout(() => { if (CAR.place !== 'room' || RM.talked) return; const o = ROOMP[0]; if (o) roomLine(o.p, '(You\'re in the dressing room getting your gear on before tonight\'s game against ' + (f ? f.opp : 'them') + '. Drew has just sat down next to you. Say something short to him.)', pick(['Big one tonight, Drew.', 'Feeling sharp?', 'Who\'s got spare tape?', 'Let\'s start fast tonight.'])); }, 2500);
+}
+async function roomLine(P, typed, stock) {                              // one of the lads (or Crofty) says something out loud, through your server, or a stock line
+  if (!P) return;
+  if (!brainOK()) { say(P, stock, { force: true }); return; }
+  await pubLine(P, typed);
+}
+async function roomTeamTalk() {                                         // Crofty stands up at the whiteboard
+  if (RM.talking || RM.talked) return; RM.talking = true; const P = RM.crof && RM.crof.p, f = fxNow(); if (!P) return;
+  const ok = RM.kind === 'train'
+    ? (CAR.train ? CAR.train.msg.replace(/^Training tonight: /, 'Right lads, tonight it\'s ') : 'Right lads, let\'s get on the ice.')
+    : CAR.pre || 'Right lads. Work hard, keep it simple, enjoy it.';
+  if (brainOK() && RM.kind === 'pre') await pubLine(P, '(Everyone is ready in the dressing room before tonight\'s game against ' + (f ? f.opp : 'them') + '. Give the team talk, out loud to the whole room: 3 or 4 short sentences, warm and positive. Mention how they play and one or two simple things to do: ' + (CAR.pre || '') + ')');
+  else { say(P, ok, { force: true, hold: Math.min(12, 1 + ok.length * 0.06) }); await new Promise(r => setTimeout(r, Math.min(11000, 800 + ok.length * 55))); }
+  RM.talking = false; RM.talked = true; roomDoor(); if (CAR.place === 'room') toast('Out the door when you\'re ready', 2);
+}
+function roomHide() { for (const o of ROOMP) o.p.root.visible = false; if (CROF.p && !CROF.on) CROF.p.root.visible = false; if (CAR.place === 'room') CAR.place = null; }
+function roomLeave(where) {
+  if (CAR.place !== 'room') return; const kind = RM.kind; roomHide(); if (audio) audio.click(true);
+  if (where === 'pub') return carPub();
+  if (where === 'home') return carHub();
+  if (kind === 'train') { CAR.step = 'train'; drillStart(CAR.train.id); return; }
+  carGameGo();
+}
+function roomFrame(dt) {
+  const s = renderer.xr.getSession(); if (!s) return;
+  RM.t += dt; RM.poseT += dt;
+  const pose = RM.poseT > 0.12; if (pose) RM.poseT = 0;
+  for (let i = 0; i < RM.n; i++) { const o = ROOMP[i], P = o.p, ps = P.s; if (!P.root.visible) continue;
+    if (P.talkT > 0) { ps.lookX = HEADW.x; ps.lookZ = HEADW.z; } else if (Math.random() < dt * 0.25) { const q = Math.random() < 0.3 ? null : ROOMP[Math.floor(Math.random() * RM.n)]; ps.lookX = q && q !== o ? q.x : RM.talking ? RM.crof.x : HEADW.x; ps.lookZ = q && q !== o ? q.z : RM.talking ? RM.crof.z : HEADW.z; }
+    if (RM.talking) { ps.lookX = RM.crof.x; ps.lookZ = RM.crof.z; }
+    if (pose || P.talkT > 0) posePlayer(P, pose ? 0.12 : dt); }
+  if (RM.crof) { const P = RM.crof.p, ps = P.s; ps.lookX = HEADW.x; ps.lookZ = HEADW.z; posePlayer(P, dt); }
+  // the team talk: after a bit of chat (or straight away if it's gone quiet)
+  if (RM.kind !== 'post' && !RM.talked && !RM.talking && (RM.t > (RM.kind === 'train' ? 4 : 16) || (RM.t > 8 && MIC.sent === RM.lastSent && !MIC.busy))) roomTeamTalk();
+  if (MIC.sent !== RM.lastSent) { RM.lastSent = MIC.sent; RM.talkT = 0; }
+  RM.talkT += dt;
+  if (RM.kind === 'post' && RM.talkT > 9 && RM.said < 2 && !MIC.busy && nowS() > MIC.gate + 6) { RM.talkT = 0; RM.said++; const last = CAR.vc.last;
+    if (RM.said === 1 && RM.crof) roomLine(RM.crof.p, '(Back in the dressing room after the game against ' + (last ? last.opp + ', ' + last.gf + '-' + last.ga : 'them') + '. Say a few words to the whole team about the game: warm and honest, never harsh.)', last && last.gf > last.ga ? 'Brilliant, lads. Proper team performance.' : last && last.gf < last.ga ? 'Heads up. Plenty to build on. Same again next week, but better.' : 'Hard-earned point, lads. Good effort.');
+    else { const o = ROOMP[1 + Math.floor(Math.random() * Math.max(1, RM.n - 1))]; if (o) roomLine(o.p, '(In the dressing room after the game. Say something short to Drew, about the game or the pub.)', pick(['Pint?', 'Good shift out there, Drew.', 'My legs are done.'])); } }
+  // the door
+  const ray = h => panelRay(h, roomDoorM, 0.8, 0.5, 512, 320, RM.hits || []);
+  const hv = { left: ray('left'), right: ray('right') }, hov = hv.right >= 0 ? hv.right : hv.left;
+  if (hov !== RM.hov) { RM.hov = hov; roomDoor(); if (hov >= 0) buzz('right', 0.1, 8); }
+  for (const src of s.inputSources) {
+    const gp = src.gamepad, h = src.handedness; if (!gp || (h !== 'left' && h !== 'right')) continue;
+    const pb = prevBtn[h], edge = i => !!(gp.buttons[i] && gp.buttons[i].pressed) && !pb[i];
+    if (h === 'left' && edge(4)) openMenu();
+    if (h === 'left' && edge(5)) { for (let i = 0; i < gp.buttons.length; i++) pb[i] = !!gp.buttons[i].pressed; roomLeave(RM.kind === 'post' ? 'pub' : 'ice'); return; }
+    if (edge(0) && hv[h] >= 0 && RM.hits[hv[h]]) { for (let i = 0; i < gp.buttons.length; i++) pb[i] = !!gp.buttons[i].pressed; RM.hits[hv[h]].act(); return; }
+    if (h === 'right') {
+      const ax = gp.axes.length >= 4 ? gp.axes[2] : (gp.axes[0] || 0);
+      if (st.turn === 'smooth') { if (Math.abs(ax) > 0.2) rotateRig(-ax * 1.3 * dt, HEADW); }
+      else if (Math.abs(ax) < 0.35) RM.arm = true; else if (RM.arm && Math.abs(ax) > 0.75) { RM.arm = false; rotateRig(-Math.sign(ax) * (st.turn === 'snap45' ? Math.PI / 4 : Math.PI / 6), HEADW); }
+      if (st.talk !== 'off') { const aD = !!(gp.buttons[4] && gp.buttons[4].pressed); if (aD !== MIC.ptt) micPTT(aD); }
+    }
+    for (let i = 0; i < gp.buttons.length; i++) pb[i] = !!gp.buttons[i].pressed;
+  }
+  talkFrame(dt); updateToast(dt);
 }
 
 // ---- the breakout, as you described it: forwards on the blue line, the puck to a D, his call (or yours), the centre curls for it and moves it up
@@ -5871,6 +6046,11 @@ function vrFrame(t, frame, dt) {
     if (hw && audio) audio.listen(hw, V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion));
     pubFrame(dt); return;
   }
+  if (CAR.place === 'room') {                                                 // career: in the dressing room
+    rig.updateMatrixWorld(true); const f0 = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion); HF.set(f0.x, 0, f0.z); if (HF.lengthSq() < 0.04) HF.set(Math.cos(lastYaw), 0, Math.sin(lastYaw)); HF.normalize();
+    if (hw && audio) audio.listen(hw, V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion));
+    roomFrame(dt); return;
+  }
   if (DBD.open) {                                                               // the drill board before a drill: the game waits
     rig.updateMatrixWorld(true); const f0 = V.set(0, 0, -1).applyQuaternion(headQ).applyQuaternion(rig.quaternion); HF.set(f0.x, 0, f0.z); if (HF.lengthSq() < 0.04) HF.set(Math.cos(lastYaw), 0, Math.sin(lastYaw)); HF.normalize();
     pvFrame(dt); return;
@@ -5958,7 +6138,7 @@ async function enterVR(mode) {
   } catch (e) { st.inVR = false; closeAudio(); failure = 'VR started but the 3D view could not attach: ' + (e && e.message || e); showErr(failure); buildResult(null); }
 }
 function onEnd() {
-  micStop(); if (CAR.vc) carSave(); CAR.step = null; PH.open = false; CAR.place = null; for (const o of PUBP) o.p.root.visible = false; phoneM.visible = false; st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
+  micStop(); if (CAR.vc) carSave(); CAR.step = null; PH.open = false; CAR.place = null; for (const o of PUBP) o.p.root.visible = false; for (const o of ROOMP) o.p.root.visible = false; phoneM.visible = false; st.inVR = false; rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); lastT = 0; sizePreview();
   closeAudio(); vig.visible = false; toastM.visible = false; toastT = 0; stickOn = false; showStick(false); keepOn = false; handsOne = false; grabPend = 0; MENU.open = false; drillStop(true); scStop(true); st.inVR = false; othersInit(); menuM.visible = false; for (const h of ['left', 'right']) { lasers[h].visible = false; dots[h].visible = false; }
   const ended = { ...run, sk: { ...run.sk, speedT: run.sk.speedT.slice() }, pk: { ...run.pk }, frames: run.frames.map(a => a.slice()) };
   buildResult(ended);
@@ -6154,7 +6334,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
