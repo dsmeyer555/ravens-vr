@@ -2026,7 +2026,7 @@ function pollInput(dt, hw, hy) {
     } else {
       if (edge(4) && st.oneM === 'btn') toggleHands();
       else if (st.oneM !== 'btn' && st.talk !== 'off') { const aD = !!(gp.buttons[4] && gp.buttons[4].pressed); if (aD !== MIC.ptt) micPTT(aD); }
-      if (edge(5)) puckBack();
+      if (edge(5)) { if (BN.on && SC.on) benchSkip(); else puckBack(); }
       if (edge(3)) { if (SC.on || DR.on) myCall('over'); else nextCurve(); }
       const lt = gp.buttons[0], lv = lt ? (lt.value || (lt.pressed ? 1 : 0)) : 0;                    // the right trigger keeps the puck on the blade (unless it holds the stick)
       if (st.oneM === 'hold' && h === (st.shot === 'right' ? 'right' : 'left')) { if (keepOn) setKeep(false); }
@@ -3360,11 +3360,13 @@ function scStop(quiet) {
 // the circle in their own). At a stoppage, a line that has been out a while changes.
 function scFaceoff(msg, dot) {
   dot = dot || [0, 0]; const [fx0, fz0] = dot;
-  if (SC.grp && st.inVR && SC.on && !SC.over && SC.t > 1) {             // Crofty's call stands at a stoppage: off you go, or on you go
+  if (SC.grp && st.inVR && SC.on && !SC.over && SC.t > 1 && SC.noChg !== 'ravens') {   // Crofty's call stands at a stoppage: off you go, or on you go (not after your icing)
     if (!BN.on && BN.called) benchGo(true);
     else if (BN.on && BN.t > 1.5 && BN.upCalled) benchGo(false);
   }
+  if (SC.grp && SC.noChg) toast((SC.noChg === 'ravens' ? 'Ravens' : oppN()) + ' iced it: no change', 1.8);
   if (SC.grp) for (const team of ['ravens', 'visitors']) for (const k of ['F', 'D']) {
+    if (team === SC.noChg) continue;
     const on = SC.sk.filter(s => s.team === team && isK(s, k)), avg = on.reduce((a, s) => a + (s.shift || 0), 0) / Math.max(1, on.length);
     if (avg > 38) scSwapLine(team, k);
   }
@@ -3378,7 +3380,7 @@ function scFaceoff(msg, dot) {
     let [x, z] = inRink(dir * u, dir * v, 1.5); skPlace(s, x, z, dir, 0); s.cool = 0.2;
   }
   if (!BN.on) { const dr = teamDir('ravens'); let [x, z] = inRink(fx0 - dr * 1.6, fz0 - dr * 4.6, 1.5); teleportTo(x, z, dr > 0 ? 0 : Math.PI); }
-  resetPuck(fx0, fz0); SC.pause = 1.5; SC.dot = dot; SC.rpx = null; SC.lastTeam = null; SC.dOff = null; SC.msg = msg || 'Faceoff'; SC.chase = {}; SC.press = {}; toast(SC.msg, 2);
+  resetPuck(fx0, fz0); SC.pause = 1.5; SC.dot = dot; SC.rpx = null; SC.lastTeam = null; SC.dOff = null; SC.ice = null; SC.noChg = null; SC.msg = msg || 'Faceoff'; SC.chase = {}; SC.press = {}; toast(SC.msg, 2);
   goalHomes();
   boardText();
 }
@@ -3414,12 +3416,17 @@ function scLines(dt, carrierTeam, stopped) {
   if (SC.mode !== '5' || stopped) return;
   for (const s of SC.sk) s.shift = (s.shift || 0) + dt;
   for (const team of ['ravens', 'visitors']) {
-    const dir = teamDir(team), mine = SC.sk.filter(s => s.team === team), going = mine.filter(s => s.chg).length;
-    const pinned = carrierTeam && carrierTeam !== team && dir * PK.x < -BLUEL;          // never change while they have it in your end
+    const dir = teamDir(team), mine = SC.sk.filter(s => s.team === team); let going = mine.filter(s => s.chg).length;
+    // change on the fly only when it's safe, and one or two at a time: the puck deep in their end, or you've got it going forward. Never with it in your end.
+    const zone = dir * PK.x, theirs = !!carrierTeam && carrierTeam !== team, ours = carrierTeam === team;
+    const deep = zone > BLUEL + 3 && !theirs, safeF = deep || (zone > BLUEL && !theirs) || (ours && zone > 1), safeD = !theirs && zone > BLUEL;
+    const maxGo = deep ? 2 : 1;
     const fNow = team === 'ravens' ? grpOn('ravens', 'F') : 0;
     for (const s of mine) {
       const isF = s.role !== 'D', may = !(team === 'ravens' && isF) || (BN.on && fNow === 1);   // your line goes off with you; line 2 hands over to line 3 by itself
-      if (!s.chg && may && !pinned && going < 3 && !s.has && s.shift > (isF ? SHIFT_F : SHIFT) && Math.random() < dt * 0.6) {
+      const len = isF ? SHIFT_F : SHIFT, safe = isF ? safeF : safeD, dD = s.role === 'D' && mine.some(q => q.chg && q.role === 'D');
+      if (!s.chg && may && safe && !dD && going < maxGo && !s.has && s.shift > len && Math.random() < dt * 0.8) {
+        going++;
         s.chg = true; if (team === 'ravens') { say(s.p, 'Change!'); if (isF && pClock - SC.fChgT > 20) { SC.fChgT = pClock; croftySay(pick(['Change, lads!', 'On you go, lads.'])); } }
       }
       if (s.chg) { const [bx, bz] = BENCH[team]; if (Math.hypot(s.x - bx, s.z - bz) < 2) scSwapOne(s); }
@@ -3499,7 +3506,7 @@ function benchSwapRavens(drewOff) {
   if (!SC.grp) return;
   const G = SC.grp.ravens.F, cur = grpOn('ravens', 'F');
   if (!drewOff && cur > 0) SC.fPrev = cur;
-  const inn = G[drewOff ? (SC.fPrev === 1 ? 2 : 1) : 0];
+  const inn = G[drewOff ? 1 : 0];
   const out = SC.sk.filter(s => s.team === 'ravens' && s.role !== 'D');
   for (const s of out) { s.has = false; s.act = ''; s.chg = false; }
   SC.sk = SC.sk.filter(s => !out.includes(s)).concat(inn);
@@ -3512,13 +3519,46 @@ function benchGo(off) {
   if (off) {
     teleportTo(door, BNG.z0 + 0.6, -Math.PI / 2); BN.on = true; BN.t = 0; BN.shift2 = 0; BN.called = false; BN.upCalled = false; BN.upT = 0; BN.zoneT = 0;
     benchSwapRavens(true); run.benchOff = (run.benchOff || 0) + 1;
-    toast(BN.hint++ < 2 ? 'On the bench. Push the left stick forward to go back on' : 'On the bench', 2.5);
+    toast(BN.hint++ < 2 ? 'On the bench. The next two lines go, then Crofty calls you. B skips to your next shift' : 'On the bench. B skips to your shift', 3);
     const m = SC.grp.ravens.F[0][Math.floor(Math.random() * SC.grp.ravens.F[0].length)]; if (m && Math.random() < 0.6) setTimeout(() => { if (BN.on) say(m.p, pick(['Nice!', 'Lovely!', 'Yes boys!'])); }, 900);
   } else {
     teleportTo(door, BNG.z0 - 1.25, -Math.PI / 2); BN.on = false; BN.shift = 0; BN.called = false; BN.upCalled = false; BN.zoneT = 0;
     benchSwapRavens(false); run.benchOn = (run.benchOn || 0) + 1; toast('Over the boards. Go!', 1.4);
   }
   MENU.dirty = true;
+}
+function benchSkip() {
+  if (!BN.on || !SC.on || SC.over || SC.inter > 0 || SC.after > 0 || SC.mode !== '5') return;
+  const fNow = grpOn('ravens', 'F'), fOn = SC.sk.filter(s => s.team === 'ravens' && s.role !== 'D'), fSh = fOn.reduce((a, s) => a + (s.shift || 0), 0) / Math.max(1, fOn.length);
+  let need = fNow === 2 ? SHIFT_D2 - fSh : fNow === 1 ? Math.max(0, SHIFT_F - fSh) + SHIFT_D2 : SHIFT_D2;
+  need = Math.max(12, need + 5 + Math.random() * 15);
+  const el = Math.min(need, SC.clk - 4); if (el < 8) { toast('Not enough time left in the period', 1.6); return; }
+  // what happened while you watched: the other lines against theirs, shots and goals by the strength of each side
+  const rq = (SC.Qr || ravensQ()).sk, oq = (SC.Qopp || SC.Qv || skillQ(levelSk())).sk, tilt = Math.exp(2.2 * (rq - oq));
+  const gR = 0.0025 * tilt, gO = 0.0025 / tilt, shR = 0.017 * Math.sqrt(tilt), shO = 0.017 / Math.sqrt(tilt);
+  const nm = q => (RN.map && RN.map[q.num] || {}).n || '';
+  const mates = SC.grp.ravens.F.slice(1).flat().concat(SC.grp.ravens.D.flat()).filter(q => nm(q));
+  const pr = q => q.role === 'D' ? 0.35 : 1, pickM = () => { const t = mates.reduce((a, q) => a + pr(q), 0); let r = Math.random() * t; for (const q of mates) { r -= pr(q); if (r <= 0) return q; } return mates[0]; };
+  let clk = SC.clk; const said = [];
+  for (let t = 0; t < el; t++, clk--) {
+    if (Math.random() < shR) SC.shots[0]++;
+    if (Math.random() < shO) SC.shots[1]++;
+    if (Math.random() < gR) { SC.score[0]++; SC.shots[0]++; const a = mates.length ? pickM() : null, b = mates.length > 1 && Math.random() < 0.75 ? pickM() : null; const sc = a ? nm(a) : '', as = b && b !== a ? nm(b) : '';
+      SC.goals.push({ t: 'R', sc, as: as ? [as] : [], per: SC.per, clk: Math.round(clk) }); (SC.log = SC.log || []).push(ordN(SC.per) + ' ' + clockStr(clk) + ' Ravens goal' + (sc ? ' by ' + sc : '')); said.push('Ravens scored' + (sc ? ' (' + sc + ')' : '')); }
+    if (Math.random() < gO) { SC.score[1]++; SC.shots[1]++; SC.goals.push({ t: 'O', sc: '', as: [], per: SC.per, clk: Math.round(clk) }); (SC.log = SC.log || []).push(ordN(SC.per) + ' ' + clockStr(clk) + ' ' + oppN() + ' goal'); said.push(oppN() + ' scored'); }
+  }
+  SC.clk -= el;
+  // the D pairs and their lines rotated meanwhile
+  const steps = Math.max(1, Math.round(el / 45));
+  for (const [team, k] of [['ravens', 'D'], ['visitors', 'F'], ['visitors', 'D']]) { const G = SC.grp[team][k], cur = Math.max(0, grpOn(team, k)), nx = (cur + steps) % G.length; if (nx !== cur) grpSwap(team, k, nx); }
+  for (const s of SC.sk) s.shift = 0;
+  const m = Math.floor(el / 60), sec = Math.round(el % 60);
+  toast('Skipped ' + m + ':' + String(sec).padStart(2, '0') + (said.length ? '. ' + said.join(', ') : '. No goals') + '.  ' + SC.score[0] + ' - ' + SC.score[1], 4);
+  BN.upCalled = true; benchGo(false);
+  const dots = [[0, 0], [6.1, 6.71], [6.1, -6.71], [-6.1, 6.71], [-6.1, -6.71]];
+  scFaceoff('Your shift. ' + SC.score[0] + ' - ' + SC.score[1], said.length ? [0, 0] : dots[Math.floor(Math.random() * dots.length)]);
+  croftySay(pick(["Drew's line, you're up!", 'On you go, lads.']));
+  run.skips = (run.skips || 0) + 1; boardText();
 }
 function benchLeave() { if (BN.on) { BN.on = false; const d = BNG.ravens.door; teleportTo(d, BNG.z0 - 1.25, -Math.PI / 2); } }
 function benchFrame(dt) {
@@ -3549,10 +3589,13 @@ function benchFrame(dt) {
   } else {
     BN.t += dt; if (!stopped) BN.shift2 += dt;
     const fOn = SC.sk.filter(s => s.team === 'ravens' && s.role !== 'D'), fSh = fOn.reduce((a, s) => a + (s.shift || 0), 0) / Math.max(1, fOn.length);
-    if (grpOn('ravens', 'F') === 2 && fSh > SHIFT_D2 && pClock - BN.callT > 15) { croftySay(!BN.upCalled ? "Drew's line, you're up!" : "Up you go, Drew."); BN.callT = pClock; BN.upCalled = true; }
+    if (grpOn('ravens', 'F') === 2 && fSh > SHIFT_D2 && pClock - BN.callT > 15) { croftySay(!BN.upCalled ? "Drew's line, you're up!" : "Up you go, Drew."); if (!BN.upCalled) toast('Your shift: push the left stick forward to go on', 2.5); BN.callT = pClock; BN.upCalled = true; }
     const want = BN.sy < -0.6 || HEADW.z < BNG.z0 - 0.15;
     BN.upT = want ? BN.upT + dt : 0;
-    if (BN.t > 2 && BN.upT > 0.25) benchGo(false);
+    if (BN.t > 2 && BN.upT > 0.25) {
+      if (BN.upCalled) benchGo(false);                                       // only once Crofty has called your line
+      else if (pClock - (BN.waitT || -9) > 4) { BN.waitT = pClock; toast('Not your shift yet. Watch, or press B to skip to it', 2); }
+    }
   }
 }
 const nearestDot = (x, z) => DOTS.reduce((b, d) => Math.hypot(d[0] - x, d[1] - z) < Math.hypot(b[0] - x, b[1] - z) ? d : b, DOTS[0]);
@@ -3679,7 +3722,7 @@ function scDecide(s, Q) {
     const spd = m.human ? clamp(9 + d0 * 0.25, 11, 14) : clamp(9 + d0 * 0.3, 11, 17), aim = passLead(s.x, s.z, m.bl[0], m.bl[1], m.vx || 0, m.vz || 0, spd);
     const mu = dir * aim[0], mv = dir * aim[1];
     if (u < -GX + 12 && mu < -GX + 12 && Math.abs(s.z) > 1 && Math.sign(aim[1]) !== Math.sign(s.z) && !(deepD && m.o.role === 'D' && Math.abs(aim[0]) > GX - 0.5)) continue;   // never across the front of our own net (behind it, D to D, is fine)
-    if (st.rulesOn && u < BLUEL && mu > BLUEL + 0.3) continue;            // offside
+    if (st.rulesOn && u < BLUEL && (mu > BLUEL + 0.3 || (mu > BLUEL - 0.5 && offAhead(s)))) continue;            // offside
     const lane = laneP(s.x, s.z, aim[0], aim[1], s.team, 0.8); if (lane < 0.25) continue;
     let near = 9; for (const o of oppsOf(s.team)) near = Math.min(near, Math.hypot(o.x - m.x, o.z - m.z));
     const open = clamp(near / 4, 0, 1), mq = shotQ(aim[0], aim[1], nx), threat = Math.max(0, mq - sq), terr = clamp((mu - u) / 20, -0.4, 1);
@@ -3695,7 +3738,7 @@ function scDecide(s, Q) {
   const prog = u < -BLUEL ? 0.4 : u < BLUEL ? 0.32 : u < GX - 6 ? 0.22 : 0.12, open = Math.max(fwd, wide * 0.9, mid * 0.85);   // carrying is good, moving it to someone open is usually better
   opts.push({ k: 'carry', sc: (1 - pr) * open * prog * 0.8 + 0.02 });
   // dump it in (from over the red line), chip it out (in our end), protect it on the wall
-  if (u > 0.5 && u < BLUEL + 1) { let wall = 0; for (const o of oppsOf(s.team)) if (dir * (o.x - s.x) > -0.5 && dir * (o.x - s.x) < 8 && Math.abs(o.z - s.z) < 5) wall++; opts.push({ k: 'dump', sc: (pr * 0.6 + 0.12 * wall) * 0.85 }); }
+  if (u > 0.5 && u < BLUEL + 1) { let wall = 0; for (const o of oppsOf(s.team)) if (dir * (o.x - s.x) > -0.5 && dir * (o.x - s.x) < 8 && Math.abs(o.z - s.z) < 5) wall++; opts.push({ k: 'dump', sc: (pr * 0.6 + 0.12 * wall) * 0.85 * (st.rulesOn && offAhead(s) ? 0.25 : 1) }); }
   if (u < -BLUEL) opts.push({ k: 'clear', sc: pr * 0.5 * (u < -GX + 10 && Math.abs(s.z) < 6 ? 1.6 : 1) - 0.05 });
   if (Math.abs(s.z) > 9.5) opts.push({ k: 'protect', sc: pr * 0.25 });
   // pick: softmax over the scores (a better team almost always takes the best one)
@@ -3712,13 +3755,16 @@ function scDecide(s, Q) {
     s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [ch.aim[0], ch.aim[1], 0, ch.spd]; s.actT = ch.m.human ? 0.22 : 0.16; return;
   }
   if (ch.k === 'dump') { s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [dir * (GX - 1.5), -(Math.sign(s.z) || 1) * 9.5, 0, 14]; s.actT = 0.18; s.dumpT = 1; if (SC.st) SC.st.dump[s.team === 'ravens' ? 0 : 1]++; say(s.p, pick(['In deep!', 'Get in on it!']), { gap: 3 }); return; }
-  if (ch.k === 'clear') { s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [s.x + dir * 12, (Math.sign(s.z) || 1) * 12.5, 0, 13]; s.actT = 0.16; s.dumpT = 1; return; }   // off the boards and out
+  if (ch.k === 'clear') { const tx = dir * (1 + Math.random() * 6), tz = (Math.sign(s.z) || 1) * 11.2, d = Math.hypot(tx - s.x, tz - s.z); s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [tx, tz, 0, clamp(Math.sqrt(1.2 * (d + 4)), 6, 10.5)]; s.actT = 0.16; s.dumpT = 1; return; }   // off the boards and out
   if (ch.k === 'protect') s.prot2 = true;
   s.act = 'carry';
 }
 // where he carries it: the most open way up the ice, along the wall if he's protecting it, at the net in their end
+const offAhead = s => { const dir = teamDir(s.team); return SC.sk.some(o => o !== s && o.team === s.team && !o.chg && dir * o.x > BLUEL + 0.2) || (s.team === 'ravens' && !BN.on && dir * H.x > BLUEL + 0.2); };   // a teammate already in the zone
+const dir0 = s => teamDir(s.team);
 function scCarry(s) {
   const dir = teamDir(s.team), u = dir * s.x;
+  if (st.rulesOn && u < BLUEL && u > BLUEL - 7 - 0.5 * Math.hypot(s.vx, s.vz) && offAhead(s)) return inRink(dir * (BLUEL - 2.7), s.z + (Math.abs(s.z) > 6 ? -Math.sign(s.z) : (Math.sign(s.z) || 1)) * 3, 1.2);   // hold up at the line till they're back onside
   if (s.prot2) return inRink(s.x + dir * 2.5, s.z, 1.2);
   if (u > GX - 9) return inRink(dir * (GX - 4), s.z * 0.4, 1.2);
   let best = null, bs = -1;
@@ -3790,7 +3836,7 @@ function scTargets(s, carrier, carrierTeam) {
   if (s.chg) return BENCH[s.team];
   const dir = teamDir(s.team), Q = s.team === 'visitors' && SC.Qopp ? SC.Qopp : (s.team === 'ravens' ? SC.Qr : SC.Qv) || ravensQ();
   if (!carrier && SC.chase[s.team] === s && !(SC.dOff && SC.dOff.team === s.team)) { const p = intercept(s, Q); return [p[0] - s.fx * 0.7, p[1] - s.fz * 0.7]; }   // loose puck: to where he gets to it first
-  if (SC.dOff && SC.dOff.team === s.team && carrierTeam === s.team && s.role !== 'D') { s.urg = true; return [dir * (BLUEL - 1.2), clamp(s.z, -9, 9)]; }   // delayed offside: tag up
+  if (SC.dOff && SC.dOff.team === s.team && dir * s.x > BLUEL - 1.5 && (carrierTeam === s.team || dir * s.x > BLUEL + 0.35)) { s.urg = true; return [dir * (BLUEL - 1.2), clamp(s.z, -9, 9)]; }   // delayed offside: tag up
   if (SC.press[s.team] === s && carrier) {                               // pressure: the intercept point on him, forcing him wide
     const cx = carrier === 'human' ? H.x : carrier.x, cz = carrier === 'human' ? H.z : carrier.z, cvx = carrier === 'human' ? S.vx : carrier.vx, cvz = carrier === 'human' ? S.vz : carrier.vz;
     const ox = -dir * GX, lx = cx + cvx * 0.3, lz = cz + cvz * 0.3, tn = Math.hypot(ox - lx, lz) || 1;
@@ -3845,10 +3891,11 @@ function scRules(carrier, carrierTeam) {
   if (!st.rulesOn) return false;
   for (const team of ['ravens', 'visitors']) {
     const dir = teamDir(team), line = BLUEL + PUCK.R;
-    if (dir * px <= line && dir * x > line) {                                 // the puck has just gone over this team's attacking blue line
+    const took = carrier ? carrierTeam : SC.lastTeam;                         // only the team that carried, passed or shot it in can be offside
+    if (took === team && dir * px <= line && dir * x > line) {                // the puck has just gone over this team's attacking blue line
       const ahead = SC.sk.filter(q => q.team === team && q !== carrier && dir * q.x > BLUEL + 0.35).map(q => '#' + q.num);
       if (team === 'ravens' && !BN.on && carrier !== 'human' && dir * H.x > BLUEL + 0.35) ahead.unshift('you');
-      if (ahead.length) { SC.dOff = { team, who: ahead[0] }; SC.msg = 'Delayed offside: ' + (team === 'ravens' ? 'Ravens' : oppN()) + ' clear the zone'; toast(ahead[0] === 'you' ? 'Delayed offside: get out of the zone' : SC.msg, 1.6); boardText(); }
+      if (ahead.length) { SC.dOff = { team, who: ahead[0], t: pClock }; SC.msg = 'Delayed offside: ' + (team === 'ravens' ? 'Ravens' : oppN()) + ' clear the zone'; toast(ahead[0] === 'you' ? 'Delayed offside: get out of the zone' : SC.msg, 1.6); boardText(); }
     }
   }
   // delayed offside: the attackers must all get back over the line before one of them plays the puck in the zone
@@ -3856,11 +3903,21 @@ function scRules(carrier, carrierTeam) {
     const team = SC.dOff.team, dir = teamDir(team);
     const inZone = SC.sk.filter(q => q.team === team && dir * q.x > BLUEL + 0.35).length + (team === 'ravens' && !BN.on && dir * H.x > BLUEL + 0.35 ? 1 : 0);
     if (dir * PK.x < BLUEL || !inZone) { SC.dOff = null; SC.msg = inZone ? '' : 'Tagged up'; SC.msgT = pClock + 1.5; boardText(); }
-    else if (carrierTeam === team || (pClock - PK.touch < 0.05 && PK.lastT === team)) { const w = SC.dOff.who; SC.dOff = null; scWhistle('Offside: ' + w + (w === 'you' ? ' were' : ' was') + ' over the line', [dir * 6.1, (PK.z >= 0 ? 1 : -1) * 6.71]); return true; }
+    else if (carrierTeam === team || (pClock - PK.touch < 0.05 && PK.touch > SC.dOff.t + 0.03 && PK.lastT === team)) { const w = SC.dOff.who; SC.dOff = null; scWhistle('Offside: ' + w + (w === 'you' ? ' were' : ' was') + ' over the line', [dir * 6.1, (PK.z >= 0 ? 1 : -1) * 6.71]); return true; }
   }
-  if (!carrier && SC.lastTeam && SC.lastTeam !== 'goalie' && !PK.inNet && !PK.goalLatch && !(Math.abs(PK.z) < 1.2 && PK.y < 1.3)) {
+  // icing (hybrid): shot or cleared from its own half over the far goal line, untouched. It is waved off if the icing team gets there first or the goalie
+  // plays it, and called when a defender gets to it first (or the puck sits there).
+  if (SC.ice) {
+    const I = SC.ice, other = I.team === 'ravens' ? 'visitors' : 'ravens';
+    const touched = carrier ? carrierTeam : (pClock - PK.touch < 0.05 ? PK.lastT : null);
+    const dist = tm => { let d = 99; for (const q of SC.sk) if (q.team === tm) d = Math.min(d, Math.hypot(q.x - PK.x, q.z - PK.z)); if (tm === 'ravens' && !BN.on) d = Math.min(d, Math.hypot(H.x - PK.x, H.z - PK.z)); return d; };
+    const dO = dist(other), dI = dist(I.team);
+    const call = () => { SC.ice = null; SC.lastTeam = null; SC.noChg = I.team; scWhistle('Icing: ' + (I.team === 'ravens' ? 'Ravens' : oppN()), [-teamDir(I.team) * (GX - 6.1), (PK.z >= 0 ? 1 : -1) * 6.71]); return true; };
+    if (SC.lastTeam === 'goalie' || touched === I.team || (dI < 1.6 && dI < dO)) { SC.ice = null; SC.msg = 'Icing waved off'; SC.msgT = pClock + 1.5; boardText(); }
+    else if (touched === other || (dO < 3 && dO + 0.8 < dI) || pClock - I.t > 5) return call();
+  } else if (!carrier && SC.lastTeam && SC.lastTeam !== 'goalie' && !PK.inNet && !PK.goalLatch && !(Math.abs(PK.z) < 1.2 && PK.y < 1.3)) {
     const dir = teamDir(SC.lastTeam);
-    if (dir * x > GX + 0.15 && dir * SC.lastU < 0) { const t = SC.lastTeam; SC.lastTeam = null; scWhistle('Icing: ' + (t === 'ravens' ? 'Ravens' : oppN()), [-dir * (GX - 6.1), (PK.z >= 0 ? 1 : -1) * 6.71]); return true; }
+    if (dir * x > GX + 0.15 && dir * SC.lastU < 0) { SC.ice = { team: SC.lastTeam, t: pClock }; SC.msg = 'Icing?'; SC.msgT = pClock + 2; boardText(); }
   }
   return false;
 }
@@ -3890,7 +3947,7 @@ function scFrame(dt) {
   }
   for (const s of SC.sk) {
     if (stopped) continue;
-    if (!carrier && SC.pause <= 0 && !s.chg && skCanPick(s)) { skPick(s); carrier = s; }
+    if (!carrier && SC.pause <= 0 && !s.chg && !(SC.dOff && SC.dOff.team === s.team && teamDir(s.team) * s.x > BLUEL) && skCanPick(s)) { skPick(s); carrier = s; }   // (offside players in the zone leave it)
     if (s.has) {
       if (skAct(s, dt, qf(s))) carrier = null;
       else if (s.act !== 'shoot' && s.act !== 'pass' && s.dec <= 0) { s.dec = qf(s).dec * (0.7 + Math.random() * 0.6); scDecide(s, qf(s)); if (s.act === 'pass' && s.team === 'ravens' && called()) s.actT = 0.12; }
@@ -3910,7 +3967,7 @@ function scFrame(dt) {
     if (stopped && SC.pause <= 0) t = [s.x + s.vx * 0.3, s.z + s.vz * 0.3];
     else if (SC.pause > 0) t = [s.x, s.z];
     else if (s.has && s.act === 'carry') t = scCarry(s);
-    else if (s.has) t = [s.x, s.z];
+    else if (s.has) t = st.rulesOn && dir0(s) * s.x < BLUEL && dir0(s) * s.x > BLUEL - 4 && offAhead(s) ? [s.x - dir0(s) * 1.5, s.z] : [s.x, s.z];   // (don't drift over the line with a mate offside)
     else { s.urg = false; t = (!s.chg && skIncoming(s)) || scTargets(s, carrier, carrierTeam); }
     t = s.chg ? t : inRink(t[0], t[1], 1.0);
     const k = s.has || SC.chase[s.team] === s || s.urg ? 1 : 1 - Math.exp(-dt / 0.5);
@@ -4229,7 +4286,7 @@ function playLive() { return SC.on ? (!SC.over && !(SC.pause > 0) && !(SC.after 
 function talkCtx() {
   const live = playLive();
   let now = 'Free skate at the rink with the puck.';
-  if (CAR.place === 'pub' || CAR.place === 'room' || PH.open) now = carNowText();
+  if (CAR.place === 'pub' || CAR.place === 'room' || PH.open) now = carNowText() + ((CAR.place === 'pub' || CAR.place === 'room') && SCN.length ? ' Just said around you: ' + SCN.slice(-4).join(' / ') : '');
   else if (SC.on) now = (SC.fx ? 'This week\'s league game, played in VR, against ' + SC.fx.opp + (SC.fx.cup ? ' (Talon Cup)' : '') + ', ' : (SC.mode === '5' ? '5 on 5' : '3 on 3') + ' scrimmage against the Visitors, ') + (SC.over ? 'just finished' : ordN(SC.per) + ' period, ' + clockStr(SC.clk) + ' left') + ', Ravens ' + SC.score[0] + ' ' + oppN() + ' ' + SC.score[1] + ', shots ' + SC.shots[0] + ' to ' + SC.shots[1] + '. Drew so far: ' + SC.my.g + ' goals, ' + SC.my.a + ' assists, ' + SC.my.sh + ' shots.' + (SC.msg ? ' Last thing that happened: ' + SC.msg + '.' : '');
   else if (DR.on && DR.d) now = 'Training, the ' + DR.d.name + ' drill' + (DR.rep ? ', rep ' + DR.rep + ' of ' + DR.d.reps : '') + '. ' + (DR.msg || '');
   const fr = fxNow && CAR.vc ? fxNow() : null;
@@ -4247,9 +4304,10 @@ async function micSend(pcm) {
   const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 20000);
   const on = o => {                                                       // each part as it arrives
     if (o.error) throw new Error(o.error);
+    if (o.quota) quotaNote();
     if (o.heard !== undefined) { rec.heard = o.heard; rec.intent = o.intent; rec.tHeard = Math.round((nowS() - t0) * 1000); if (o.heard && o.intent !== 'none') toast('You: "' + o.heard.slice(0, 60) + '"', 1.6);
       if (o.intent === 'command') { voiceCommand(o.command); if (P) bubbleClear(P); } else if (o.intent === 'none' && P) bubbleClear(P); }
-    if (o.reply !== undefined && P) { rec.tReply = Math.round((nowS() - t0) * 1000); if (o.reply) { say(P, o.reply, { force: true, quiet: true, hold: 1.5 + o.reply.length * 0.07 }); hist.push({ role: 'user', content: rec.heard }, { role: 'assistant', content: o.reply }); MIC.hist[to] = hist.slice(-12); } else bubbleClear(P); }
+    if (o.reply !== undefined && P) { rec.tReply = Math.round((nowS() - t0) * 1000); if (o.reply) { say(P, o.reply, { force: true, quiet: true, hold: 1.5 + o.reply.length * 0.07 }); hist.push({ role: 'user', content: rec.heard }, { role: 'assistant', content: o.reply }); MIC.hist[to] = hist.slice(-12); scnAdd('Drew', rec.heard); scnAdd(to, o.reply); } else bubbleClear(P); }
     if (o.audio && P) { if (rec.tVoice === undefined) rec.tVoice = Math.round((nowS() - t0) * 1000); replyAudio(P, o.audio); }
     if (o.ms) rec.srv = o.ms;
   };
@@ -4601,7 +4659,7 @@ async function thFetch(th, typed) {
   const body = { hist: thHist(th).slice(0, typed ? -1 : undefined), typed: typed || '', ctx: { now: carNowText(), topic: th.topic } };
   if (th.group) body.group = th.group; else body.to = th.to;
   let msgs = [], options = [];
-  if (brainOK()) { try { const j = await brainFetch('/text', body, 20000); msgs = j.msgs || []; options = j.options || []; } catch (e) { PH.note = 'Your server did not answer: ' + (e.message || e); } }
+  if (brainOK()) { try { const j = await brainFetch('/text', body, 20000); msgs = j.msgs || []; options = j.options || []; if (j.quota) PH.note = "Cloudflare's free daily allowance is used up till midnight: stock replies for now"; } catch (e) { PH.note = 'Your server did not answer: ' + (e.message || e); } }
   if (!msgs.length) { const s = STOCK[th.kind === 'after' ? 'after' : 'chat'][Math.min(th.n, 1)]; msgs = [{ n: th.group ? th.group[0] : th.to, t: s[0] }]; options = s[1]; }
   if (options.length < 2) options = th.kind === 'after' ? ['Cheers lads', 'Great game', 'See you next week'] : ['Sounds good', 'Ha, brilliant', 'See you Thursday'];
   for (const m of msgs) th.msgs.push({ n: m.n, t: m.t });
@@ -4696,13 +4754,16 @@ function pubPeople(names) {
 function carPub() {
   const vc = CAR.vc, soc = vc.week % 4 === 0, mates = lineMates().filter(n => n !== 'Drew'), pick4 = [];
   for (const n of mates.slice(0, 2)) pick4.push(n); const rest = mates.slice(2); while (pick4.length < 4 && rest.length) pick4.push(rest.splice(Math.floor(Math.random() * rest.length), 1)[0]);
-  phoneClose(); CAR.place = 'pub'; CAR.pubT = 0; CAR.pubSaid = 0; CAR.pubSoc = soc; homeTvDraw();
+  phoneClose(); SCN.length = 0; CAR.place = 'pub'; CAR.pubT = 0; CAR.pubSaid = 0; CAR.pubSoc = soc; homeTvDraw();
   pubPeople(pick4.length ? pick4 : ['Crofty']);
   stickOn = false; showStick(false); for (const k of ['left', 'right']) { const g0 = hands[k] && hands[k].grip.children[0]; if (g0) g0.visible = true; }
   teleportTo(PUB.x - 1.2, PUB.z + 0.55, -Math.PI / 2);
   toast((soc ? 'Social night. ' : 'The pub. ') + 'Look at someone and speak. Press Y when you want to head home', 4);
   setTimeout(() => { if (CAR.place === 'pub' && PUBP[0]) pubLine(PUBP[0].p, soc ? '(Drew arrives for the team social night and joins you at the table. Greet him.)' : '(Drew has just walked into the pub after tonight\'s game and joined you at the table. Greet him and say something about the game.)'); }, 1800);
 }
+const SCN = [];                                                          // the last few things said out loud off the ice (who: what)
+const scnAdd = (n, t) => { if (t) { SCN.push(firstN(n || '') + ': "' + String(t).slice(0, 140) + '"'); if (SCN.length > 8) SCN.shift(); } };
+function quotaNote() { if (MIC.quotaT && nowS() - MIC.quotaT < 600) return; MIC.quotaT = nowS(); toast("Cloudflare's free daily allowance is used up: the lads are on stock lines till midnight", 4); }
 async function playReply(P, text, b64) {                               // one of the lads says a line: the words in a bubble and his voice from your server (or the headset's own voice without it)
   if (!P || !text) return;
   const voice = !!(b64 && audio && audio.ctx && st.sound);
@@ -4714,7 +4775,7 @@ async function pubLine(P, typed) {                                       // one 
   if (!brainOK() || !P || MIC.busy) return;
   MIC.busy = true; say(P, '...', { force: true, quiet: true, hold: 6 });
   let out = '';
-  try { const r = await brainFetch('/talk', { typed, to: P.name, play: false, ctx: talkCtx(), hist: MIC.hist[P.name] || [] }, 20000); if (r && r.reply) { out = r.reply; (MIC.hist[P.name] = MIC.hist[P.name] || []).push({ role: 'assistant', content: r.reply }); if (CAR.place === 'room') roomCap(P, r.reply); await playReply(P, r.reply, r.audio); } else bubbleClear(P); }
+  try { const r = await brainFetch('/talk', { typed, to: P.name, play: false, ctx: talkCtx(), hist: MIC.hist[P.name] || [] }, 20000); if (r && r.quota) quotaNote(); if (r && r.reply) { out = r.reply; scnAdd(P.name, r.reply); (MIC.hist[P.name] = MIC.hist[P.name] || []).push({ role: 'assistant', content: r.reply }); if (CAR.place === 'room') roomCap(P, r.reply); await playReply(P, r.reply, r.audio); } else bubbleClear(P); }
   catch (e) { bubbleClear(P); }
   MIC.busy = false; return out;
 }
@@ -4729,7 +4790,7 @@ function pubFrame(dt) {
   const s = renderer.xr.getSession(); if (!s) return;
   CAR.pubT += dt;
   for (let i = 0; i < CAR.pubN; i++) { const o = PUBP[i], ps = o.p.s; if (o.p.talkT > 0) { ps.lookX = HEADW.x; ps.lookZ = HEADW.z; } else if (Math.random() < dt * 0.3) { const t = PUBP[Math.floor(Math.random() * CAR.pubN)]; ps.lookX = t === o ? HEADW.x : t.x; ps.lookZ = t === o ? HEADW.z : t.z; } posePlayer(o.p, dt); }
-  if (CAR.pubT > 14 && MIC.sent === CAR.pubLastSent && CAR.pubSaid < 4 && nowS() > MIC.gate + 9 && !MIC.busy) { CAR.pubT = 0; CAR.pubSaid++; const o = PUBP[1 + Math.floor(Math.random() * Math.max(1, CAR.pubN - 1))] || PUBP[0]; pubLine(o.p, '(A quiet moment at the table. Say something to Drew, about tonight, the season, or the next game.)'); }
+  if (CAR.pubT > 25 && MIC.sent === CAR.pubLastSent && CAR.pubSaid < 3 && nowS() > MIC.gate + 9 && !MIC.busy) { CAR.pubT = 0; CAR.pubSaid++; const o = PUBP[1 + Math.floor(Math.random() * Math.max(1, CAR.pubN - 1))] || PUBP[0]; pubLine(o.p, '(A quiet moment at the table. Say something to Drew, about tonight, the season, or the next game.)'); }
   if (MIC.sent !== CAR.pubLastSent) { CAR.pubLastSent = MIC.sent; CAR.pubT = 0; CAR.pubSaid++; }
   const hits = [{ x: 0, y: 0, w: 512, h: 160, act: carPubLeave }];
   const ray2 = h => panelRay(h, pubBtnM, 0.4, 0.156, 512, 200, hits) >= 0 || panelRay(h, pubSignM, 0.9, 0.28, 512, 160, hits) >= 0;
@@ -5754,7 +5815,7 @@ function roomPlayer(i, name) {
 function carRoom(kind) {
   phoneClose(); if (DR.on) drillStop(true); if (SC.on) scStop(true);
   if (CAR.place === 'pub') { for (const o of PUBP) o.p.root.visible = false; }
-  CAR.place = 'room'; Object.assign(RM, { kind, phase: 'chat', t: 0, talkT: 0, quietT: 0, talked: false, talking: false, said: 0, lastSent: MIC.sent, hov: -1, poseT: 1, heard: '' });
+  SCN.length = 0; CAR.place = 'room'; Object.assign(RM, { kind, phase: 'chat', t: 0, talkT: 0, quietT: 0, talked: false, talking: false, said: 0, lastSent: MIC.sent, hov: -1, poseT: 1, heard: '' });
   const m0 = lineMates().filter(n => n !== 'Drew' && n !== 'Crofty'), mates = m0.length ? m0 : Object.entries(DEFAULT_LU).filter(([k]) => k !== 'G').map(([, v]) => v), gN = (st.lineup && st.lineup.G) || 'Craig';
   const people = (kind === 'train' ? mates.slice(0, 7) : mates.slice(0, 12)).concat(kind === 'train' ? [] : [gN]);
   const order = [2, 4, 1, 5, 0, 6, 7, 8, 9, 10, 11, 12, 13, 14];          // seats round the room, the ones beside you first (seat 3 is yours)
@@ -5869,15 +5930,15 @@ function roomFrame(dt) {
   // free chat until Crofty starts (when you ask, or after a good while once it goes quiet); the lads start conversations when it's quiet
   if (MIC.sent !== RM.lastSent) { RM.lastSent = MIC.sent; RM.talkT = 0; RM.quietT = 0; }
   RM.talkT += dt; if (!MIC.busy) RM.quietT += dt; else RM.quietT = 0;
-  if (RM.kind !== 'post' && RM.phase === 'chat' && ((RM.t > (RM.kind === 'train' ? 45 : 80) && RM.quietT > 7) || RM.t > (RM.kind === 'train' ? 90 : 170))) roomTeamTalk();
-  if (RM.phase === 'chat' && !RM.banter && RM.quietT > (RM.said ? 12 : 7) && nowS() > MIC.gate + 3 && !MIC.busy) {
+  if (RM.kind !== 'post' && RM.phase === 'chat' && ((RM.t > (RM.kind === 'train' ? 40 : 60) && RM.quietT > 7) || RM.t > (RM.kind === 'train' ? 80 : 130))) roomTeamTalk();
+  if (RM.phase === 'chat' && !RM.banter && RM.said < 5 && RM.quietT > (RM.said ? 26 : 7) && nowS() > MIC.gate + 3 && !MIC.busy) {
     RM.quietT = 0; const kind = RM.kind, last = CAR.vc.last, f = fxNow();
     if (kind === 'post' && RM.said === 0 && RM.crof) { RM.said++; roomLine(RM.crof.p, '(Back in the dressing room after the game against ' + (last ? last.opp + ', ' + last.gf + '-' + last.ga : 'them') + '. Say a few words to the whole team about the game: warm and honest, never harsh.)', last && last.gf > last.ga ? 'Brilliant, lads. Proper team performance.' : last && last.gf < last.ga ? 'Heads up. Plenty to build on.' : 'Hard-earned point, lads.'); }
     else {
       RM.said++; const near = ROOMP.slice(0, RM.n).filter(o => o.p.root.visible).sort((a, b) => Math.hypot(a.x - HEADW.x, a.z - HEADW.z) - Math.hypot(b.x - HEADW.x, b.z - HEADW.z)).slice(0, 6), o = near[Math.floor(Math.random() * near.length)];
       const topics = kind === 'post' ? ['the game', 'a moment from the game', 'the pub', 'how knackered you are'] : ['the weekend', 'football', 'something on telly', 'the weather', 'tonight\'s game' + (f ? ' against ' + f.opp : ''), 'last week', 'sticks, tape or skates', 'the pub after'];
       const tp = topics[RM.topic++ % topics.length];
-      if (RM.said % 3 === 0) roomBanter(tp); else if (o) roomLine(o.p, '(You\'re in the dressing room ' + (kind === 'post' ? 'after the game, taking your gear off' : 'getting your gear on') + '. Start a bit of casual chat with Drew about ' + tp + '. One or two short sentences, and ask him something.)', pick(kind === 'post' ? ['Pint?', 'Good shift out there, Drew.', 'My legs are done.'] : ['Big one tonight, Drew.', 'Feeling sharp?', 'Anyone got spare tape?', 'You watch the football at the weekend?']));
+      if (RM.said === 3) roomBanter(tp); else if (o) roomLine(o.p, '(You\'re in the dressing room ' + (kind === 'post' ? 'after the game, taking your gear off' : 'getting your gear on') + '. Start a bit of casual chat with Drew about ' + tp + '. One or two short sentences, and ask him something.)', pick(kind === 'post' ? ['Pint?', 'Good shift out there, Drew.', 'My legs are done.'] : ['Big one tonight, Drew.', 'Feeling sharp?', 'Anyone got spare tape?', 'You watch the football at the weekend?']));
     }
   }
   if (RM.phase === 'speech') {
@@ -6619,7 +6680,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
