@@ -2930,6 +2930,28 @@ function penPokeMiss(s, carrier, Q) {
 // ---- puck protection: your body between the man and the puck blocks his poke; holding the top-hand grip with the puck makes you protect it
 // (shoulder in, a little slower, much harder to strip).
 const PROT = { on: false, t: 0, hint: 0 };
+// the arm bar: your free (lower) hand held out, chest high, keeps a man at arm's length on that side, and he can't reach round it to poke
+function protArm() {
+  if (!handsOne || !stickOn || BN.on || !(STA.ly > 0.75 && STA.ly < 1.65)) return null;
+  const dx = STA.lx - H.x, dz = STA.lz - H.z, d = Math.hypot(dx, dz); if (d < 0.36) return null;
+  return { ux: dx / d, uz: dz / d, d: Math.min(d, 0.75) };
+}
+function protArmFrame(dt) {
+  const a = protArm(); PROT.arm = !!a; if (!a) return;
+  const L = []; if (SC.on) for (const s of SC.sk) if (s.team === 'visitors') L.push(s); if (DFN.on) L.push(DFN);
+  for (const o of L) {
+    const rx = o.x - H.x, rz = o.z - H.z, d = Math.hypot(rx, rz); if (d < 0.05 || d > 1.5) continue;
+    const side = (rx * a.ux + rz * a.uz) / d; if (side < 0.5) continue;  // only straight down your arm: off its line, he's free to come
+    const keep = a.d + 0.3; if (d >= keep) continue;
+    const nx = rx / d, nz = rz / d, k = 0.6 * (side - 0.5) / 0.5 + 0.25;  // a firm push straight on, softer as he works to the edge of it
+    o.x += nx * (keep - d) * k; o.z += nz * (keep - d) * k;
+    const vn = (o.vx || 0) * nx + (o.vz || 0) * nz; if (vn < 0) { o.vx -= vn * nx * k; o.vz -= vn * nz * k; }
+    const tx = -nz, tz = nx, sg = ((PK.x - o.x) * tx + (PK.z - o.z) * tz) >= 0 ? 1 : -1; o.vx += tx * sg * 2.2 * dt; o.vz += tz * sg * 2.2 * dt;   // and he tries to get round it
+    if (o.S) { o.S.x = o.x; o.S.z = o.z; o.S.vx = o.vx; o.S.vz = o.vz; }
+    if (!o.armT || pClock - o.armT > 0.4) { o.armT = pClock; buzz(handLo, 0.25, 30); if (PROT.hint < 3 && !PROT.armHint) { PROT.armHint = true; toast('Arm out: holding him off', 1.4); } }
+  }
+}
+function protArmCovers(s) { const a = protArm(); if (!a) return 0; const rx = s.x - H.x, rz = s.z - H.z, d = Math.hypot(rx, rz) || 1, side = (rx * a.ux + rz * a.uz) / d; return clamp((side - 0.5) / 0.35, 0, 1); }   // 1 straight down the arm, 0 once he's round it
 function protShield(s) {                                                // how much your body covers the puck from him: 0 open, 1 fully shielded
   const ax = s.x, az = s.z, bx = PK.x, bz = PK.z, dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1;
   const t = clamp(((H.x - ax) * dx + (H.z - az) * dz) / L2, 0, 1), px = ax + dx * t, pz = az + dz * t, d = Math.hypot(H.x - px, H.z - pz);
@@ -3332,6 +3354,7 @@ function defShow(v) {
 }
 // the defender in the 1 on 1 (and the 2 on 1). He backs off as you come, closes the gap, then steps up and challenges for the puck.
 function defFrame(dt) {
+  if (!SC.on) protArmFrame(dt);
   const D = DFN, P = D.p, s = P.s, Q = OPPS[st.oppP] || OPPS[1]; D.cool -= dt;
   if (DR.rep !== D.rep0) { D.rep0 = DR.rep; D.ax = D.az = null; D.ph = 'back'; D.phT = 0; }
   D.phT += dt;
@@ -3642,7 +3665,7 @@ function drillFrame(dt) {
     else if (PK.out > 0) end = 'Puck out of play';
     if (!end && (d.id === 'oneone' || d.id === 'twoone')) {
       if (DR.defHas) { DR.steals++; end = 'The D took it'; }
-      else if (DFN.on && !mateHas && Math.hypot(PK.x - DFN.x, PK.z - DFN.z) < 1.2 && Math.hypot(PK.vx - DFN.vx, PK.vz - DFN.vz) < 1.5 && !humanHas()) { DR.steals++; end = 'The D took it'; }
+      else if (DFN.on && !mateHas && Math.hypot(PK.x - DFN.x, PK.z - DFN.z) < 1.2 && Math.hypot(PK.vx - DFN.vx, PK.vz - DFN.vz) < 1.5 && !humanHas() && pClock - (PK.htouch || -9) > 0.7) { DR.steals++; end = 'The D took it'; }
     }
     if (!end && d.id === 'breakout') {
       const B = DR.bo;
@@ -3899,6 +3922,7 @@ function bodyHuman() {
 // ---- the puck and an AI skater
 function skCanPick(s) {
   const [bx, bz] = skBlade(s);
+  if (s.team === 'visitors' && stickOn && !BN.on && pClock - (PK.htouch || -9) < 0.7) { const hb = humanBlade(); if (Math.hypot(PK.x - hb[0], PK.z - hb[1]) < 0.55) return false; }
   return s.cool <= 0 && PK.y < PUCK.HH + 0.06 && !PK.sh && !(PK.hopT > pClock) && Math.hypot(PK.x - bx, PK.z - bz) < 0.8 && Math.hypot(PK.vx - s.vx, PK.vz - s.vz) < 22;
 }
 function scStat(s) {                                                   // who got the puck: a completed pass, or a turnover
@@ -3953,7 +3977,7 @@ function skPoke(s, Q, onHuman, carrier) {
   s.pw = 0; s.poke = 1.2;
   const cs = onHuman ? Math.hypot(S.vx, S.vz) : carrier ? Math.hypot(carrier.vx, carrier.vz) : 0, cq = onHuman ? 0.55 : ((carrier && (carrier.team === 'visitors' ? SC.Qopp || SC.Qv : SC.Qr)) || Q).sk || 0.5;
   let p = clamp(0.35 + 0.4 * ((Q.sk || 0.5) - cq) - 0.2 * cs / 8 + (carrier && carrier.prot2 ? -0.1 : 0), 0.1, 0.8) * (onHuman ? (st.arcade ? 0.9 : 1) : 1);
-  if (onHuman) { const sh = protShield(s); p *= (1 - 0.8 * sh) * (PROT.on ? 0.4 : 1); if (sh > 0.5 && PROT.on) EV.push({ k: 'mpass', v: 2, x: H.x, y: 1, z: H.z }); }
+  if (onHuman) { const sh = protShield(s); p *= (1 - 0.8 * sh) * (PROT.on ? 0.4 : 1) * (1 - 0.55 * protArmCovers(s)); if (sh > 0.5 && PROT.on) EV.push({ k: 'mpass', v: 2, x: H.x, y: 1, z: H.z }); }
   if (Math.random() < p) {
     const a = Math.atan2(s.fz, s.fx) + (Math.random() - 0.5) * 1.4, v = 2.5 + Math.random() * 3;
     if (carrier && carrier !== 'human') { carrier.has = false; carrier.act = ''; carrier.cool = 0.6; }
@@ -4657,7 +4681,7 @@ function scFrame(dt) {
   const carrierTeam = carrier === 'human' ? 'ravens' : carrier ? carrier.team : null;
   { const who = carrier === 'human' || pClock - (PK.htouch || -9) < 0.08 ? 'you' : carrier ? carrier.team[0] + carrier.num : null; if (who && who !== SC.tc.last) { SC.tc.prev = SC.tc.last; SC.tc.last = who; } }   // who touched it last (for goals and assists)
   if (!stopped) for (const s of SC.sk) if (carrier && carrierTeam !== s.team && !s.chg) { if (skPoke(s, qf(s), carrier === 'human', carrier)) carrier = null; }
-  penFrame(dt, stopped, carrier, carrierTeam);
+  penFrame(dt, stopped, carrier, carrierTeam); protArmFrame(dt);
   if (!stopped && scRules(carrier, carrierTeam)) return;
   scLines(dt, carrierTeam, stopped);
   scRoles(carrier, carrierTeam);
@@ -7420,7 +7444,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
