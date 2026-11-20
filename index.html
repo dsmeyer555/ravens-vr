@@ -284,7 +284,7 @@ details.rate[open]>summary{margin-bottom:10px}
           <option value="fd-stretch">Drill: Stretch Pass</option>
           <option value="fd-fourlines">Drill: Four Lines Flow</option>
           <option value="fd-twoone">Drill: 2 on 1 Rush</option>
-          <option value="fd-breakout">Drill: Breakout</option>
+          <option value="fd-breakout">Drill: Breakout Pass 1 on 1</option>
           <option value="fd-closeout">Drill: Cover the Point</option>
           <option value="fd-backcheck">Drill: Backcheck</option>
           <option value="defend">Drill: defending 1 on 1</option>
@@ -541,12 +541,13 @@ const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
 const DEFAULT_LU = { '17': 'Nicky', '12': 'Robbins', '27': 'Will', '19': 'Crofty', '22': 'Mids', '14': 'Tony', '16': 'Iain M.', '10': 'Ewan O.', '44': 'Samy', '5': 'Aidan', '2': 'Callum', '8': 'Mickey', '3': 'Oliver K.', '6': 'Grant', G: 'Craig' };
-const DEF = { passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 0, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 4, rulesOn: true, scrimM: '5', voices: true };
+const DEF = { passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 5, rulesOn: true, scrimM: '5', voices: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
     const j = JSON.parse(localStorage.getItem(SKEY) || localStorage.getItem(SKEY_OLD) || 'null');
-    if (j && typeof j === 'object' && !(j.cfg >= 3)) { delete j.oneM; delete j.goalP; delete j.oppP; }   // the arcade update: new defaults for the hands and the levels (an Easy level was added)
+    if (j && typeof j === 'object' && !(j.cfg >= 3)) { delete j.oneM; delete j.goalP; delete j.oppP; }
+    if (j && typeof j === 'object' && !(j.cfg >= 5) && j.oppP === 0) delete j.oppP;   // the new AI: Easy was the old default, Rec is now   // the arcade update: new defaults for the hands and the levels (an Easy level was added)
     if (j && typeof j === 'object') {
       const ok = (v, a) => a.includes(v);
       if (ok(j.level, [0, 1, 2])) o.level = j.level; if (ok(j.shot, ['right', 'left'])) o.shot = j.shot; if (ok(j.wantHz, [0, 90, 120])) o.wantHz = j.wantHz;
@@ -3250,21 +3251,22 @@ function skStolen(s, Q) {
     if (near && !humanHas()) { const a = Math.atan2(PK.z - s.z, PK.x - s.x) + (Math.random() - 0.5) * 1.2; PK.vx = s.vx * 0.3 + Math.cos(a) * 2.5; PK.vz = s.vz * 0.3 + Math.sin(a) * 2.5; PK.cr = 0; PK.touch = pClock; EV.push({ k: 'mpass', v: 4, x: PK.x, y: PK.y, z: PK.z }); } s.has = false; s.act = ''; s.cool = 0.8; s.poke = 0.6; run.steals = (run.steals || 0) + 1; PK.lastT = 'ravens'; return true; }
   PK.cr = 0; PK.rel = pClock + 0.3; return false;            // he protected it
 }
-// his stick reaches for a puck someone else is carrying
+// his stick reaches for a puck someone else is carrying: a telegraphed poke (his ring flashes) that works more often the better he is
 function skPoke(s, Q, onHuman, carrier) {
-  const [bx, bz] = skBlade(s);
-  const dP = Math.hypot(PK.x - bx, PK.z - bz);
-  if (s.poke > 0 || PK.y > PUCK.HH + 0.05 || dP > (s.pw ? 0.85 : 0.7)) { s.pw = 0; return false; }
-  if (!s.pw) { s.pw = pClock + (Q.wind || 0.3) * (st.arcade ? 1.3 : 1); return false; }     // he reaches first (his ring flashes): a moment to pull the puck away
+  const reach = Q.reach || 1.3, dx = PK.x - s.x, dz = PK.z - s.z, d = Math.hypot(dx, dz), facing = (dx * s.fx + dz * s.fz) / Math.max(d, 0.01);
+  if (s.poke > 0 || PK.y > PUCK.HH + 0.05 || d > reach || facing < 0.15) { if (d > reach + 0.5) s.pw = 0; return false; }
+  if (!s.pw) { s.pw = pClock + (Q.wind || 0.3); return false; }
   if (pClock < s.pw) return false;
-  s.pw = 0; s.poke = 0.8;
-  if (Math.random() < Q.poke * (onHuman ? 1.1 : 1)) {
+  s.pw = 0; s.poke = 1.2;
+  const cs = onHuman ? Math.hypot(S.vx, S.vz) : carrier ? Math.hypot(carrier.vx, carrier.vz) : 0, cq = onHuman ? 0.55 : ((carrier && (carrier.team === 'visitors' ? SC.Qopp || SC.Qv : SC.Qr)) || Q).sk || 0.5;
+  const p = clamp(0.35 + 0.4 * ((Q.sk || 0.5) - cq) - 0.2 * cs / 8 + (carrier && carrier.prot2 ? -0.1 : 0), 0.1, 0.8) * (onHuman ? (st.arcade ? 0.9 : 1) : 1);
+  if (Math.random() < p) {
     const a = Math.atan2(s.fz, s.fx) + (Math.random() - 0.5) * 1.4, v = 2.5 + Math.random() * 3;
     if (carrier && carrier !== 'human') { carrier.has = false; carrier.act = ''; carrier.cool = 0.6; }
-    PK.vx = Math.cos(a) * v + s.vx * 0.4; PK.vz = Math.sin(a) * v + s.vz * 0.4; PK.cr = 0; PK.sh = 0; PK.rel = pClock + 0.45; PK.touch = pClock; PK.soft = false; PK.lastT = s.team;
-    EV.push({ k: 'mpass', v: 4, x: PK.x, y: PK.y, z: PK.z }); return true;
+    PK.vx = Math.cos(a) * v + s.vx * 0.4; PK.vz = Math.sin(a) * v + s.vz * 0.4; PK.cr = 0; PK.sh = 0; PK.att = 0; PK.rel = pClock + 0.45; PK.touch = pClock; PK.soft = false; PK.lastT = s.team;
+    EV.push({ k: 'mpass', v: 4, x: PK.x, y: PK.y, z: PK.z }); if (onHuman) toast(pick(['Poked away!', 'He got a stick on it']), 0.9); return true;
   }
-  s.poke = 0.5 + Q.read; return false;                 // missed: a moment off balance
+  s.poke = 1.2 + Q.read; return false;                                   // missed: committed for a moment, out of position
 }
 // a pass on its way to him: where will it pass his blade?
 function skIncoming(s) {
@@ -3332,7 +3334,7 @@ function scStart(mode, fx) {
     SC.lines = { ravens: [...SC.grp.ravens.F, ...SC.grp.ravens.D], visitors: [...SC.grp.visitors.F, ...SC.grp.visitors.D] };
   } else { SC.grp = null; SC.lines = { ravens: R.ravens.map(L => mkLine('ravens', L)), visitors: R.visitors.map(L => mkLine('visitors', L)) }; }
   SC.fPrev = 2; SC.fChgT = -99; SC.goals = [];
-  SC.fx = SC.mode === '5' ? (fx || null) : null; SC.Qopp = fxSkill(SC.fx); if (SC.fx) fxLineup(SC.fx);
+  SC.fx = SC.mode === '5' ? (fx || null) : null; SC.Qr = ravensQ(); SC.Qv = skillQ(levelSk()); SC.Qopp = fxSkill(SC.fx); if (SC.fx) fxLineup(SC.fx);
   for (const L of [...SC.lines.ravens, ...SC.lines.visitors]) for (const q of L) skShow(q, false);   // everyone starts on the bench
   SC.sk = SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0], ...SC.grp.visitors.F[0], ...SC.grp.visitors.D[0]] : [...SC.lines.ravens[0], ...SC.lines.visitors[0]];
   for (const s of SC.sk) { skShow(s, true); s.shift = 0; s.chg = false; }
@@ -3588,176 +3590,245 @@ function scPeriodEnd() {
   } else { SC.inter = 6; SC.msg = 'End of the ' + ordN(SC.per) + ' period'; toast(SC.msg, 3); }
   boardText();
 }
+const AI2 = { on: true, ravens: true, visitors: true }, ai2 = t => true;   // (kept for old tests)
+// ---- the 5 on 5 AI (rebuilt from the hockey AI design notes). Everything runs in each team's own frame: u up the ice toward the net they attack,
+// v across (+ is the right side). Skill is one number per team (0..1) that sets speed, reactions, reach, accuracy and decision quality; your
+// teammates play at a solid level, the other team at the Opponents setting. Nobody gets hidden speed or puck cheats.
+//  - Positions come from formation tables for each phase (breakout, rush, offensive zone, forecheck, neutral-zone defence, D-zone coverage by
+//    where the puck is), shifted toward the puck. One skater pressures the carrier (or chases a loose puck, to where he can actually reach it).
+//  - Defenders keep a gap on the carrier: skating backwards facing him, between him and the net, inside shoulder, then step up and poke.
+//  - The carrier scores every option (shoot, pass to each teammate, carry, dump, chip it out, protect) on shot quality, how open the lane is,
+//    how open the receiver is and how much pressure he's under, then picks with a little randomness (less the better the team).
+//  - Passes lead the receiver properly; shots go to spots away from the goalie. Defenders step into shooting lanes.
+const AISK = { lv: [0.28, 0.56, 0.74, 0.9] };
+const lerp = (a, b, t) => a + (b - a) * t;
+function skillQ(sk) {
+  const top = SPEEDS[st.speed] || 6.5;
+  return { sk, spd: top * lerp(0.86, 1.03, sk), poke: lerp(0.25, 0.55, sk), pass: lerp(7, 1.5, sk) * Math.PI / 180, shot: lerp(8, 2, sk) * Math.PI / 180, read: lerp(0.3, 0.12, sk),
+    dec: lerp(0.32, 0.16, sk), prot: lerp(0.15, 0.6, sk), fo: 0.5, wind: lerp(0.4, 0.2, sk), reach: lerp(1.2, 1.55, sk), temp: lerp(0.25, 0.04, sk), shotV: lerp(17, 26, sk) };
+}
+const levelSk = () => AISK.lv[st.oppP] != null ? AISK.lv[st.oppP] : 0.52;
+const ravensQ = () => skillQ(clamp(levelSk(), 0.5, 0.8));
+// ---- the puck's path over the next 2 s (sliding, off the boards), rebuilt once a frame
+const PKP = { at: -1, pts: [] };
+function pkPath() {
+  if (PKP.at === pClock) return PKP.pts; PKP.at = pClock; const P = PKP.pts; P.length = 0;
+  let x = PK.x, z = PK.z, vx = PK.vx, vz = PK.vz;
+  for (let i = 0; i <= 40; i++) {
+    P.push([x, z, i * 0.05]);
+    const sp = Math.hypot(vx, vz); if (sp > 0.01) { const k = Math.max(0, sp - 0.6 * 0.05) / sp; vx *= k; vz *= k; }
+    x += vx * 0.05; z += vz * 0.05;
+    const [cx, cz] = inRink(x, z, 0.1); if (cx !== x) { vx = -vx * 0.7; x = cx; } if (cz !== z) { vz = -vz * 0.7; z = cz; }
+  }
+  return P;
+}
+function ttp(s, x, z, Q) {                                               // how long he takes to get there (turning round costs time)
+  const dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz); if (d < 0.05) return 0;
+  const ux = dx / d, uz = dz / d, vmax = Q.spd, a = 5; let vt = s.vx * ux + s.vz * uz, t = 0, dist = d;
+  if (vt < 0) { t += -vt / 8; dist += vt * vt / 16; vt = 0; }
+  t += 0.5 * Math.abs(s.vx * uz - s.vz * ux) / 7.5;
+  const dAcc = (vmax * vmax - vt * vt) / (2 * a);
+  return t + (dist <= dAcc ? (-vt + Math.sqrt(vt * vt + 2 * a * dist)) / a : (vmax - vt) / a + (dist - dAcc) / vmax);
+}
+function intercept(s, Q) {                                               // the first point on the puck's path he gets to in time
+  const P = pkPath(), reach = 0.9;
+  for (const p of P) if (ttp(s, p[0], p[1], Q) + Q.read * 0.5 - reach / Q.spd <= p[2]) return p;
+  return P[P.length - 1];
+}
+// ---- what the carrier sees
+function oppsOf(team) { const L = []; for (const o of skVis()) if (o.team !== team) L.push(o); if (team !== 'ravens' && !BN.on) L.push({ x: H.x, z: H.z, vx: S.vx, vz: S.vz, human: true }); return L; }
+function laneP(ax, az, bx, bz, team, reach) {                            // the chance a pass from a to b gets through (0..1)
+  let open = 1; const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1, r = reach || 0.8;
+  for (const o of oppsOf(team)) { const ox = o.x + (o.vx || 0) * 0.15, oz = o.z + (o.vz || 0) * 0.15, t = clamp(((ox - ax) * dx + (oz - az) * dz) / L2, 0, 1), d = Math.hypot(ax + dx * t - ox, az + dz * t - oz); open *= 1 - Math.exp(-(d * d) / (r * r)); }
+  return open;
+}
+function shotQ(x, z, nx) {                                               // a shot from here: 0.4 a prime slot shot, 0.1 a point shot
+  const d = Math.hypot(nx - x, z), a1 = Math.atan2(-NETW - z, nx - x), a2 = Math.atan2(NETW - z, nx - x), w = Math.abs(Math.atan2(Math.sin(a2 - a1), Math.cos(a2 - a1))) * 180 / Math.PI;
+  if (Math.sign(nx) * x > Math.abs(nx) - 0.3) return 0;                 // from behind the goal line
+  return clamp(w / 22, 0, 1) / (1 + Math.pow(d / 11, 2.5));
+}
+function pressureOn(s) {
+  let p = 0; for (const o of oppsOf(s.team)) { const dx = s.x - o.x, dz = s.z - o.z, d = Math.hypot(dx, dz) || 0.01, close = ((o.vx || 0) * dx + (o.vz || 0) * dz) / d - (s.vx * dx + s.vz * dz) / d; p = Math.max(p, clamp(1 - (d - 0.8) / Math.max(1.2, close + 1.2), 0, 1)); }
+  return p;
+}
+function openAhead(s, ax, az) {                                           // free ice in a 20-degree cone that way, up to 12 m (0..1)
+  let free = 12; const al = Math.hypot(ax, az) || 1, ux = ax / al, uz = az / al;
+  for (const o of oppsOf(s.team)) { const dx = o.x - s.x, dz = o.z - s.z, along = dx * ux + dz * uz; if (along <= 0) continue; const off = Math.abs(dx * uz - dz * ux); if (off < along * 0.36 + 0.6) free = Math.min(free, along); }
+  const [cx, cz] = inRink(s.x + ux * free, s.z + uz * free, 0.8); free = Math.min(free, Math.hypot(cx - s.x, cz - s.z));
+  return free / 12;
+}
+function passLead(px, pz, rx, rz, rvx, rvz, spd) {                       // where to aim so the pass meets him
+  const dx = rx - px, dz = rz - pz, a = rvx * rvx + rvz * rvz - spd * spd, b = 2 * (dx * rvx + dz * rvz), c = dx * dx + dz * dz;
+  let t = Math.abs(a) < 1e-4 ? (Math.abs(b) < 1e-4 ? 0 : -c / b) : (() => { const q = b * b - 4 * a * c; if (q < 0) return Math.sqrt(c) / spd; const s1 = (-b - Math.sqrt(q)) / (2 * a), s2 = (-b + Math.sqrt(q)) / (2 * a); return Math.min(s1 > 0 ? s1 : 9, s2 > 0 ? s2 : 9); })();
+  t = clamp(t, 0, 2.5); return [rx + rvx * t, rz + rvz * t];
+}
+// ---- the carrier: score every option, pick one (softmax by skill), stick with it for a moment
 function scDecide(s, Q) {
-  const dir = teamDir(s.team), u = dir * s.x, nx = dir * GX, [, pd] = nearestOpp(s), dN = Math.hypot(nx - s.x, s.z), G = s.team === 'ravens' ? GOAL : SC.g2;
-  // shoot: in their end, with a lane or close in (the D shoots from the point)
-  if (u > GX - 15.5 && u < GX - 0.6 && Math.abs(s.z) < 8.5 && (dN < 9 || pd > 2.4 || (s.role === 'D' && u < BLUEL + 4))) {
-    if (laneOpen(s.x, s.z, nx, 0, s.team) > 0.5 || dN < 6) { skShoot(s, nx, G, Q); return; }
-  }
-  // pass: someone further up the ice and open, more so in front of their net; you, if you called for it
-  let best = null, bs = -9;
-  const mates = SC.sk.filter(o => o !== s && o.team === s.team && !o.chg).map(o => ({ o, x: o.x, z: o.z, vx: o.vx, vz: o.vz, bl: skBlade(o) }));
-  if (s.team === 'ravens' && !BN.on) mates.push({ o: 'human', x: H.x, z: H.z, vx: S.vx, vz: S.vz, bl: humanBlade() });
-  const call = s.team === 'ravens' && called();
-  const gg = ai2(s.team) && s.team === 'ravens' && SC.gg && SC.gg.s === s && pClock - SC.gg.t < 3.5;          // Drew just gave it to me: is he away?
-  const deepD = ai2(s.team) && s.role === 'D' && u < -GX + 7, pressed = pd < 4.2;                                 // a D back behind the net
+  const dir = teamDir(s.team), u = dir * s.x, nx = dir * GX, G = s.team === 'ravens' ? GOAL : SC.g2, pr = pressureOn(s), five = SC.mode === '5';
+  const opts = [];
+  // shoot
+  const sq = shotQ(s.x, s.z, nx), sl = laneP(s.x, s.z, nx, 0, s.team, 0.6);
+  if (u > BLUEL && sq > 0.03) opts.push({ k: 'shoot', sc: sq * (0.35 + 0.65 * sl) * (1 - 0.5 * pr) * 1.15 + (sq > 0.28 ? 0.08 : 0) });
+  // pass to each teammate (you included)
+  const call = s.team === 'ravens' && called(), gg = s.team === 'ravens' && SC.gg && SC.gg.s === s && pClock - SC.gg.t < 3.5;
+  const mates = SC.sk.filter(o => o !== s && o.team === s.team && !o.chg).map(o => ({ o, x: o.x, z: o.z, vx: o.vx, vz: o.vz, fx: o.fx, fz: o.fz, bl: skBlade(o) }));
+  if (s.team === 'ravens' && !BN.on) mates.push({ o: 'human', x: H.x, z: H.z, vx: S.vx, vz: S.vz, bl: humanBlade(), human: true });
+  const deepD = s.role === 'D' && u < -GX + 7;
   for (const m of mates) {
-    const d = Math.hypot(m.bl[0] - s.x, m.bl[1] - s.z); if (d < 3 || d > 28) continue;
-    const op = laneOpen(s.x, s.z, m.bl[0], m.bl[1], s.team); if (op < (m.o === 'human' && call ? 0.6 : 1.1)) continue;
-    if (u < -GX + 12 && dir * m.x < -GX + 12 && Math.abs(s.z) > 1 && Math.sign(m.z) !== Math.sign(s.z)) continue;   // never across the front of our own net
-    if (st.rulesOn && u < BLUEL && dir * m.x > BLUEL + 0.3) continue;                                                  // not to someone already over their blue line (offside)
-    const mo = m.o !== 'human' && m.o, partner = deepD && mo && mo.role === 'D' && Math.sign(m.z) !== Math.sign(s.z), strongW = deepD && (m.o === 'human' || (mo && mo.role === 'W')) && Math.sign(m.z) === Math.sign(s.z || m.z);
-    let mopp = 9; for (const o of skVis()) if (o.team !== s.team) mopp = Math.min(mopp, Math.hypot(o.x - m.x, o.z - m.z));
-    const mu = dir * m.x, sc = (mu - u) * 0.22 + Math.min(op, 4) * 0.8 - d * 0.04 + (mu > GX - 12 && Math.abs(m.z) < 5 ? 1.5 : 0) + (m.o === 'human' ? (call ? 8 : 0.5) : 0)
-      + (ai2(s.team) ? Math.min(mopp, 4) * 0.35 : 0)                                                     // he's got time on it
-      + (gg && m.o === 'human' && dir * (H.x - s.x) > 1.5 && op > 0.8 ? 5 : 0)                       // give-and-go
-      + (partner && pressed && mopp > 3.5 ? 4 : 0) + (strongW && !pressed ? 3 : 0);                   // D to D under pressure, otherwise Quick up
-    if (sc > bs) { bs = sc; best = m; }
+    const d0 = Math.hypot(m.bl[0] - s.x, m.bl[1] - s.z); if (d0 < 2.5 || d0 > 32) continue;
+    const spd = m.human ? clamp(9 + d0 * 0.25, 11, 14) : clamp(9 + d0 * 0.3, 11, 17), aim = passLead(s.x, s.z, m.bl[0], m.bl[1], m.vx || 0, m.vz || 0, spd);
+    const mu = dir * aim[0], mv = dir * aim[1];
+    if (u < -GX + 12 && mu < -GX + 12 && Math.abs(s.z) > 1 && Math.sign(aim[1]) !== Math.sign(s.z) && !(deepD && m.o.role === 'D' && Math.abs(aim[0]) > GX - 0.5)) continue;   // never across the front of our own net (behind it, D to D, is fine)
+    if (st.rulesOn && u < BLUEL && mu > BLUEL + 0.3) continue;            // offside
+    const lane = laneP(s.x, s.z, aim[0], aim[1], s.team, 0.8); if (lane < 0.25) continue;
+    let near = 9; for (const o of oppsOf(s.team)) near = Math.min(near, Math.hypot(o.x - m.x, o.z - m.z));
+    const open = clamp(near / 4, 0, 1), mq = shotQ(aim[0], aim[1], nx), threat = Math.max(0, mq - sq), terr = clamp((mu - u) / 20, -0.4, 1);
+    const catchK = m.human ? (Math.hypot(S.vx, S.vz) > 6 ? 0.75 : 0.92) : 1;
+    let sc = (threat + 0.5 * terr + 0.12) * lane * lerp(0.6, 1, open) * catchK * (mq > 0.2 ? 1.3 : 1);
+    if (m.human) sc = sc * 1.1 + (call ? 0.35 : 0) + (gg && dir * (H.x - s.x) > 1.5 && lane > 0.5 ? 0.3 : 0);
+    if (deepD && !m.human && m.o.role === 'D' && pr > 0.4 && open > 0.6) sc += 0.15;                // D to D under pressure
+    if (deepD && (m.human || m.o.role === 'W') && Math.sign(mv) === Math.sign(dir * s.z || mv) && pr < 0.5) sc += 0.08;   // Quick up to the strong-side winger
+    opts.push({ k: 'pass', m, aim, spd, sc });
   }
-  if (best && (bs > 6 || pd < 2.4 || (bs > 3.4 && Math.random() < 0.6))) {
-    if (deepD && best.o !== 'human' && best.o.role === 'D') { say(s.p, 'D to D!', { gap: 2 }); if (SC.st) SC.st.dd++; }
-    else if (deepD) { say(s.p, best.o === 'human' ? 'Drew!' : 'Quick up!', { gap: 2 }); if (SC.st) SC.st.qu++; }
-    if (gg && best.o === 'human' && SC.st) { SC.st.gg++; SC.gg = null; }
-    skPass(s, best); return;
+  // carry toward open ice
+  const fwd = openAhead(s, dir, 0), wide = openAhead(s, dir * 0.7, (Math.sign(s.z) || 1) * 0.7), mid = openAhead(s, dir * 0.7, -(Math.sign(s.z) || 1) * 0.7);
+  const prog = u < -BLUEL ? 0.4 : u < BLUEL ? 0.32 : u < GX - 6 ? 0.22 : 0.12, open = Math.max(fwd, wide * 0.9, mid * 0.85);   // carrying is good, moving it to someone open is usually better
+  opts.push({ k: 'carry', sc: (1 - pr) * open * prog * 0.8 + 0.02 });
+  // dump it in (from over the red line), chip it out (in our end), protect it on the wall
+  if (u > 0.5 && u < BLUEL + 1) { let wall = 0; for (const o of oppsOf(s.team)) if (dir * (o.x - s.x) > -0.5 && dir * (o.x - s.x) < 8 && Math.abs(o.z - s.z) < 5) wall++; opts.push({ k: 'dump', sc: (pr * 0.6 + 0.12 * wall) * 0.85 }); }
+  if (u < -BLUEL) opts.push({ k: 'clear', sc: pr * 0.5 * (u < -GX + 10 && Math.abs(s.z) < 6 ? 1.6 : 1) - 0.05 });
+  if (Math.abs(s.z) > 9.5) opts.push({ k: 'protect', sc: pr * 0.25 });
+  // pick: softmax over the scores (a better team almost always takes the best one)
+  s.dbgOpts = opts.map(o => o.k + (o.m ? (o.m.human ? ':you' : ':' + o.m.o.num) : '') + ' ' + o.sc.toFixed(2)).join(', ');
+  const T = Q.temp || 0.1, mx = Math.max(...opts.map(o => o.sc)); let sum = 0; for (const o of opts) { o.w = Math.exp((o.sc - mx) / T); sum += o.w; }
+  let r = Math.random() * sum, ch = opts[0]; for (const o of opts) { r -= o.w; if (r <= 0) { ch = o; break; } }
+  s.prot2 = false;
+  if (ch.k === 'shoot') { skShoot(s, nx, G, Q); return; }
+  if (ch.k === 'pass') {
+    if (deepD && !ch.m.human && ch.m.o.role === 'D') { say(s.p, 'D to D!', { gap: 2 }); if (SC.st) SC.st.dd++; }
+    else if (deepD) { say(s.p, ch.m.human ? 'Drew!' : 'Quick up!', { gap: 2 }); if (SC.st) SC.st.qu++; }
+    else if (ch.m.human && Math.random() < 0.45) say(s.p, pick(['Drew!', 'Yours!', 'Heads up!']), { gap: 1.5 });
+    if (gg && ch.m.human && SC.st) { SC.st.gg++; SC.gg = null; }
+    s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [ch.aim[0], ch.aim[1], 0, ch.spd]; s.actT = ch.m.human ? 0.22 : 0.16; return;
   }
-  // a wall of them at their blue line and nothing on: dump it in deep, away from the goalie (from over the red line, so it isn't icing)
-  if (ai2(s.team) && u > 0.5 && u < BLUEL + 1 && (!best || bs < 3)) {
-    let wall = 0; for (const o of skVis()) if (o.team !== s.team && dir * (o.x - s.x) > -0.5 && dir * (o.x - s.x) < 7 && Math.abs(o.z - s.z) < 5) wall++;
-    if (wall >= 2 || (wall >= 1 && pd < 2.6)) { const tz = -(Math.sign(s.z) || 1) * 9.5; s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [dir * (GX - 1.5), tz, 0, 14]; s.actT = 0.18; s.dumpT = 1; if (SC.st) SC.st.dump[s.team === 'ravens' ? 0 : 1]++; say(s.p, pick(['In deep!', 'Dump it!', 'Get in on it!']), { gap: 3 }); return; }
-  }
-  if (!best && pd < 1.7 && u < -BLUEL) { s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [s.x + dir * 10, (Math.sign(s.z) || 1) * 12, 0, 9]; s.actT = 0.2; return; }   // nothing on: chip it up the wall
+  if (ch.k === 'dump') { s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [dir * (GX - 1.5), -(Math.sign(s.z) || 1) * 9.5, 0, 14]; s.actT = 0.18; s.dumpT = 1; if (SC.st) SC.st.dump[s.team === 'ravens' ? 0 : 1]++; say(s.p, pick(['In deep!', 'Get in on it!']), { gap: 3 }); return; }
+  if (ch.k === 'clear') { s.act = 'pass'; s.p.s.shotT = 0.15; s.aim = [s.x + dir * 12, (Math.sign(s.z) || 1) * 12.5, 0, 13]; s.actT = 0.16; s.dumpT = 1; return; }   // off the boards and out
+  if (ch.k === 'protect') s.prot2 = true;
   s.act = 'carry';
 }
-// where to carry it: up the wall in our end, up his lane through the middle, to the net in theirs, stepping away from whoever is closest
+// where he carries it: the most open way up the ice, along the wall if he's protecting it, at the net in their end
 function scCarry(s) {
-  const dir = teamDir(s.team), u = dir * s.x, lane = s.role === 'W' ? dir * s.ln * 6 : s.z * 0.6;
-  let tx, tz;
-  if (u < -BLUEL) { tx = s.x + dir * 7; tz = (Math.abs(s.z) > 2 ? Math.sign(s.z) : (dir * s.ln || 1)) * 8.5; }
-  else if (u < BLUEL) { tx = s.x + dir * 7; tz = lane; }
-  else { tx = dir * (GX - 5); tz = s.z * 0.45; }
-  const [o, od] = nearestOpp(s);
-  if (o && od < 3.5) { const ox = o === 'human' ? H.x : o.x, oz = o === 'human' ? H.z : o.z; if (dir * (ox - s.x) > -0.5) { tz = s.z + (s.z - oz >= 0 ? 1 : -1) * 3.5; tx = s.x + dir * 3.5; } }
-  if (dir * tx > GX - 3.5) tx = dir * (GX - 3.5);
-  return inRink(tx, tz, 1.2);
+  const dir = teamDir(s.team), u = dir * s.x;
+  if (s.prot2) return inRink(s.x + dir * 2.5, s.z, 1.2);
+  if (u > GX - 9) return inRink(dir * (GX - 4), s.z * 0.4, 1.2);
+  let best = null, bs = -1;
+  for (const a of [0, 0.45, -0.45, 0.8, -0.8]) { const ax = dir * Math.cos(a), az = Math.sin(a), o = openAhead(s, ax, az) - Math.abs(a) * 0.12 - (Math.abs(s.z + az * 6) > 10.5 ? 0.15 : 0); if (o > bs) { bs = o; best = [ax, az]; } }
+  return inRink(s.x + best[0] * 7, s.z + best[1] * 7, 1.2);
 }
-// ---- Phase 12: the smarter 5 on 5. Defending: everyone not pressuring picks up a man (goal side of him, tighter in our end), keeping the pairs
-// from frame to frame. Attacking: players slide into open ice where the carrier can actually find them. After a shot the forwards crash the net.
-// A teammate you've just passed to looks to give it straight back if you've got away (give-and-go). D under pressure behind the net go D to D;
-// otherwise the strong-side winger gets it up the wall (Quick up). No pass and a wall of defenders at their line: dump it in.
-const AI2 = { on: true, ravens: true, visitors: true }, ai2 = t => AI2.on && AI2[t] !== false;                                               // the smarter AI (off only for side-by-side tests)
-function scMarks(carrier, carrierTeam) {
-  SC.mark = SC.mark || { ravens: new Map(), visitors: new Map() };
-  for (const team of ['ravens', 'visitors']) {
-    const M = SC.mark[team];
-    if (!carrier || carrierTeam === team) { M.clear(); continue; }
-    const def = SC.sk.filter(s => s.team === team && !s.chg && SC.press[team] !== s), dir = teamDir(team), ox = -dir * GX;
-    const att = SC.sk.filter(o => o.team !== team && !o.chg && o !== carrier).map(o => ({ o, x: o.x, z: o.z }));
-    if (team === 'visitors' && !BN.on && carrier !== 'human') att.push({ o: 'human', x: H.x, z: H.z });
-    const old = new Map(M); M.clear();
-    const pairs = [];
-    for (const d of def) for (const a of att) {
-      const gu = dir * a.x, deep = gu < -BLUEL, cost = Math.hypot(a.x - d.x, a.z - d.z) + (d.role === 'D' && !deep && dir * a.x > dir * d.x + 6 ? 6 : 0) + (d.role !== 'D' && deep && Math.hypot(ox - a.x, a.z) < 7 ? 3 : 0) - (old.get(d) === a.o ? 3 : 0);
-      pairs.push([cost, d, a]);
-    }
-    pairs.sort((p, q) => p[0] - q[0]); const usedD = new Set(), usedA = new Set();
-    for (const [c, d, a] of pairs) { if (usedD.has(d) || usedA.has(a.o)) continue; usedD.add(d); usedA.add(a.o); M.set(d, a.o); }
-  }
-}
-function scCover(s, spot) {                                              // goal side of his man, blended with the zone spot
-  const M = SC.mark && SC.mark[s.team], m = M && M.get(s); if (!m) return spot;
-  const mx = m === 'human' ? H.x : m.x, mz = m === 'human' ? H.z : m.z, dir = teamDir(s.team), ox = -dir * GX, toN = Math.hypot(ox - mx, mz) || 1;
-  const inZone = dir * mx < -BLUEL, gap = inZone ? 1.2 : 2.6, gx = mx + (ox - mx) / toN * gap, gz = mz - mz / toN * gap, w = inZone ? 0.8 : 0.55;
-  return [spot[0] + (gx - spot[0]) * w, spot[1] + (gz - spot[1]) * w];
-}
-function scOpen(s, t, carrier) {                                         // slide to where the carrier can find you
-  if (!carrier || carrier === s) return t;
-  if (s.openT > pClock && s.openOff) return [t[0] + s.openOff[0], t[1] + s.openOff[1]];
-  const cx = carrier === 'human' ? H.x : carrier.x, cz = carrier === 'human' ? H.z : carrier.z, dx = t[0] - cx, dz = t[1] - cz, d = Math.hypot(dx, dz) || 1, px = -dz / d, pz = dx / d, dir = teamDir(s.team);
-  let best = [0, 0], bs = -99;
-  for (const [ox, oz] of [[0, 0], [px * 2.4, pz * 2.4], [-px * 2.4, -pz * 2.4], [dir * 2.2, 0], [px * 1.4 + dir * 1.4, pz * 1.4]]) {
-    const q = inRink(t[0] + ox, t[1] + oz, 1.2), lane = Math.min(laneOpen(cx, cz, q[0], q[1], s.team), 4);
-    let near = 9; for (const o of skVis()) if (o.team !== s.team) near = Math.min(near, Math.hypot(o.x - q[0], o.z - q[1]));
-    if (s.team !== 'ravens' && !BN.on) near = Math.min(near, Math.hypot(H.x - q[0], H.z - q[1]));
-    const sc = lane + Math.min(near, 4) * 0.5 - Math.hypot(ox, oz) * 0.22; if (sc > bs) { bs = sc; best = [q[0] - t[0], q[1] - t[1]]; }
-  }
-  s.openOff = best; s.openT = pClock + 0.45; return [t[0] + best[0], t[1] + best[1]];
-}
-// where a player without the puck goes. Worked out in the team's own frame: u up the ice toward the net they attack, v to the right.
-function scTargets(s, carrier, carrierTeam) {
+// ---- where everyone else goes
+function scSlot(s, carrier, carrierTeam) {
   const dir = teamDir(s.team), W = (u, v) => [dir * u, dir * v], five = SC.mode === '5';
   const cx = carrier ? (carrier === 'human' ? H.x : carrier.x) : PK.x, cz = carrier ? (carrier === 'human' ? H.z : carrier.z) : PK.z, pu = dir * cx, pv = dir * cz;
   const side = Math.abs(pv) > 1 ? Math.sign(pv) : (s.ln || 1), strong = s.ln === side;
-  if (s.chg) return BENCH[s.team];                                     // off for a change
-  if (!carrier && SC.chase[s.team] === s && !(SC.dOff && SC.dOff.team === s.team)) return [PK.x + PK.vx * 0.35 - s.fx * 0.7, PK.z + PK.vz * 0.35 - s.fz * 0.7];
   const mode = !carrier ? (pu > -2 ? 'O' : 'D') : carrierTeam === s.team ? 'O' : 'D';
-  if (ai2(s.team) && SC.crash && SC.crash.team === s.team && pClock - SC.crash.t < 1.8 && s.role !== 'D' && !carrier) return W(GX - 2.3, s.ln ? s.ln * 1.5 : -side * 0.4);   // a shot's gone in: crash the net for the rebound
-  if (ai2(s.team) && mode === 'O' && carrier && carrier !== s && s.role !== 'D' && pu > -BLUEL) return scOpen(s, scTargetsO(s, carrier, pu, pv, side, strong, W, five, dir), carrier);
-  if (mode === 'O') return scTargetsO(s, carrier, pu, pv, side, strong, W, five, dir);
-  const inZone0 = pu < -BLUEL;
-  if (ai2(s.team) && carrier && pu > BLUEL && SC.press[s.team] !== s) {               // they've got it in their own end: forecheck (F1 on him, F2 the wall, F3 high, D hold the line)
-    if (s.role === 'D') return W(BLUEL + 1.2, s.ln * 5.5 + pv * 0.1);
-    if (s.role === 'W') return s.ln === side ? W(clamp(pu - 4, BLUEL + 2, GX - 6), side * 7.5) : W(BLUEL + 3.5, -side * 2.5);
-    return W(clamp(pu - 8, BLUEL + 2, GX - 9), pv * 0.2);
-  }
-  if (ai2(s.team) && carrier && SC.press[s.team] !== s) return scCover(s, scTargetsD(s, pu, pv, side, strong, W, five, dir, inZone0));
-  return scTargetsD(s, pu, pv, side, strong, W, five, dir, inZone0);
-}
-function scTargetsO(s, carrier, pu, pv, side, strong, W, five, dir) {
-  {
-    if (pu < -BLUEL) {                                                 // breakout
-      if (s.role === 'D') return s.ln ? W(clamp(pu - 4, -GX + 3, -BLUEL - 4), s.ln * 3.5) : W(clamp(pu - 5, -GX + 4, -BLUEL - 6), pv * 0.3);
-      if (s.role === 'W') return strong ? W(-GX + 9.5, s.ln * 10.2) : W(-BLUEL + 1.5, s.ln * 7.5);
-      return W(clamp(pu + 5, -GX + 7, -BLUEL - 1), clamp(pv * 0.2 - side * 1.5, -4, 4));
+  const lim = BLUEL - 1.6, onside = t => { const tu = dir * t[0]; if (st.rulesOn && pu < BLUEL && tu > lim) { if (dir * s.x > lim + 1) s.urg = true; return [dir * lim, t[1]]; } return t; };
+  if (mode === 'O') {
+    if (pu < -BLUEL) {                                                   // breakout
+      if (s.role === 'D') return strong ? W(clamp(pu - 2, -GX + 2, -BLUEL - 6), side * 7) : W(-GX + 2, -side * 6);
+      if (s.role === 'W') return strong ? W(-17, side * 11.3) : W(-8, -side * 11);
+      return W(clamp(pu + 8, -20, -10), -side * 1.5);
     }
-    if (pu < BLUEL) {                                                  // through the neutral zone in lanes (staying onside until the puck is in)
-      const lim = BLUEL - 1.6 - (carrier && carrier !== s ? clamp((pu - BLUEL + 6) * 0.15, 0, 0.8) : 0);   // a little short of the line (they glide), more so as the puck gets close
-      const onside = t => { if (st.rulesOn && dir * t[0] > lim) { if (dir * s.x > lim) s.urg = true; return [dir * lim, t[1]]; } return t; };   // over the line already: hurry back
-      if (s.role === 'D') return onside(s.ln ? W(pu - 7, s.ln * 3.5 + pv * 0.2) : W(pu - 7, pv * 0.35));
-      if (s.role === 'W') return onside(W(Math.min(pu + 5, GX - 12), s.ln * 8));
-      return onside(W(Math.min(pu + 3, GX - 12), clamp(-pv * 0.3, -3, 3)));
+    if (pu < BLUEL) {                                                    // the rush: wide lanes ahead of the puck (onside), centre trailing, D1 8 m back, D2 holding
+      if (s.role === 'W') return onside(W(pu + 4.5, s.ln * 9));
+      if (s.role === 'C') return onside(W(pu - 3, -side * 2.5));
+      return strong ? W(pu - 8, side * 4) : W(pu - 13, -side * 3);
     }
-    if (SC.dOff && SC.dOff.team === s.team) { s.urg = true; return W(BLUEL - 1.2, clamp(dir * s.z, -9, 9)); }   // delayed offside: everyone back over the line, quickly
-    if (s.role === 'D') return s.ln ? W(BLUEL + 1.0, s.ln * 6 + pv * 0.15) : W(BLUEL + 1.0, clamp(pv * 0.55, -7, 7));   // the points, just inside the line
-    const carrierD = carrier && carrier !== 'human' && carrier.role === 'D';
-    if (carrierD) return s.role === 'W' ? W(GX - 6, s.ln * 5.5) : W(GX - 3.2, -side * 0.8);   // shot from the point: wingers low, centre at the net
-    if (five) {
-      if (s.role === 'W') return strong ? W(clamp(pu - 3, GX - 12, GX - 4), s.ln * 7.5) : W(GX - 3.2, s.ln * 1.8);   // strong side supports on the wall, weak side at the back door
-      return pu > GX - 4 ? W(GX - 7, -side * 1.2) : W(GX - 9, clamp(-pv * 0.2, -2, 2));                              // centre in the high slot
+    const lowC = pu > GX - 6;                                            // their end: points, half-wall, back door, high slot (low when it's low)
+    if (s.role === 'D') return W(BLUEL + 1.9, s.ln * 7.5 + pv * 0.1);
+    if (s.role === 'W') return strong ? W(clamp(pu, GX - 10, GX - 3), side * 11) : W(GX - 6, -side * 4.5);
+    return lowC ? W(GX - 5, -side * 0.8) : W(GX - 9.6, pv * 0.15);
+  }
+  // they have it (or it's loose in our half)
+  if (pu > BLUEL) {                                                      // forecheck 1-2-2: F2 the strong-side lane, F3 high, D hold the line
+    if (s.role === 'D') return W(BLUEL + 0.9, s.ln * 8);
+    const otherF = SC.sk.find(o => o.team === s.team && o !== s && o.role !== 'D' && SC.press[s.team] !== o);
+    const iAmF2 = !otherF || Math.abs(dir * s.z - side * 7) < Math.abs(dir * otherF.z - side * 7);
+    return iAmF2 ? W(clamp(pu - 6, BLUEL + 1, GX - 6), side * 7) : W(clamp(pu - 11, BLUEL - 2, GX - 10), 0);
+  }
+  if (pu > -BLUEL) {                                                     // neutral zone: D keep a gap, forwards back in their lanes
+    if (s.role === 'D') return strong && carrier ? scGap(s, carrier, dir) : W(clamp(pu - 11, -GX + 6, -1), -side * 2.5);
+    if (s.role === 'W') return W(clamp(pu - 3, -GX + 8, BLUEL), s.ln * 8.5);
+    return W(clamp(pu - 5, -GX + 8, BLUEL), pv * 0.35);
+  }
+  // our end: coverage by where the puck is
+  const corner = pu < -GX + 5.5, half = !corner && Math.abs(pv) > 7.5, slot = !corner && Math.abs(pv) < 5 && pu < -GX + 12, behind = pu < -GX + 0.5;
+  if (corner) {
+    if (s.role === 'D') return strong ? (behind ? W(-25.2, side * 2.2) : W(pu + 2, pv * 0.75)) : W(-25, -side * 1.2);
+    if (s.role === 'W') return strong ? W(-16, side * 10) : W(-11, -side * 6);
+    return W(-21.5, 0);
+  }
+  if (half) {
+    if (s.role === 'D') return strong ? (carrier ? scGap(s, carrier, dir, 1.4) : W(-20, side * 6)) : W(-24.5, -side * 0.5);
+    if (s.role === 'W') return strong ? W(-11, side * 7.5) : W(-13, -side * 6);
+    return W(-20.5, side * 1.5);
+  }
+  if (slot) {
+    if (s.role === 'D') return W(-24, (s.ln || (strong ? 1 : -1)) * 2.5);
+    if (s.role === 'W') return W(-17, s.ln * 6.5);
+    return W(-19, 0);
+  }
+  if (s.role === 'D') return strong ? W(-20, side * 4.5) : W(-24.5, -side * 1);   // up at the point
+  if (s.role === 'W') return strong ? W(-12.5, side * 7) : W(-12.5, -side * 7);
+  return W(-18, 0);
+}
+function scGap(s, carrier, dir, gmin) {                                  // between him and our net, a gap that grows with his speed, inside shoulder
+  const cx = carrier === 'human' ? H.x : carrier.x, cz = carrier === 'human' ? H.z : carrier.z, cvx = carrier === 'human' ? S.vx : carrier.vx, cvz = carrier === 'human' ? S.vz : carrier.vz;
+  const ox = -dir * GX, lx = cx + cvx * 0.35, lz = cz + cvz * 0.35, tn = Math.hypot(ox - lx, lz) || 1, cs = Math.hypot(cvx, cvz), gap = clamp(1.6 + 0.3 * cs, gmin || 2, 4.5);
+  return [lx + (ox - lx) / tn * gap, lz - lz / tn * gap - Math.sign(cz) * 0.7];
+}
+function scTargets(s, carrier, carrierTeam) {
+  if (s.chg) return BENCH[s.team];
+  const dir = teamDir(s.team), Q = s.team === 'visitors' && SC.Qopp ? SC.Qopp : (s.team === 'ravens' ? SC.Qr : SC.Qv) || ravensQ();
+  if (!carrier && SC.chase[s.team] === s && !(SC.dOff && SC.dOff.team === s.team)) { const p = intercept(s, Q); return [p[0] - s.fx * 0.7, p[1] - s.fz * 0.7]; }   // loose puck: to where he gets to it first
+  if (SC.dOff && SC.dOff.team === s.team && carrierTeam === s.team && s.role !== 'D') { s.urg = true; return [dir * (BLUEL - 1.2), clamp(s.z, -9, 9)]; }   // delayed offside: tag up
+  if (SC.press[s.team] === s && carrier) {                               // pressure: the intercept point on him, forcing him wide
+    const cx = carrier === 'human' ? H.x : carrier.x, cz = carrier === 'human' ? H.z : carrier.z, cvx = carrier === 'human' ? S.vx : carrier.vx, cvz = carrier === 'human' ? S.vz : carrier.vz;
+    const ox = -dir * GX, lx = cx + cvx * 0.3, lz = cz + cvz * 0.3, tn = Math.hypot(ox - lx, lz) || 1;
+    return [lx + (ox - lx) / tn * 0.75, lz - lz / tn * 0.75 - Math.sign(cz) * 0.35];
+  }
+  if (SC.crash && SC.crash.team === s.team && pClock - SC.crash.t < 1.6 && s.role !== 'D' && !carrier) return [dir * (GX - 2.3), (s.ln || 0) * 1.5];   // a shot's gone in: crash the net
+  // a shot's being wound up: step into the lane if it's close
+  if (carrier && carrier !== 'human' && carrierTeam !== s.team && carrier.act === 'shoot' && carrier.aim) {
+    const ax = carrier.x, az = carrier.z, bx = carrier.aim[0], bz = carrier.aim[1], dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1, t = clamp(((s.x - ax) * dx + (s.z - az) * dz) / L2, 0.15, 0.85), px = ax + dx * t, pz = az + dz * t;
+    if (Math.hypot(px - s.x, pz - s.z) < 2.2 * Q.sk + 0.6) { s.urg = true; return [px, pz]; }
+  }
+  let t = scSlot(s, carrier, carrierTeam);
+  if (s.team === 'ravens' && !BN.on && carrier !== 'human') {            // don't stand where Drew is: take his slot (left wing) instead, or move off him
+    const dh = Math.hypot(t[0] - H.x, t[1] - H.z);
+    if (dh < 3) {
+      const lw = scSlot({ team: 'ravens', role: 'W', ln: -1, x: s.x, z: s.z }, carrier, carrierTeam), busy = SC.sk.some(o => o.team === 'ravens' && o !== s && Math.hypot(o.x - lw[0], o.z - lw[1]) < 3);
+      if (!busy && Math.hypot(lw[0] - H.x, lw[1] - H.z) > 5) t = lw; else { const ex = t[0] - H.x, ez = t[1] - H.z, e = Math.hypot(ex, ez) || 1; t = [H.x + ex / e * 3.2, H.z + ez / e * 3.2]; }
     }
-    return pu > GX - 4 ? W(GX - 7, -side * 1.6) : W(GX - 3.3, -side * 2.2);   // 3 on 3: the other forward at the net, back door
   }
+  return t;
 }
-function scTargetsD(s, pu, pv, side, strong, W, five, dir, inZone) {
-  if (SC.press[s.team] === s) {                                       // pressure: goal side, about a stick's length from the puck
-    const ox = -dir * GX, pu0 = pu, toN = Math.hypot(ox - PK.x, PK.z) || 1, gap = 0.7;
-    return [PK.x + (ox - PK.x) / toN * gap, PK.z - PK.z / toN * gap];
-  }
-  if (inZone) {
-    if (s.role === 'D') return s.ln ? (strong ? W(-GX + 3, side * 1.6) : W(-GX + 3.4, -side * 0.6)) : W(-GX + 3, clamp(pv * 0.25, -1.6, 1.6));   // net front, both posts
-    if (s.role === 'W') return W(-BLUEL - 2.5, (s.ln || -side) * (five ? 6.5 : 5));   // the point on his side
-    return W(-GX + 8, pv * 0.3);                                         // the slot
-  }
-  if (s.role === 'D') return s.ln ? W(clamp(pu - 9, -GX + 8, -2), s.ln * 3.5 + pv * 0.3) : W(clamp(pu - 9, -GX + 8, -2), pv * 0.45);   // backing up, keeping a gap
-  if (s.role === 'W') return W(clamp(pu - 4, -GX + 8, GX - 8), s.ln * 6.5);
-  return W(clamp(pu - 5, -GX + 8, GX - 8), pv * 0.3);
-}
-// who chases a loose puck, and who pressures the carrier, on each team (sticking with a choice unless someone else is clearly better)
+// who chases a loose puck (the one who gets there first, by the puck's path) and who pressures the carrier
 function scRoles(carrier, carrierTeam) {
   for (const team of ['ravens', 'visitors']) {
-    const mine = SC.sk.filter(s => s.team === team && !s.chg), dir = teamDir(team);
+    const mine = SC.sk.filter(s => s.team === team && !s.chg), dir = teamDir(team), Q = team === 'visitors' && SC.Qopp ? SC.Qopp : (team === 'ravens' ? SC.Qr : SC.Qv) || ravensQ();
     if (!carrier) {
-      const px = PK.x + PK.vx * 0.35, pz = PK.z + PK.vz * 0.35, cost = s => Math.hypot(px - s.x, pz - s.z) + (s.role === 'D' && dir * px > 0 ? 3 : 0);
-      let b = null, bc = 99; for (const s of mine) { const c = cost(s) - (SC.chase[team] === s ? 1.5 : 0); if (c < bc) { bc = c; b = s; } }
-      if (team === 'ravens' && !BN.on && Math.hypot(px - H.x, pz - H.z) < bc - 1) b = null;
+      let b = null, bc = 99;
+      for (const s of mine) { const p = intercept(s, Q), c = ttp(s, p[0], p[1], Q) + (s.role === 'D' && dir * p[0] > 0 ? 0.8 : 0) - (SC.chase[team] === s ? 0.3 : 0); if (c < bc) { bc = c; b = s; } }
+      if (team === 'ravens' && !BN.on) { const p = pkPath()[10]; if (Math.hypot(p[0] - H.x, p[1] - H.z) / 6 < bc - 0.3) b = null; }   // you're closer: it's yours
       SC.chase[team] = b; SC.press[team] = null;
     } else if (carrierTeam !== team) {
-      const cx = carrier === 'human' ? H.x : carrier.x, cz = carrier === 'human' ? H.z : carrier.z, cu = dir * cx, cv = dir * cz, inZone = cu < -BLUEL;
-      const netFront = inZone && cu < -GX + 9 && Math.abs(cv) < 5, deep = inZone && cu < -GX + 12, side = Math.sign(cv) || 1;
+      const cx = carrier === 'human' ? H.x : carrier.x, cz = carrier === 'human' ? H.z : carrier.z, cu = dir * cx, inZone = cu < -BLUEL;
       let b = null, bc = 99;
       for (const s of mine) {
-        const d = Math.hypot(cx - s.x, cz - s.z);
-        if (s.role === 'D' && !netFront && !(deep && (s.ln === side || !s.ln)) && d > 2.5) continue;
-        const c = d - (SC.press[team] === s ? 2 : 0) - (netFront && s.role === 'D' ? 3 : 0); if (c < bc) { bc = c; b = s; }
+        const d = Math.hypot(cx - s.x, cz - s.z), behind = dir * (s.x - cx) > 1.5;                // a forward who's beaten (behind the play) can still chase
+        if (s.role === 'D' && !inZone && d > 3) continue;                                          // D keep their gap in the neutral zone (they step up when he's close)
+        if (s.role === 'D' && inZone && Math.sign(dir * cz) !== s.ln && s.ln && d > 3 && Math.abs(cz) > 3) continue;   // the D on his side takes him in our end
+        const c = d * (behind ? 1.4 : 1) - (SC.press[team] === s ? 1.5 : 0); if (c < bc) { bc = c; b = s; }
       }
       SC.press[team] = b; SC.chase[team] = null;
     } else { SC.press[team] = null; SC.chase[team] = null; }
@@ -3795,7 +3866,7 @@ function scRules(carrier, carrierTeam) {
 }
 function scFrame(dt) {
   if (!SC.on) return;
-  const Q = OPPS[st.oppP] || OPPS[1]; SC.t += dt;
+  const Q = SC.Qr || (SC.Qr = ravensQ()); SC.t += dt;
   benchFrame(dt);
   // stoppages and the clock
   if (SC.after > 0) { SC.after -= dt; if (SC.after <= 0) scFaceoff('Faceoff at centre  ' + SC.score[0] + ' - ' + SC.score[1], [0, 0]); }
@@ -3807,7 +3878,7 @@ function scFrame(dt) {
   if (SC.tc && SC.tc.last === 'you' && pClock - (PK.htouch || -9) < 0.05 && Math.hypot(PK.vx - S.vx, PK.vz - S.vz) > 9 && teamDir('ravens') * PK.vx > 4) SC.crash = { team: 'ravens', t: pClock };
   // shots on goal: a goalie stopping it
   for (const e of EV) if (e.k === 'block' && e.kind === 'goalie') { const k = (e.x != null ? e.x : PK.x) * teamDir('ravens') > 0 ? 0 : 1; if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; if (k === 0 && SC.tc.last === 'you') SC.my.sh++; } }
-  const qf = s => s.team === 'visitors' && SC.Qopp ? SC.Qopp : Q;
+  const qf = s => s.team === 'visitors' ? SC.Qopp || SC.Qv || (SC.Qv = skillQ(levelSk())) : Q;
   for (const s of SC.sk) { s.cool -= dt; s.poke -= dt; s.dec -= dt; s.prot -= dt; if (s.has && !stopped) skStolen(s, qf(s)); }
   const hum = humanHas();
   if (hum) for (const s of SC.sk) if (s.has) { s.has = false; s.act = ''; s.cool = 0.7; }
@@ -3832,7 +3903,6 @@ function scFrame(dt) {
   if (!stopped && scRules(carrier, carrierTeam)) return;
   scLines(dt, carrierTeam, stopped);
   scRoles(carrier, carrierTeam);
-  scMarks(carrier, carrierTeam);
   // move: a smoothed target from the structure, or straight to a pass coming to him
   const all = skVis();
   for (const s of SC.sk) {
@@ -4004,11 +4074,10 @@ const oppShort = () => { const n = oppN(); if (n.length <= 12) return n.toUpperC
 const oppAbbr = () => oppShort().replace(/^THE /, '').slice(0, 3);
 // their level from the career game: stronger clubs are quicker and sharper, and each plays its own way
 function fxSkill(fx) {
-  const b = Object.assign({}, OPPS[st.oppP] || OPPS[1]); if (!fx) return null;
-  const k = clamp(1 + ((+fx.r || 0.52) - 0.52) * 2.5, 0.75, 1.3);
-  b.spd *= 1 + (k - 1) * 0.25; b.acc *= 1 + (k - 1) * 0.25; b.poke = Math.min(0.6, b.poke * k); b.prot = Math.min(0.85, b.prot * (0.6 + 0.4 * k)); b.fo = clamp(b.fo * (0.7 + 0.3 * k), 0.25, 0.75);
-  b.pass /= k; b.shot /= k; b.read /= k; b.dec /= k; b.wind /= k;
-  if (fx.style === 'rush') { b.spd *= 1.04; b.acc *= 1.06; b.dec *= 0.85; }
+  if (!fx) return null;
+  const b = skillQ(clamp(levelSk() + ((+fx.r || 0.52) - 0.52) * 0.8, 0.15, 0.95));                  // the Opponents level, better or worse by how good this team is
+  b.fo = clamp(0.5 + ((+fx.r || 0.52) - 0.52) * 0.8, 0.3, 0.7);
+  if (fx.style === 'rush') { b.spd *= 1.03; b.dec *= 0.85; }
   else if (fx.style === 'cycle') { b.prot = Math.min(0.88, b.prot + 0.1); b.dec *= 1.15; b.spd *= 0.98; }
   else if (fx.style === 'forecheck') { b.poke = Math.min(0.65, b.poke * 1.15); b.read *= 0.85; b.spd *= 1.02; }
   else if (fx.style === 'patient') { b.dec *= 1.3; b.pass *= 0.85; b.spd *= 0.97; }
@@ -4634,6 +4703,13 @@ function carPub() {
   toast((soc ? 'Social night. ' : 'The pub. ') + 'Look at someone and speak. Press Y when you want to head home', 4);
   setTimeout(() => { if (CAR.place === 'pub' && PUBP[0]) pubLine(PUBP[0].p, soc ? '(Drew arrives for the team social night and joins you at the table. Greet him.)' : '(Drew has just walked into the pub after tonight\'s game and joined you at the table. Greet him and say something about the game.)'); }, 1800);
 }
+async function playReply(P, text, b64) {                               // one of the lads says a line: the words in a bubble and his voice from your server (or the headset's own voice without it)
+  if (!P || !text) return;
+  const voice = !!(b64 && audio && audio.ctx && st.sound);
+  say(P, text, { force: true, quiet: voice, hold: 1.5 + text.length * 0.07 });
+  if (voice) { replyAudio(P, b64); await MIC.dq; }
+  else await new Promise(r => setTimeout(r, 900 + text.length * 50));
+}
 async function pubLine(P, typed) {                                       // one of the lads says something, out loud
   if (!brainOK() || !P || MIC.busy) return;
   MIC.busy = true; say(P, '...', { force: true, quiet: true, hold: 6 });
@@ -4731,6 +4807,7 @@ function carHub() {
   if (!st.inVR || CAR.mode !== 'career') return;
   if (CAR.place === 'pub') { CAR.place = null; for (const o of PUBP) o.p.root.visible = false; }
   if (CAR.place === 'room') roomHide();
+  if (!CAR.step && (PH.scr === 'train' || PH.scr === 'game' || PH.scr === 'thread')) { PH.scr = 'home'; PH.th = null; }   // back from training or a game: your phone's home screen, not that step again
   if (DR.on) drillStop(true); if (SC.on) scStop(true);
   teleportTo(HOME.x, HOME.z + 0.6, -Math.PI / 2); croftyShow(false); homeTvDraw();
   phoneOpen();
@@ -5114,7 +5191,8 @@ function fdRep() {
   if (FD.base && FD.base.variants) { const V = FD.base.variants; let k; do { k = Math.floor(Math.random() * V.length); } while (V.length > 1 && k === FD.vi); FD.vi = k; FD.d = Object.assign({}, FD.base, V[k]); }
   const d = FD.d; FD.rep++; DR.rep = FD.rep;
   Object.assign(FD, { bi: -1, b: null, T: 0, bt: 0, hold: null, fly: null, q: [], ev: [], shot: null, endT: null, wait: 0.7, ok: true, miss: 0, tgt: null, prog: 0, feedT: 0 });
-  for (const id in FD.ents) { const e = FD.ents[id], [x, z] = fP(e.c.at), f = e.c.face || [x > 0 ? -1 : 1, 0]; skPlace(e.sk, x, z, f[0], -f[1]); e.sk.has = false; e.seg = e.glide = e.chase = null; }
+  for (const id in FD.ents) { const e = FD.ents[id], [x, z] = fP(e.c.at), f = e.c.face || [x > 0 ? -1 : 1, 0]; skPlace(e.sk, x, z, f[0], -f[1]); e.sk.has = false; e.seg = e.glide = e.chase = e.def = null; }
+  setCones((d.cones || []).map(fP));
   const [mx, mz] = fP(d.me.at), yaw = fdFace(d, mx, mz);
   teleportTo(mx, mz, yaw); resetPuck(0, -40);
   for (const id in FD.ents) if (FD.ents[id].c.puck) fdGive(id);
@@ -5182,6 +5260,7 @@ function fdDo(a) {
   }
   if (a.shoot) { if (FD.fly && FD.fly.to === w) return false; if (FD.hold !== w && a.wait !== false && FD.hold) return false; fdShoot(w); return true; }
   if (a.dump) { fdDump(w, a.dump, a.to); return true; }
+  if (a.defend && FD.ents[w]) { const e = FD.ents[w]; e.def = { pw: 0, cool: 0.8 }; e.seg = e.glide = null; return true; }
   if (a.give) { fdGive(w); }
   if (a.move) fdMove(w, a.move, a.spd, a.back);
   if (a.say && FD.ents[w]) { say(FD.ents[w].sk.p, a.say, { force: true }); toast(firstN(FD.ents[w].sk.p.name || '') + ': ' + a.say, 1.4); }
@@ -5238,6 +5317,7 @@ function fdEnd(why) {
   if (why === 'goal') { DR.goals++; if (d.unit === 'Goals') DR.fdScore++; toast(FD.shot && FD.shot.by !== 'me' ? 'Goal! Lovely pass' : 'Goal!', 1.1); }
   else if (why === 'save') { DR.saves++; toast('Saved', 0.9); }
   else if (why === 'miss') toast('Missed the net', 0.9);
+  else if (why === 'poked') { /* said already */ }
   else if (why === 'against') toast(FD.shot && FD.shot.goal ? 'They scored' : 'He got his shot away', 1);
   if (d.unit !== 'Goals' && FD.ok && why !== 'against') { DR.fdScore++; toast(pick(['Clean rep', 'Spot on', 'Nice and sharp', 'That\'s the one']), 1); }
   else if (d.unit !== 'Goals' && !why) toast('Again', 0.8);
@@ -5325,6 +5405,11 @@ function fdFrame(dt) {
   }
   if (FD.endT != null) { FD.endT -= dt; fdMoveAll(dt); if (FD.endT <= 0) { FD.endT = null; if (FD.rep >= FD.d.reps) { drillEnd(); return; } fdRep(); } return; }
   if (FD.wait > 0) { FD.wait -= dt; fdMoveAll(dt); if (FD.wait <= 0) fdNext(); return; }
+  for (const id in FD.ents) { const e = FD.ents[id], D = e.def; if (!D || FD.endT != null) continue;
+    D.cool -= dt; const d = Math.hypot(PK.x - e.sk.x, PK.z - e.sk.z), facing = ((PK.x - e.sk.x) * e.sk.fx + (PK.z - e.sk.z) * e.sk.fz) / Math.max(d, 0.01);
+    if (D.cool <= 0 && d < 1.35 && facing > 0.2 && (humanHas() || FD.hold === 'me')) { if (!D.pw) D.pw = FD.T + 0.35; else if (FD.T >= D.pw) { D.pw = 0; D.cool = 1.2;
+      if (Math.random() < clamp(0.42 - 0.2 * Math.hypot(S.vx, S.vz) / 8, 0.12, 0.45)) { const a = Math.atan2(e.sk.fz, e.sk.fx) + (Math.random() - 0.5) * 1.2; PK.vx = Math.cos(a) * 4; PK.vz = Math.sin(a) * 4; PK.att = 0; PK.cr = 0; PK.rel = pClock + 0.5; FD.hold = null; toast('He poked it away', 1); FD.b = null; FD.bi = FD.d.beats.length; SDG.ring.visible = false; SDG.dots.count = 0; fdBad(9); fdEnd('poked'); } } }
+    else if (d > 1.8) D.pw = 0; }
   fdBeat(dt);
   if (FD.b || FD.ev.length) for (const a of FD.ev) { if (a.done) continue; const due = a.at != null ? (FD.b && FD.b.path ? (FD.frac || 0) >= a.at : true) : FD.bt >= (a.t || 0); if (due && fdDo(a)) a.done = true; }
   if (!FD.b && !FD.shot && FD.endT == null && FD.bi >= FD.d.beats.length) fdEnd(null);
@@ -5333,14 +5418,19 @@ function fdFrame(dt) {
 function fdMoveAll(dt) {
   for (const id in FD.ents) {
     const e = FD.ents[id], s = e.sk, x0 = s.x, z0 = s.z;
-    if (e.chase) { const tx = PK.x + PK.vx * 0.25, tz = PK.z + PK.vz * 0.25, dx = tx - s.x, dz = tz - s.z, d = Math.hypot(dx, dz) || 1, st0 = Math.min(d, 6.5 * dt); s.x += dx / d * st0; s.z += dz / d * st0; }
+    if (e.def) {                                                         // 1 on 1: between you and the net, a gap that closes as you come in, facing you
+      const nx = (FD.d.net || 1) * GX, tn = Math.hypot(nx - S.x, S.z) || 1, cs = Math.hypot(S.vx, S.vz), gap = clamp(1.2 + 0.3 * cs, 1.6, 3.4);
+      const tx = S.x + S.vx * 0.3 + (nx - S.x) / tn * gap, tz = S.z + S.vz * 0.3 - S.z / tn * gap - Math.sign(S.z) * 0.5, dx = tx - s.x, dz = tz - s.z, d = Math.hypot(dx, dz) || 1, st0 = Math.min(d, (SPEEDS[st.speed] || 6.5) * 0.85 * dt);
+      s.x += dx / d * st0; s.z += dz / d * st0;
+    } else if (e.chase) { const tx = PK.x + PK.vx * 0.25, tz = PK.z + PK.vz * 0.25, dx = tx - s.x, dz = tz - s.z, d = Math.hypot(dx, dz) || 1, st0 = Math.min(d, 6.5 * dt); s.x += dx / d * st0; s.z += dz / d * st0; }
     else if (e.seg) {
       const u = (FD.T - e.seg.t0) / e.seg.dur, q = sdAt(e.seg.poly, sdEase(u) * e.seg.poly.len); s.x = q[0]; s.z = q[1];
       if (u >= 1) { e.glide = { vx: s.vx, vz: s.vz, back: e.seg.back }; e.seg = null; }
     } else if (e.glide) { const g = e.glide, k = Math.exp(-dt / 0.45); s.x += g.vx * dt; s.z += g.vz * dt; g.vx *= k; g.vz *= k; const [cx, cz] = inRink(s.x, s.z, 0.6); s.x = cx; s.z = cz; if (Math.hypot(g.vx, g.vz) < 0.2) e.glide = null; }
     const vx = (s.x - x0) / Math.max(dt, 1e-3), vz = (s.z - z0) / Math.max(dt, 1e-3); s.vx += (vx - s.vx) * 0.35; s.vz += (vz - s.vz) * 0.35;
     const sp = Math.hypot(s.vx, s.vz); let turn = 0, hx, hz;
-    if (sp > 0.4) { hx = s.vx / sp; hz = s.vz / sp; if ((e.seg && e.seg.back) || (e.glide && e.glide.back)) { hx = -hx; hz = -hz; } }
+    if (e.def) { const dx = S.x - s.x, dz = S.z - s.z, d = Math.hypot(dx, dz) || 1; hx = dx / d; hz = dz / d; }
+    else if (sp > 0.4) { hx = s.vx / sp; hz = s.vz / sp; if ((e.seg && e.seg.back) || (e.glide && e.glide.back)) { hx = -hx; hz = -hz; } }
     else if (!s.has) { const dx = PK.x - s.x, dz = PK.z - s.z, d = Math.hypot(dx, dz); if (d > 1.5) { hx = dx / d; hz = dz / d; } }   // standing: he watches the puck
     if (hx != null) { const a0 = Math.atan2(s.fz, s.fx), a1 = Math.atan2(hz, hx); turn = wrapPi(a1 - a0) / Math.max(dt, 1e-3); const k = 1 - Math.exp(-dt / (sp > 0.4 ? 0.12 : 0.35)); s.fx += (hx - s.fx) * k; s.fz += (hz - s.fz) * k; const n = Math.hypot(s.fx, s.fz) || 1; s.fx /= n; s.fz /= n; }
     if (s.has) { if (FD.hold === id) skGlue(s); else s.has = false; }
@@ -5408,50 +5498,19 @@ const FDRILLS = [
       { do: 'carry', path: [[32, 22], [52, 18]], cue: 'Attack. Make the D commit' },
       { do: 'finish', to: 'C', cue: 'Shoot, or pass across' }] },
   // defensive zone
-  // the Ravens breakout, the way Drew drew it: the centre puts it back to a D, the D makes the call (Quick up or D to D, or DREW), the forwards read it,
-  // the carrier takes it out, curls and drops it to the weak-side winger, and the three come back in 3 on 2 against the D for a shot
-  { id: 'fd-breakout', zone: 'Defensive zone', name: 'Breakout', reps: 6, unit: 'Goals', net: -1, how: 'The centre passes back to a D. Listen for the call: Quick up (it stays that side) or D to D (it goes behind the net to the other side), and DREW if it\'s coming to you. Out of the zone, the carrier curls and drops it to the weak side, then 3 on 2 back in.', points: ['Read the call: strong side, get to the wall; weak side, curl through the middle', 'Carrier: curl and drop it to the weak side'],
-    cast: { C: { at: [-27, 0], puck: true, pos: 'F' }, RW: { at: [-27, -30], pos: 'F' }, D1: { at: [-84, 30], pos: 'D', face: [1, 0] }, D2: { at: [-84, -30], pos: 'D', face: [1, 0] } }, me: { at: [-27, 30], face: [-1, 0] },
-    variants: [
-      { tag: 'Quick up, to you', beats: [
-        { do: 'wait', t: 0.5, cue: 'Centre puts it back to the D', on: [{ t: 0, who: 'C', pass: 'D1' }] },
-        { do: 'skate', path: [[-44, 30], [-58, 26], [-67, 30], [-66, 37], [-55, 39]], cue: 'Quick up! Your side: get to the wall', on: [{ t: 0.3, who: 'D1', say: 'Quick up!' }, { t: 0.2, who: 'C', move: [[-50, 6], [-70, 10], [-74, 18], [-64, 22], [-52, 20]] }, { t: 0.2, who: 'RW', move: [[-50, -30], [-68, -26], [-66, -16], [-50, -12]] }, { at: 0.72, who: 'D1', say: 'DREW!' }, { at: 0.78, who: 'D1', pass: 'me' }] },
-        { do: 'get', cue: 'Take it on the wall' },
-        { do: 'carry', path: [[-36, 38], [-16, 36], [-2, 30]], cue: 'Carry it out of the zone', on: [{ t: 0, who: 'C', move: [[-32, 14], [-10, 8], [2, 2]] }, { t: 0, who: 'RW', move: [[-30, -14], [-10, -18], [4, -16]] }, { t: 0.5, who: 'D1', move: [[-62, 16]], spd: 3, back: true }, { t: 0.5, who: 'D2', move: [[-62, -14]], spd: 3, back: true }] },
-        { do: 'carry', path: [[6, 22], [4, 12], [-4, 8]], cue: 'Curl round, look weak side' },
-        { do: 'pass', to: 'RW', cue: 'Drop it to the weak-side winger' },
-        { do: 'skate', path: [[-22, 22], [-48, 14], [-62, 8]], cue: 'Drive the net: 3 on 2', on: [{ t: 0, who: 'RW', move: [[-22, -16], [-46, -16]], spd: 5 }, { t: 0, who: 'C', move: [[-24, 2], [-50, 2], [-70, -2]], spd: 5.5 }, { t: 0, who: 'D1', move: [[-74, 10]], spd: 2.6, back: true }, { t: 0, who: 'D2', move: [[-74, -10]], spd: 2.6, back: true }, { at: 0.55, who: 'RW', pass: 'me' }] },
-        { do: 'shoot', cue: 'Shoot!' }] },
-      { tag: 'Quick up, to the centre', beats: [
-        { do: 'wait', t: 0.5, cue: 'Centre puts it back to the D', on: [{ t: 0, who: 'C', pass: 'D1' }] },
-        { do: 'skate', path: [[-44, 30], [-58, 26], [-67, 30], [-66, 37], [-55, 39]], cue: 'Quick up! Your side: get to the wall', on: [{ t: 0.3, who: 'D1', say: 'Quick up!' }, { t: 0.2, who: 'C', move: [[-50, 6], [-70, 10], [-74, 18], [-64, 22], [-52, 20]] }, { t: 0.2, who: 'RW', move: [[-50, -30], [-68, -26], [-66, -16], [-50, -12]] }, { at: 0.7, who: 'D1', pass: 'C' }] },
-        { do: 'skate', path: [[-36, 38], [-14, 36], [-2, 32]], cue: 'He went middle: support up the wall', on: [{ t: 0.2, who: 'C', move: [[-34, 16], [-12, 10], [2, 4], [4, -6], [-4, -8]] }, { t: 0, who: 'RW', move: [[-30, -18], [-10, -24], [2, -20]] }, { t: 0.5, who: 'D1', move: [[-62, 16]], spd: 3, back: true }, { t: 0.5, who: 'D2', move: [[-62, -14]], spd: 3, back: true }, { t: 3.2, who: 'C', pass: 'RW' }] },
-        { do: 'skate', path: [[-22, 26], [-48, 16], [-62, 8]], cue: 'Back in, 3 on 2: drive the net', on: [{ t: 0, who: 'RW', move: [[-24, -18], [-46, -14]], spd: 5 }, { t: 0, who: 'C', move: [[-26, -2], [-52, 0], [-70, -4]], spd: 5.5 }, { t: 0, who: 'D1', move: [[-74, 10]], spd: 2.6, back: true }, { t: 0, who: 'D2', move: [[-74, -10]], spd: 2.6, back: true }, { at: 0.55, who: 'RW', pass: 'me' }] },
-        { do: 'shoot', cue: 'Shoot!' }] },
-      { tag: 'D to D, you\'re weak side', beats: [
-        { do: 'wait', t: 0.5, cue: 'Centre puts it back to the D', on: [{ t: 0, who: 'C', pass: 'D1' }] },
-        { do: 'skate', path: [[-44, 26], [-60, 26], [-70, 20], [-62, 13], [-46, 12]], cue: 'D to D! You\'re weak side: curl through the middle', on: [{ t: 0.3, who: 'D1', say: 'D to D!' }, { t: 0.4, who: 'D1', move: [[-95, 12], [-96, 6]], spd: 4 }, { t: 0.2, who: 'D2', move: [[-93, -20]], spd: 3 }, { t: 2.2, who: 'D1', pass: 'D2' }, { t: 0.2, who: 'C', move: [[-50, -4], [-70, -10], [-74, -20], [-62, -22], [-50, -18]] }, { t: 0.2, who: 'RW', move: [[-56, -36], [-74, -38], [-66, -38]] }, { t: 3.6, who: 'D2', pass: 'RW' }] },
-        { do: 'skate', path: [[-30, 14], [-10, 16], [2, 18]], cue: 'Up the middle, out of the zone', on: [{ t: 0.2, who: 'RW', move: [[-40, -38], [-16, -34], [2, -24], [4, -10], [-2, -6]] }, { t: 0.2, who: 'C', move: [[-30, -16], [-8, -14], [4, -4]] }, { t: 0.4, who: 'D1', move: [[-62, 14]], spd: 3.5 }, { t: 0.4, who: 'D2', move: [[-62, -14]], spd: 3.5 }] },
-        { do: 'get', cue: 'Take the drop pass', on: [{ t: 0.2, who: 'RW', say: 'Drop!' }, { t: 0.3, who: 'RW', pass: 'me' }] },
-        { do: 'carry', path: [[-26, 16], [-52, 10]], cue: 'Attack 3 on 2', on: [{ t: 0, who: 'RW', move: [[-26, -18], [-56, -12]], spd: 5 }, { t: 0, who: 'C', move: [[-28, 0], [-60, -2]], spd: 5.2 }, { t: 0, who: 'D1', move: [[-74, 10]], spd: 2.6, back: true }, { t: 0, who: 'D2', move: [[-74, -10]], spd: 2.6, back: true }] },
-        { do: 'finish', to: 'RW', cue: 'Shoot, or give it across' }] },
-      { tag: 'Quick up, other side', beats: [
-        { do: 'wait', t: 0.5, cue: 'Centre puts it back to the D', on: [{ t: 0, who: 'C', pass: 'D2' }] },
-        { do: 'skate', path: [[-44, 26], [-60, 26], [-70, 20], [-62, 13], [-46, 12]], cue: 'Quick up on their side: you\'re weak side, curl through', on: [{ t: 0.3, who: 'D2', say: 'Quick up!' }, { t: 0.2, who: 'C', move: [[-50, -6], [-70, -10], [-74, -18], [-64, -22], [-52, -20]] }, { t: 0.2, who: 'RW', move: [[-50, -36], [-66, -38], [-60, -39]] }, { t: 2.4, who: 'D2', pass: 'RW' }] },
-        { do: 'skate', path: [[-30, 14], [-10, 16], [2, 18]], cue: 'Up the middle, out of the zone', on: [{ t: 0.2, who: 'RW', move: [[-40, -38], [-16, -34], [2, -24], [4, -10], [-2, -6]] }, { t: 0.2, who: 'C', move: [[-30, -16], [-8, -14], [4, -4]] }, { t: 0.4, who: 'D1', move: [[-62, 14]], spd: 3.5 }, { t: 0.4, who: 'D2', move: [[-62, -14]], spd: 3.5 }] },
-        { do: 'get', cue: 'Take the drop pass', on: [{ t: 0.2, who: 'RW', say: 'Drop!' }, { t: 0.3, who: 'RW', pass: 'me' }] },
-        { do: 'carry', path: [[-26, 16], [-52, 10]], cue: 'Attack 3 on 2', on: [{ t: 0, who: 'RW', move: [[-26, -18], [-56, -12]], spd: 5 }, { t: 0, who: 'C', move: [[-28, 0], [-60, -2]], spd: 5.2 }, { t: 0, who: 'D1', move: [[-74, 10]], spd: 2.6, back: true }, { t: 0, who: 'D2', move: [[-74, -10]], spd: 2.6, back: true }] },
-        { do: 'finish', to: 'RW', cue: 'Shoot, or give it across' }] },
-      { tag: 'D to D, to you', beats: [
-        { do: 'wait', t: 0.5, cue: 'Centre puts it back to the D', on: [{ t: 0, who: 'C', pass: 'D2' }] },
-        { do: 'skate', path: [[-44, 30], [-58, 26], [-67, 30], [-66, 37], [-55, 39]], cue: 'D to D! It\'s coming your side: get to the wall', on: [{ t: 0.3, who: 'D2', say: 'D to D!' }, { t: 0.4, who: 'D2', move: [[-95, -12], [-96, -6]], spd: 4 }, { t: 0.2, who: 'D1', move: [[-93, 20]], spd: 3 }, { t: 2.2, who: 'D2', pass: 'D1' }, { t: 0.2, who: 'C', move: [[-50, 6], [-70, 10], [-74, 18], [-64, 22], [-52, 20]] }, { t: 0.2, who: 'RW', move: [[-50, -30], [-68, -26], [-66, -16], [-50, -12]] }, { at: 0.82, who: 'D1', say: 'DREW!' }, { at: 0.86, who: 'D1', pass: 'me' }] },
-        { do: 'get', cue: 'Take it on the wall' },
-        { do: 'carry', path: [[-36, 38], [-16, 36], [-2, 30]], cue: 'Carry it out of the zone', on: [{ t: 0, who: 'C', move: [[-32, 14], [-10, 8], [2, 2]] }, { t: 0, who: 'RW', move: [[-30, -14], [-10, -18], [4, -16]] }, { t: 0.5, who: 'D1', move: [[-62, 16]], spd: 3, back: true }, { t: 0.5, who: 'D2', move: [[-62, -14]], spd: 3, back: true }] },
-        { do: 'carry', path: [[6, 22], [4, 12], [-4, 8]], cue: 'Curl round, look weak side' },
-        { do: 'pass', to: 'RW', cue: 'Drop it to the weak-side winger' },
-        { do: 'skate', path: [[-22, 22], [-48, 14], [-62, 8]], cue: 'Drive the net: 3 on 2', on: [{ t: 0, who: 'RW', move: [[-22, -16], [-46, -16]], spd: 5 }, { t: 0, who: 'C', move: [[-24, 2], [-50, 2], [-70, -2]], spd: 5.5 }, { t: 0, who: 'D1', move: [[-74, 10]], spd: 2.6, back: true }, { t: 0, who: 'D2', move: [[-74, -10]], spd: 2.6, back: true }, { at: 0.55, who: 'RW', pass: 'me' }] },
-        { do: 'shoot', cue: 'Shoot!' }] }
-    ] },
+  // Breakout Pass 1-1 (icehockeysystems.com): half the zone. Crofty dumps it to the side of the net, the D gets it and comes round the net
+  // while you skate low and open up on the wall; he hits you with the breakout pass, you carry round the cone and take him on 1 on 1.
+  { id: 'fd-breakout', zone: 'Defensive zone', name: 'Breakout Pass 1 on 1', reps: 6, unit: 'Goals', net: -1, cones: [[-44, 30]],
+    how: 'Crofty dumps it in. Skate low and open up on the wall while the D gets it and comes round the net. Take his pass, carry round the cone, then go at him 1 on 1.',
+    points: ['Go low first, then open up to the passer with your stick on the ice', 'Attack his inside shoulder with speed'],
+    cast: { CO: { at: [-40, 4], puck: true, pos: 'F', name: 'Crofty' }, D1: { at: [-80, -4], pos: 'D', face: [1, 0] } }, me: { at: [-66, 24] },
+    beats: [
+      { do: 'wait', t: 1.4, cue: 'Crofty dumps it in', on: [{ t: 0, who: 'CO', dump: [-88, -13], to: 'D1' }] },
+      { do: 'skate', path: [[-78, 31], [-85, 34], [-78, 39], [-66, 39]], cue: 'Skate low, then open up on the wall', on: [{ t: 0, who: 'D1', move: [[-95, -7], [-96, 4], [-90, 12]], spd: 4.5 }, { at: 0.75, who: 'D1', say: 'Drew!' }, { at: 0.8, who: 'D1', pass: 'me' }] },
+      { do: 'get', cue: 'Take the breakout pass' },
+      { do: 'carry', path: [[-52, 37], [-40, 34], [-40, 25], [-48, 22]], cue: 'Carry round the cone', on: [{ t: 0, who: 'D1', move: [[-78, 6], [-68, 6]], spd: 4 }] },
+      { do: 'carry', path: [[-62, 14], [-72, 6]], cue: '1 on 1: take him on', on: [{ t: 0, who: 'D1', defend: true }] },
+      { do: 'shoot', cue: 'Shoot!' }] },
   { id: 'fd-closeout', zone: 'Defensive zone', name: 'Cover the Point', reps: 6, unit: 'Clean', how: 'You start low in your own end. When it goes up to their point, get out and block the lane. D to D: back to the middle. Then win the loose puck and get it out.', points: ['Move as the pass goes, not after', 'Stick in the lane, body between him and the net'],
     cast: { X2: { at: [-84, 30], puck: true, team: 'V', pos: 'F' }, X1: { at: [-62, 30], team: 'V', pos: 'D' }, X3: { at: [-62, -28], team: 'V', pos: 'D' } }, me: { at: [-76, 12] },
     beats: [{ do: 'wait', t: 0.8, cue: 'Watch the puck low' },
@@ -5495,6 +5554,7 @@ function pvSim(d) {
     if (a.shoot) { if (fly && fly.to === w) return false; if (hold !== w && !give(w)) return false; shootFrom(w); return true; }
     if (a.dump) { if (hold !== w && !give(w)) return false; const p = pos(w); pk.x = p.x; pk.y = p.y; hold = null; fly = { spot: a.dump.slice(), chaser: a.to && a.to !== 'me' ? a.to : null }; return true; }
     if (a.spawn) { pk.x = a.spawn[0]; pk.y = a.spawn[1]; hold = null; fly = null; return true; }
+    if (a.defend && ents[w]) { ents[w].def = true; ents[w].path = null; return true; }
     if (a.give) give(w);
     if (a.move && ents[w]) { ents[w].path = a.move.map(q => q.slice()); ents[w].spd = (a.spd || 5.5) / FT; }
     return true;
@@ -5522,7 +5582,8 @@ function pvSim(d) {
       for (const a of ev) if (!a.done && (a.at != null ? frac >= a.at : bt >= (a.t || 0)) && doEv(a)) a.done = true;
       if (done) next();
     } else { for (const a of ev) if (!a.done && doEv(a)) a.done = true; tail += DT; }
-    for (const id in ents) { const e = ents[id]; if (e.chase && !hold) { const dx = pk.x - e.x, dy = pk.y - e.y, dd = Math.hypot(dx, dy); if (dd < 2) { hold = id; e.chase = false; } else { const s = Math.min(dd, 18 * DT); e.x += dx / dd * s; e.y += dy / dd * s; } } else along(e, DT); }
+    for (const id in ents) { const e = ents[id]; if (e.def) { const nx = 89 * (d.net || 1), tl = Math.hypot(nx - me.x, me.y) || 1, tx = me.x + (nx - me.x) / tl * 9, ty = me.y - me.y / tl * 9, dx = tx - e.x, dy = ty - e.y, dd = Math.hypot(dx, dy) || 1, st0 = Math.min(dd, 14 * DT); e.x += dx / dd * st0; e.y += dy / dd * st0; continue; }
+      if (e.chase && !hold) { const dx = pk.x - e.x, dy = pk.y - e.y, dd = Math.hypot(dx, dy); if (dd < 2) { hold = id; e.chase = false; } else { const s = Math.min(dd, 18 * DT); e.x += dx / dd * s; e.y += dy / dd * s; } } else along(e, DT); }
     let flying = false;
     if (fly) {
       flying = true; const tg = fly.to ? pos(fly.to) : fly.spot ? { x: fly.spot[0], y: fly.spot[1] } : { x: fly.net, y: 0 }, dx = tg.x - pk.x, dy = tg.y - pk.y, dd = Math.hypot(dx, dy), s = Math.min(dd, (fly.spot ? 42 : fly.net ? 80 : PASS) * DT);
@@ -6558,7 +6619,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
