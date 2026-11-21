@@ -2824,7 +2824,7 @@ const PEN_BOX = { ravens: -3.2, visitors: 3.2 }, PEN_Z = -(RK.W / 2 + 0.75);
 const penOn = () => SC.on && st.rulesOn && SC.mode === '5' && !SC.over && SC.grp;
 const penN = team => PEN.list.filter(p => p.team === team).length;
 const penShort = team => penN(team) > penN(team === 'ravens' ? 'visitors' : 'ravens');
-function penReset() { PEN.list.length = 0; PEN.q = []; PEN.delay = null; PEN.cool = {}; SC.pens = []; for (const k in SKP) { SKP[k].inBox = null; SKP[k].boxOut = false; } if (BN.box) { BN.box = null; BN.on = false; } }
+function penReset() { PEN.list.length = 0; PEN.q = []; PEN.delay = null; PEN.cool = {}; PEN.warn = {}; SC.pens = []; for (const k in SKP) { SKP[k].inBox = null; SKP[k].boxOut = false; } if (BN.box) { BN.box = null; BN.on = false; } }
 function penHolder() { if (humanHas()) return 'ravens'; const c = SC.sk.find(s => s.has); return c ? c.team : null; }
 function penFoul(team, who, kind, why) {
   if (!penOn() || PEN.delay || SC.pause > 0 || SC.after > 0 || SC.inter > 0) return false;
@@ -2926,41 +2926,50 @@ function penSkip() {
   penOut(p, ppGoal ? 'power-play goal' : 'time');
   scFaceoff('Faceoff  ' + SC.score[0] + ' - ' + SC.score[1], [0, 0]); boardText();
 }
-// your fouls: the blade on a man's legs while you're not playing the puck, or a big hit
+// your fouls, rewritten. A ref calls what he sees, not physics noise, so:
+//  - the stick's speed is measured relative to YOU (skating with your stick out is not a swing), and any frame where the blade jumps (a snap
+//    turn, a teleport, tracking hiccup) is thrown away;
+//  - nothing is ever called while you're playing the puck, or just after (a stick on the puck first is a clean poke);
+//  - slashing: a real chop (fast, from above, at his body, not his skates); tripping: your blade down in his feet as he carries it past,
+//    and he loses it; hooking: your stick on him for a good second as he skates away with it; body checking: you skate hard straight into him
+//    with nothing to play;
+//  - the first one of each kind in a game is a warning from the ref, not a call. After that it's a coin flip, like a real ref.
 const _bp0 = new THREE.Vector3();
 function penDrewFouls(dt) {
-  // Only what a ref would really call: a hard chop into a man's body (slashing), your blade in the skates of a man with the puck (tripping), or your
-  // stick held on him as he skates away (hooking). Never while you're playing the puck, and never for a stick that just brushes him.
-  if (!penOn() || BN.on || !stickOn || !STK.ok || !STK.F || PEN.delay || SC.pause > 0) { PEN.bprev = null; return; }
+  if (!penOn() || BN.on || !stickOn || !STK.ok || !STK.F || PEN.delay || SC.pause > 0 || SC.after > 0) { PEN.bprev = null; return; }
   const o = [0, 0, 0]; bpt(STK.F, STK.bp.Lb * 0.5, PUCK.HH, -STK.bp.c[Math.round(STK.bp.n / 2)] + PUCK.R + 0.02, o);
-  const P0 = PEN.bprev; PEN.bprev = { x: o[0], y: o[1], z: o[2] }; if (!P0 || dt <= 0) return;
-  const bvx = (o[0] - P0.x) / dt, bvy = (o[1] - P0.y) / dt, bvz = (o[2] - P0.z) / dt;
-  const onPuck = pClock - (PK.htouch || -9) < 0.3 || Math.hypot(PK.x - o[0], PK.z - o[2]) < 0.6;
+  const rel = { x: o[0] - S.x, y: o[1], z: o[2] - S.z }, P0 = PEN.bprev; PEN.bprev = rel; if (!P0 || dt <= 0) return;
+  const jump = Math.hypot(rel.x - P0.x, rel.y - P0.y, rel.z - P0.z); if (jump > 0.35) { PEN.bprev = null; return; }   // a snap turn or a hiccup, not a swing
+  const svx = (rel.x - P0.x) / dt, svy = (rel.y - P0.y) / dt, svz = (rel.z - P0.z) / dt, swing = Math.hypot(svx, svy, svz);   // the stick, relative to you
+  PEN.swF = swing > 5 ? (PEN.swF || 0) + dt : 0;
+  const nearPuck = pClock - (PK.htouch || -9) < 0.8 || Math.hypot(PK.x - o[0], PK.z - o[2]) < 1.0 || humanHas();
   for (const s of SC.sk) {
-    if (s.team !== 'visitors' || !s.vis) continue;
+    if (s.team !== 'visitors' || !s.vis || s.inBox) continue;
     const dx = s.x - o[0], dz = s.z - o[2], d = Math.hypot(dx, dz);
-    if (d > 0.34 || o[1] > 1.0) { s.hookT = 0; continue; }
-    if (onPuck || pClock - (s.foulT || -9) < 3) { s.hookT = 0; continue; }
-    const rvx = bvx - s.vx, rvz = bvz - s.vz, into = d > 0.01 ? (rvx * dx + rvz * dz) / d : Math.hypot(rvx, rvz), chop = Math.hypot(rvx, bvy, rvz);
-    const sp = Math.hypot(s.vx, s.vz), carrier = s.has || pClock - (s.lostT || -9) < 0.6;
-    let kind = '', why = '', pr = 0;
-    if (into > 4.5 && chop > 5) { kind = 'slashing'; why = 'a hard swing into his body, nowhere near the puck'; pr = 0.5; }
-    else if (carrier && sp > 3 && o[1] < 0.22 && d < 0.3 && (-dx * s.vx - dz * s.vz) / Math.max(d, 0.01) / sp > 0.2) { kind = 'tripping'; why = 'your blade in his skates as he went by'; pr = 0.45; }
-    else if (carrier && o[1] < 0.6 && (s.vx * dx + s.vz * dz) / Math.max(d, 0.01) > 0.6) { s.hookT = (s.hookT || 0) + dt; if (s.hookT > 0.7) { kind = 'hooking'; why = 'your stick held on him as he skated away'; pr = 0.45; s.hookT = 0; } }
-    else s.hookT = Math.max(0, (s.hookT || 0) - dt);
+    if (d > 0.4) { s.hookT = Math.max(0, (s.hookT || 0) - dt * 2); continue; }
+    if (nearPuck || pClock - (s.foulT || -9) < 4) { s.hookT = 0; continue; }
+    const sp = Math.hypot(s.vx, s.vz), carrier = s.has || pClock - (s.lostT || -9) < 0.5;
+    let kind = '', why = '';
+    if (swing > 7 && PEN.swF > 0.04 && svy < -2.5 && o[1] > 0.3 && o[1] < 1.3 && d < 0.32) { kind = 'slashing'; why = 'a chop into him with your stick, nowhere near the puck'; }
+    else if (carrier && sp > 3.5 && o[1] < 0.1 && d < 0.2 && (dx * s.vx + dz * s.vz) / Math.max(d, 0.01) / sp < -0.4 && pClock - (s.lostT || -9) < 0.5) { kind = 'tripping'; why = 'your blade in his skates, and he lost the puck'; }
+    else if (carrier && o[1] < 0.6 && d < 0.3 && (s.vx * dx + s.vz * dz) / Math.max(d, 0.01) > 1.2) { s.hookT = (s.hookT || 0) + dt; if (s.hookT > 1.1) { kind = 'hooking'; why = 'your stick on him for a good second as he skated away'; s.hookT = 0; } }
     if (!kind) continue;
-    s.foulT = pClock;
-    if (Math.random() < pr) { if (kind === 'tripping' && s.has) { s.has = false; s.act = ''; s.cool = 0.8; PK.vx = s.vx * 0.5; PK.vz = s.vz * 0.5; s.vx *= 0.3; s.vz *= 0.3; } penFoul('ravens', 'human', kind, why); }
-    return;
+    s.foulT = pClock; penJudge(kind, why); return;
   }
 }
-function penBump(o, v, svx, svz) {                                      // a hit from you, from bodyHuman: only if you skated into him hard
+function penJudge(kind, why) {                                            // the ref: a word first, then it's a call about half the time
+  PEN.warn = PEN.warn || {}; const k = kind;
+  if (!PEN.warn[k]) { PEN.warn[k] = pClock; toast('Ref: "Watch the ' + (kind === 'body checking' ? 'hitting' : 'stick') + ', eleven." (' + kind + ': a warning this time)', 2.6); run.penWarn = (run.penWarn || 0) + 1; return false; }
+  if (Math.random() < 0.5) return penFoul('ravens', 'human', kind, why);
+  return false;
+}
+function penBump(o, v, svx, svz) {                                      // a hit from you, from bodyHuman: only if you skated hard, straight into him, with nothing to play
   if (!penOn() || BN.on || !o || o.team !== 'visitors' || svx == null) return;
-  const dx = o.x - S.x, dz = o.z - S.z, d = Math.hypot(dx, dz) || 1, nx = dx / d, nz = dz / d;
-  const mine = svx * nx + svz * nz, his = -((o.vx || 0) * nx + (o.vz || 0) * nz);
-  if (mine < 4.2 || mine < his + 1 || pClock - (o.foulT || -9) < 3) return;
-  o.foulT = pClock;
-  if (Math.random() < 0.4) penFoul('ravens', 'human', 'body checking', 'you ran into him at speed (no hitting in rec)');
+  const dx = o.x - S.x, dz = o.z - S.z, d = Math.hypot(dx, dz) || 1, nx = dx / d, nz = dz / d, sp = Math.hypot(svx, svz) || 1;
+  const mine = svx * nx + svz * nz, his = -((o.vx || 0) * nx + (o.vz || 0) * nz), straight = mine / sp;
+  const loose = Math.hypot(PK.x - o.x, PK.z - o.z) < 1.5 && !o.has;     // both going for a loose puck: that's hockey
+  if (mine < 5.2 || mine < his + 2 || straight < 0.85 || loose || humanHas() || pClock - (o.foulT || -9) < 4) return;
+  o.foulT = pClock; penJudge('body checking', 'you skated straight into him at speed (no hitting in rec)');
 }
 // AI fouls: a defender who misses a poke from behind the man with the puck sometimes takes him down
 function penPokeMiss(s, carrier, Q) {
@@ -5609,12 +5618,16 @@ function scDecide(s, Q) {
   const mates = SC.sk.filter(o => o !== s && o.team === s.team && !o.chg).map(o => ({ o, x: o.x, z: o.z, vx: o.vx, vz: o.vz, fx: o.fx, fz: o.fz, bl: skBlade(o) }));
   if (s.team === 'ravens' && !BN.on) mates.push({ o: 'human', x: H.x, z: H.z, vx: S.vx, vz: S.vz, bl: humanBlade(), human: true });
   const deepD = s.role === 'D' && u < -GX + 7;
+  // a breakaway (nobody of theirs between him and the net, close enough to matter): he takes it to the net himself, no passing
+  const alone = u > 0 && u < GX - 2.5 && Math.abs(s.z) < 9 && dir * s.vx > 2 && !oppsOf(s.team).some(o => o.role !== 'G' && ((dir * (o.x - s.x) > -0.5 && Math.hypot(o.x - s.x, o.z - s.z) < GX - u + 2) || Math.hypot(o.x - s.x, o.z - s.z) < 2.5));
+  if (alone) { s.prot2 = false; if (u > GX - 8 && sq > 0.15) { skShoot(s, nx, G, Q); return; } s.act = 'carry'; s.dec = 0.25; s.brk = pClock; return; }
   for (const m of mates) {
     const d0 = Math.hypot(m.bl[0] - s.x, m.bl[1] - s.z); if (d0 < 2.5 || d0 > 32) continue;
     const spd = m.human ? clamp(9 + d0 * 0.25, 11, 14) : clamp(9 + d0 * 0.3, 11, 17), aim = passLead(s.x, s.z, m.bl[0], m.bl[1], m.vx || 0, m.vz || 0, spd);
     const mu = dir * aim[0], mv = dir * aim[1];
     if (u < -GX + 12 && mu < -GX + 12 && Math.abs(s.z) > 1 && Math.sign(aim[1]) !== Math.sign(s.z) && !(deepD && m.o.role === 'D' && Math.abs(aim[0]) > GX - 0.5)) continue;   // never across the front of our own net (behind it, D to D, is fine)
     if (st.rulesOn && u < BLUEL && (mu > BLUEL + 0.3 || (mu > BLUEL - 0.5 && offAhead(s)))) continue;            // offside
+    if (u > BLUEL + 0.5 && mu < BLUEL + 1.2) continue;                                                        // never back out of their zone (D to D stays in)
     const lane = laneP(s.x, s.z, aim[0], aim[1], s.team, 0.8); if (lane < 0.25) continue;
     let near = 9; for (const o of oppsOf(s.team)) near = Math.min(near, Math.hypot(o.x - m.x, o.z - m.z));
     const open = clamp(near / 4, 0, 1), mq = shotQ(aim[0], aim[1], nx), threat = Math.max(0, mq - sq), terr = clamp((mu - u) / 20, -0.4, 1);
@@ -5659,6 +5672,7 @@ function scCarry(s) {
   const dir = teamDir(s.team), u = dir * s.x;
   if (st.rulesOn && u < BLUEL && u > BLUEL - 7 - 0.5 * Math.hypot(s.vx, s.vz) && offAhead(s)) return inRink(dir * (BLUEL - 2.7), s.z + (Math.abs(s.z) > 6 ? -Math.sign(s.z) : (Math.sign(s.z) || 1)) * 3, 1.2);   // hold up at the line till they're back onside
   if (s.prot2) return inRink(s.x + dir * 2.5, s.z, 1.2);
+  if (s.brk && pClock - s.brk < 1) return inRink(dir * (GX - 3), s.z * 0.5, 1.2);
   if (u > BLUEL + 1) {                                                   // their end: drive the net only if the way's open, otherwise work the wall and cycle
     const nx = dir * (GX - 3.5), lx = nx - s.x, lz = -s.z, L = Math.hypot(lx, lz) || 1;
     const blocked = oppsOf(s.team).some(o => { const p = ((o.x - s.x) * lx + (o.z - s.z) * lz) / L; return p > 0.3 && p < L && Math.abs((o.x - s.x) * lz - (o.z - s.z) * lx) / L < 1.6; });
@@ -5767,8 +5781,20 @@ function scSupport(s, t, carrier, dir) {
   const human = carrier === 'human', cx = human ? H.x : carrier.x, cz = human ? H.z : carrier.z, cvu = dir * (human ? S.vx : carrier.vx), pu = dir * cx;
   const far = Math.hypot(t[0] - s.x, t[1] - s.z);
   if (far > 3 && (cvu > 2 || pu > BLUEL) && dir * s.x < pu + 2) s.gm = true;              // the play's going: get up with it
-  if (pu < BLUEL || s.role === 'G') return t;
+  if (s.role === 'G') return t;
   const opp = SC.sk.filter(o => o.team !== s.team && !o.chg && o.role !== 'G');
+  if (pu < BLUEL) {                                                       // our end and the neutral zone: be a real option for him
+    let tx = t[0], tz = t[1];
+    const dC = Math.hypot(tx - cx, tz - cz);
+    if (dC > 24) { const k = 18 / dC; tx = cx + (tx - cx) * k; tz = cz + (tz - cz) * k; }                       // not miles away: within a pass
+    if (dC < 4 && s.role !== 'D') { const sd = Math.sign(tz - cz) || (s.ln || 1); tz = cz + sd * 6; tx += dir * 3; }   // not on top of him either
+    for (const o of opp) { const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz); if (d < 2.4) { const k = (2.4 - d) / (d || 1); tx += dx * k; tz += dz * k; } }   // off his check
+    { const ax = tx - cx, az = tz - cz, L = Math.hypot(ax, az) || 1;                                         // and out of the shadow of a defender
+      for (const o of opp) { const p = ((o.x - cx) * ax + (o.z - cz) * az) / L; if (p < 0.8 || p > L - 0.8) continue; const off = ((o.x - cx) * az - (o.z - cz) * ax) / L;
+        if (Math.abs(off) < 1.2) { const sh = (1.5 - Math.abs(off)) * (off >= 0 ? -1 : 1); tx += (az / L) * sh * 1.5; tz += (-ax / L) * sh * 1.5; break; } } }
+    if (st.rulesOn && dir * tx > BLUEL - 0.8) tx = dir * (BLUEL - 0.8);    // still onside
+    return inRink(tx, tz, 1.0);
+  }
   let tx = t[0], tz = t[1];
   if (Math.hypot(tx - cx, tz - cz) < 4.5 && s.role !== 'D') {               // my spot's where he is: don't crowd him, give him another option
     const side = Math.sign(cz * dir) || 1, mates = SC.sk.filter(o => o.team === s.team && o !== s && !o.chg), free = (u, v) => !mates.some(o => Math.hypot(o.x - dir * u, o.z - dir * v) < 3);
@@ -5909,6 +5935,7 @@ function scRoles(carrier, carrierTeam) {
 // ---- Stage D rules: offside (an attacker over the blue line before the puck goes in: faceoff just outside that line) and icing (shot from your own
 // half over their goal line untouched: faceoff in your end). Players who know the rule stay onside.
 function scWhistle(msg, dot) { if (audio) audio.whistle({ x: PK.x, y: 1.5, z: PK.z }); SC.calls[msg] = (SC.calls[msg] || 0) + 1; scFaceoff(msg, dot); }
+const OFFX = BLUEL + 0.15 + 0.22;                                      // a skater is in the zone once both skates are past the line's far edge
 function scRules(carrier, carrierTeam) {
   const x = PK.x, px = SC.rpx == null ? x : SC.rpx; SC.rpx = x;
   if (carrier) { SC.lastTeam = carrierTeam; SC.lastU = PK.x; }
@@ -5917,19 +5944,20 @@ function scRules(carrier, carrierTeam) {
   for (const e of EV) if (e.k === 'block' && e.kind === 'goalie') SC.lastTeam = 'goalie';
   if (!st.rulesOn) return false;
   for (const team of ['ravens', 'visitors']) {
-    const dir = teamDir(team), line = BLUEL + PUCK.R;
+    const dir = teamDir(team), line = BLUEL + 0.15 + PUCK.R;                 // the puck has to be completely over the line (it's 30 cm wide): on the line is still out
     const took = carrier ? carrierTeam : SC.lastTeam;                         // only the team that carried, passed or shot it in can be offside
     if (took === team && dir * px <= line && dir * x > line) {                // the puck has just gone over this team's attacking blue line
-      const ahead = SC.sk.filter(q => q.team === team && q !== carrier && dir * q.x > BLUEL + 0.35).map(q => '#' + q.num);
-      if (team === 'ravens' && !BN.on && carrier !== 'human' && dir * H.x > BLUEL + 0.35) ahead.unshift('you');
+      const ahead = SC.sk.filter(q => q.team === team && q !== carrier && dir * q.x > OFFX).map(q => '#' + q.num);   // both skates over the far edge
+      if (team === 'ravens' && !BN.on && carrier !== 'human' && dir * S.x > OFFX) ahead.unshift('you');            // (your skates, not your head leaning over)
+      if (ahead.length && carrier) { scWhistle('Offside: ' + ahead[0] + (ahead[0] === 'you' ? ' were' : ' was') + ' over the line before the puck', [dir * 6.1, (PK.z >= 0 ? 1 : -1) * 6.71]); return true; }   // carried in with a man ahead: straight away
       if (ahead.length) { SC.dOff = { team, who: ahead[0], t: pClock }; SC.msg = 'Delayed offside: ' + (team === 'ravens' ? 'Ravens' : oppN()) + ' clear the zone'; toast(ahead[0] === 'you' ? 'Delayed offside: get out of the zone' : SC.msg, 1.6); boardText(); }
     }
   }
   // delayed offside: the attackers must all get back over the line before one of them plays the puck in the zone
   if (SC.dOff) {
     const team = SC.dOff.team, dir = teamDir(team);
-    const inZone = SC.sk.filter(q => q.team === team && dir * q.x > BLUEL + 0.35).length + (team === 'ravens' && !BN.on && dir * H.x > BLUEL + 0.35 ? 1 : 0);
-    if (dir * PK.x < BLUEL || !inZone) { SC.dOff = null; SC.msg = inZone ? '' : 'Tagged up'; SC.msgT = pClock + 1.5; boardText(); }
+    const inZone = SC.sk.filter(q => q.team === team && dir * q.x > OFFX).length + (team === 'ravens' && !BN.on && dir * S.x > OFFX ? 1 : 0);
+    if (dir * PK.x < BLUEL + 0.15 || !inZone) { SC.dOff = null; SC.msg = inZone ? '' : 'Tagged up'; SC.msgT = pClock + 1.5; boardText(); }
     else if (carrierTeam === team || (pClock - PK.touch < 0.05 && PK.touch > SC.dOff.t + 0.03 && PK.lastT === team)) { const w = SC.dOff.who; SC.dOff = null; scWhistle('Offside: ' + w + (w === 'you' ? ' were' : ' was') + ' over the line', [dir * 6.1, (PK.z >= 0 ? 1 : -1) * 6.71]); return true; }
   }
   // icing (hybrid): shot or cleared from its own half over the far goal line, untouched. It is waved off if the icing team gets there first or the goalie
