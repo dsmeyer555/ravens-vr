@@ -3006,7 +3006,22 @@ const SP_NO = ["Can't make this one, sorry", 'Out this week, sorry pal', 'Not th
 function spR(key) { let h = 2166136261; for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); } h ^= h >>> 15; h = Math.imul(h, 2246822507); h ^= h >>> 13; return (h >>> 0) / 4294967296; }
 const spRoster = () => (RN.players || []).filter(p => p.n && p.n !== 'Drew');
 function spRegular(n) { const lu = st.lineup || {}, M = RN.spSaved || RN.map; return Object.values(lu).includes(n) || (M && Object.values(M).some(m => m && m.n === n)); }
-function spTruth(vc, n) {                                                // what he'll do this week (fixed for the week, so it's the same every time you look)
+// the club always gets a full team: at least 14 skaters (8 forwards, 6 D if it can) and a goalie can make it every week. If the dice say
+// fewer, the likeliest of the rest find they can come after all; and a day-of dropout only happens when there's someone spare to cover.
+let SP_TEAM = null;
+function spTruth(vc, n) {
+  const key = vc.season + '-' + vc.week + '-' + (RN.players || []).length + '-' + Object.values(st.lineup || {}).join();
+  if (!SP_TEAM || SP_TEAM.key !== key) {
+    const R = spRoster(), T = {}; for (const p of R) T[p.n] = spTruthRaw(vc, p.n);
+    const rel = p => spR(vc.season + '-' + vc.week + '-' + p.n + 'c') - (spRegular(p.n) ? 0.2 : 0);           // lowest first = nearest to making it
+    const cnt = f => R.filter(p => f(p) && T[p.n].can).length, force = (f, need) => { for (const p of R.filter(q => f(q) && !T[q.n].can).sort((a, b) => rel(a) - rel(b))) { if (cnt(f) >= need) break; T[p.n] = Object.assign({}, T[p.n], { can: true, drop: false }); } };
+    force(p => p.pos === 'G', 1); force(p => p.pos === 'D', 6); force(p => p.pos === 'F', 8); force(p => p.pos !== 'G', 14);
+    let spare = cnt(p => p.pos !== 'G') - 14; for (const p of R) if (T[p.n].drop) { if (p.pos !== 'G' && spare > 0) spare--; else T[p.n] = Object.assign({}, T[p.n], { drop: false }); }
+    SP_TEAM = { key, T };
+  }
+  return SP_TEAM.T[n] || spTruthRaw(vc, n);
+}
+function spTruthRaw(vc, n) {                                             // what he'll do this week (fixed for the week, so it's the same every time you look)
   const k = vc.season + '-' + vc.week + '-' + n, rel = 0.22 + 0.45 * spR(n + 'rel') + (spRegular(n) ? 0.2 : 0) + (n === CAPS.C || CAPS.A.includes(n) ? 0.1 : 0), q = spR(n + 'q'), fl = spR(n + 'm');
   const can = spR(k + 'c') < rel;
   let r1 = q > 0.62 ? 0 : q > 0.32 ? 1 : q > 0.1 ? 2 : 3; if (spR(k + 'j') < 0.25) r1++; if (spR(k + 'k') < 0.2) r1--; r1 = clamp(r1, 0, 3);
@@ -3194,6 +3209,145 @@ function lnRelease() {
   const h = PH.hov >= 0 ? PH.hits[PH.hov] : null, tk = h && h.dk;
   if (tk && tk !== D.k) { lnSwap(D.k, tk); PH.sel = null; return; }
   if (tk === D.k && !D.moved) { if (PH.sel && PH.sel !== tk) { lnSwap(PH.sel, tk); PH.sel = null; } else PH.sel = PH.sel === tk ? null : tk; }
+}
+// ---- the end-of-season tournament: after the last Talon Cup week, eight clubs (the six from the Talon Cup, seeded by the table, plus two
+// invited) play one weekend: two groups of four, the top two into the semis, then the final. Ravens games are played (or simmed) like any
+// game night, three 20s; a knockout game level at the end goes to a shootout. Then the awards night, then the next season.
+const TOUR_RR = [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]];
+function tourNew(vc) {
+  const seeds = talonRows(vc).map(e => e[0]), guests = CLUBS.slice(5).filter(c => c[1] >= 0.5 && c[1] <= 0.56).sort((a, b) => spR(vc.season + a[0]) - spR(vc.season + b[0])).slice(0, 2).map(c => c[0]);
+  const all = seeds.concat(guests), A = [all[0], all[3], all[4], all[7]], B = [all[1], all[2], all[5], all[6]], games = [];
+  for (const [g, T] of [['A', A], ['B', B]]) TOUR_RR.forEach((rd, r) => rd.forEach(([i, j]) => games.push({ g, rd: r, h: T[i], a: T[j], gf: null, ga: null })));
+  const host = guests[0] || seeds[1];
+  vc.tour = { stage: 'groups', rd: 0, A, B, games, ko: [], host, res: '', me: { gp: 0, g: 0, a: 0 }, aw: null, awI: 0, log: [] };
+  return vc.tour;
+}
+const tourR = n => n === 'Ravens' ? RAV_R + ((CAR.vc && CAR.vc.conf || 55) - 55) / 1000 : clubBy(n)[1];
+function tourTable(T, grp) {
+  const tab = {}; for (const n of T[grp]) tab[n] = { n, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+  for (const g of T.games) if (g.g === grp && g.gf != null) { const H = tab[g.h], A = tab[g.a]; H.p++; A.p++; H.gf += g.gf; H.ga += g.ga; A.gf += g.ga; A.ga += g.gf;
+    if (g.gf > g.ga) { H.w++; A.l++; H.pts += 2; } else if (g.gf < g.ga) { A.w++; H.l++; A.pts += 2; } else { H.d++; A.d++; H.pts++; A.pts++; } }
+  return Object.values(tab).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || tourR(b.n) - tourR(a.n));
+}
+function tourNext(T) {                                                    // the Ravens' next game, if they're still in it
+  if (!T) return null;
+  if (T.stage === 'groups') return T.games.find(g => g.rd === T.rd && g.gf == null && (g.h === 'Ravens' || g.a === 'Ravens')) || null;
+  if (T.stage === 'semi' || T.stage === 'final') return T.ko.find(g => g.st === T.stage && g.gf == null && (g.h === 'Ravens' || g.a === 'Ravens')) || null;
+  return null;
+}
+function tourFx(vc) {
+  const T = vc.tour, g = tourNext(T); if (!g) return null;
+  const opp = g.h === 'Ravens' ? g.a : g.h, c = clubBy(opp), lab = T.stage === 'groups' ? 'Group ' + g.g + ', game ' + (g.rd + 1) : T.stage === 'semi' ? 'Semi-final' : 'Final';
+  return { opp, r: c[1], style: c[2], home: g.h === 'Ravens', cup: false, tour: true, ko: T.stage !== 'groups', lab, id: 'T' + vc.season + (T.stage === 'groups' ? 'G' + g.rd : T.stage[0].toUpperCase()) };
+}
+function tourSimGame(g) { const s = simScore(tourR(g.h), tourR(g.a)); g.gf = s[0]; g.ga = s[1]; if (g.st && g.gf === g.ga) g.so = Math.random() < 0.5 + (tourR(g.h) - tourR(g.a)) * 4 ? 'h' : 'a'; }
+const tourWin = g => g.gf > g.ga || (g.gf === g.ga && g.so === 'h') ? g.h : g.a;
+function tourAdvance(vc) {                                                // the other games of this round, then on to the next stage
+  const T = vc.tour;
+  if (T.stage === 'groups') {
+    for (const g of T.games) if (g.rd === T.rd && g.gf == null && g.h !== 'Ravens' && g.a !== 'Ravens') tourSimGame(g);
+    if (T.games.some(g => g.rd === T.rd && g.gf == null)) return;
+    if (T.rd < 2) { T.rd++; if (!tourNext(T)) { for (const g of T.games) if (g.gf == null) tourSimGame(g); T.rd = 2; } else return; }
+    const a = tourTable(T, 'A'), b = tourTable(T, 'B');
+    T.ko = [{ st: 'semi', h: a[0].n, a: b[1].n, gf: null, ga: null }, { st: 'semi', h: b[0].n, a: a[1].n, gf: null, ga: null }]; T.stage = 'semi';
+    if (!tourNext(T)) { T.res = 'Out in the group stage (' + ordN((a.findIndex(r => r.n === 'Ravens') + 1) || (b.findIndex(r => r.n === 'Ravens') + 1)) + ' in the group)'; }
+  }
+  if (T.stage === 'semi') {
+    for (const g of T.ko) if (g.st === 'semi' && g.gf == null && g.h !== 'Ravens' && g.a !== 'Ravens') tourSimGame(g);
+    if (T.ko.some(g => g.st === 'semi' && g.gf == null)) return;
+    const s = T.ko.filter(g => g.st === 'semi'); if (!T.ko.some(g => g.st === 'final')) T.ko.push({ st: 'final', h: tourWin(s[0]), a: tourWin(s[1]), gf: null, ga: null });
+    T.stage = 'final'; if (!T.res && !tourNext(T)) T.res = 'Out in the semi-finals';
+  }
+  if (T.stage === 'final') {
+    const f = T.ko.find(g => g.st === 'final'); if (f.gf == null && f.h !== 'Ravens' && f.a !== 'Ravens') tourSimGame(f);
+    if (f.gf == null) return;
+    if (!T.res) T.res = tourWin(f) === 'Ravens' ? 'Champions!' : 'Runners-up';
+    T.champ = tourWin(f); T.stage = 'awards'; T.aw = tourAwards(vc); T.awI = 0;
+  }
+}
+// a Ravens game finished (played or simmed): the score, a shootout if a knockout game is level, the tournament stats, then the rest of the round
+function tourRecord(gf, ga, me, sim, goals, pens) {
+  const vc = CAR.vc, T = vc.tour, g = tourNext(T), f = tourFx(vc); if (!g) return;
+  const rh = g.h === 'Ravens'; g.gf = rh ? gf : ga; g.ga = rh ? ga : gf; let so = '';
+  if (g.st && gf === ga) { const w = Math.random() < 0.5 + (tourR('Ravens') - tourR(f.opp)) * 4; g.so = (w === rh) ? 'h' : 'a'; so = w ? ', won in a shootout' : ', lost in a shootout'; }
+  { vc.ps = vc.ps || {}; const cr = carCredit(goals || [], gf, me), P = n => /^Spare /.test(n) ? {} : (vc.ps[n] = vc.ps[n] || { gp: 0, g: 0, a: 0, tgp: 0, tg: 0, ta: 0 });
+    for (const n of cr.lu) P(n).xgp = (P(n).xgp || 0) + 1;
+    for (const n of pens || []) P(n).pim = (P(n).pim || 0) + 2;
+    for (const q of cr.goals) { P(q.sc).xg = (P(q.sc).xg || 0) + 1; for (const a of q.as) P(a).xa = (P(a).xa || 0) + 1; } }
+  T.me.gp++; T.me.g += me.g || 0; T.me.a += me.a || 0;
+  const res = gf > ga || so.includes('won') ? 'beat' : gf < ga || so.includes('lost') ? 'lost to' : 'drew with';
+  const mine = [me.g ? me.g + (me.g > 1 ? ' goals' : ' goal') : '', me.a ? me.a + (me.a > 1 ? ' assists' : ' assist') : ''].filter(Boolean).join(', ');
+  vc.last = { gf, ga, opp: f.opp, g: me.g || 0, a: me.a || 0, sh: me.sh || 0, line: `${f.lab}: the Ravens ${res} ${f.opp} ${gf}-${ga}${so}${sim ? ' (simmed)' : ''}.${mine ? ' Drew: ' + mine + '.' : ''}` };
+  T.log.push(vc.last.line);
+  vc.conf = clamp(vc.conf + (res === 'beat' ? 4 : res === 'drew with' ? 1 : -1), 0, 100);
+  tourAdvance(vc); carSave();
+}
+// ---- the awards night
+function tourAwards(vc) {
+  const ps = vc.ps || {}, pos = n => n === 'Drew' ? 'F' : ((RN.players || []).find(p => p.n === n) || {}).pos || 'F', E = Object.entries(ps).filter(([n]) => !/^Spare /.test(n) && pos(n) !== 'G').map(([n, r]) => ({ n, gp: r.gp || 0, g: r.g || 0, a: r.a || 0, pim: r.pim || 0, xg: r.xg || 0, xa: r.xa || 0, xgp: r.xgp || 0, L: (r.lC || 0) + (r.lA || 0) }));
+  const best = (L, f, tie) => L.filter(e => f(e) > 0).sort((a, b) => f(b) - f(a) || (tie ? tie(b) - tie(a) : b.gp - a.gp) || (a.n < b.n ? -1 : 1))[0];
+  const out = [], add = (k, e, line, cro) => { if (e) out.push({ k, n: e.n, line, cro }); };
+  const reg = E.filter(e => e.gp >= Math.min(8, Math.max(1, ...E.map(x => x.gp)) * 0.4));
+  { const e = best(reg, x => x.g * 1.2 + x.a + x.gp * 0.15); add('Player of the Season', e, e && `${e.g} goals, ${e.a} assists in ${e.gp} games`, 'The one we couldnae do without this year.'); }
+  { const e = best(E, x => x.g, x => -x.gp); add('Top Scorer', e, e && `${e.g} goals`, 'Finds the net from anywhere.'); }
+  { const e = best(E, x => x.a, x => -x.gp); add('Playmaker', e, e && `${e.a} assists`, 'Makes everyone round him better.'); }
+  { const e = best(E.filter(x => pos(x.n) === 'D' && x.gp >= 4), x => x.g + x.a + x.gp * 0.2); add('Best Defenceman', e, e && `${e.g + e.a} points from the back in ${e.gp} games`, 'Solid as a rock back there.'); }
+  { const e = best(E.filter(x => x.n !== 'Drew'), x => x.gp, x => x.g + x.a); add("Crofty's Award (Ever-present)", e, e && `${e.gp} games: always on the Spond, always there`, 'Never missed a week. That matters.'); }
+  // Players' Player: never the same man as Player of the Season (the lads spread it round)
+  { const pts = x => x.g + x.a + x.gp * 0.4 + x.L * 0.6; const pos1 = out[0] && out[0].n, pool = E.filter(x => x.gp >= 4 && x.n !== pos1).map(x => ({ x, w: pts(x) * (0.35 + spR(vc.season + 'pp' + x.n)) })).sort((a, b) => b.w - a.w);
+    const e = pool[0] && pool[0].x; add("Players' Player", e, e && 'voted by the lads', "The lads' choice. That's the one they all want."); }
+  if (vc.season > 1) { const H = vc.hist || {}, imp = E.filter(x => x.gp >= 6).map(x => { const h = (H[x.n] || []).slice(-1)[0]; return h && h.gp >= 6 ? { x, d: (x.g + x.a) / x.gp - (h.g + h.a) / h.gp } : null; }).filter(Boolean).sort((a, b) => b.d - a.d)[0];
+    if (imp && imp.d > 0.05) add('Most Improved', imp.x, `${(imp.d).toFixed(1)} more points a game than last season`, 'Put the work in and it shows.'); }
+  { const e = best(E, x => x.xg + x.xa, x => x.xg); add('Tournament MVP', e, e && `${e.xg} goals, ${e.xa} assists at the tournament`, 'Turned up when it counted.'); }
+  { const e = best(E.filter(x => x.pim >= 4), x => x.pim); add('Sin Bin Trophy', e, e && `${e.pim} penalty minutes`, 'We know where to find you: the box.'); }
+  return out;
+}
+// ---- the phone: the tournament, then the awards
+function phTour(y) {
+  const vc = CAR.vc, T = vc.tour, W = PHW;
+  if (T.stage === 'awards') return phAwards(y);
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 30px system-ui, sans-serif'; pg.fillText('Season-end tournament', 44, y + 18);
+  pg.fillStyle = '#9a8fb3'; pg.font = '500 19px system-ui, sans-serif'; { let t = 'Hosted by ' + T.host + ' · 8 clubs, two groups'; while (pg.measureText(t).width > W - 88 && t.length > 8) t = t.slice(0, -1); pg.fillText(t, 44, y + 48); }
+  let yy = y + 70;
+  for (const grp of ['A', 'B']) {
+    const rows = tourTable(T, grp); pRect(34, yy, W - 68, 30 + rows.length * 28 + 8, 14, '#1c1430');
+    pg.fillStyle = '#e0a928'; pg.font = '700 19px system-ui, sans-serif'; pg.textAlign = 'left'; pg.fillText('Group ' + grp, 50, yy + 18);
+    pg.textAlign = 'right'; pg.fillStyle = '#9a8fb3'; ['P', 'W', 'D', 'L', 'GD', 'Pts'].forEach((h, i) => pg.fillText(h, 330 + i * 44, yy + 18));
+    rows.forEach((r, i) => { const ry = yy + 46 + i * 28, me = r.n === 'Ravens'; pg.textAlign = 'left'; pg.fillStyle = me ? '#e0a928' : '#ffffff'; pg.font = (me ? '700' : '500') + ' 19px system-ui, sans-serif';
+      let t = (i + 1) + '. ' + r.n; while (pg.measureText(t).width > 250 && t.length > 6) t = t.slice(0, -1); pg.fillText(t, 50, ry);
+      pg.textAlign = 'right'; [r.p, r.w, r.d, r.l, (r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga), r.pts].forEach((v, k) => pg.fillText(String(v), 330 + k * 44, ry)); });
+    yy += 30 + rows.length * 28 + 18;
+  }
+  pg.textAlign = 'left'; pg.font = '600 19px system-ui, sans-serif';
+  for (const g of T.ko) { const sc = g.gf == null ? 'v' : g.gf + '-' + g.ga + (g.so ? ' (SO)' : ''); pg.fillStyle = g.h === 'Ravens' || g.a === 'Ravens' ? '#e0a928' : '#c9bde3'; pg.fillText((g.st === 'semi' ? 'Semi: ' : 'Final: ') + g.h + ' ' + sc + ' ' + g.a, 44, yy + 4); yy += 26; }
+  if (vc.last && T.log.length) { pg.fillStyle = '#9fe0b0'; pg.font = '500 19px system-ui, sans-serif'; pWrap(T.log[T.log.length - 1], W - 88, '500 19px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 44, yy + 8 + k * 24)); yy += 54; }
+  const f = tourFx(vc);
+  if (f) {
+    pRect(34, yy, W - 68, 76, 16, '#2f1c52'); pg.fillStyle = '#b9a8d8'; pg.font = '600 18px system-ui, sans-serif'; pg.fillText(f.lab.toUpperCase(), 54, yy + 24);
+    pg.fillStyle = '#ffffff'; pg.font = '800 25px system-ui, sans-serif'; pg.fillText('Ravens vs ' + f.opp, 54, yy + 56);
+    yy += 88; const bh = Math.min(76, PHH - 128 - yy - 66);
+    pBtn(34, yy, W - 68, bh, 'To the dressing room', '#5a2bb0', () => { CAR.pre = (f.ko ? (f.lab === 'Final' ? "Final. Leave nothing out there. " : "Win and we're in the final. ") : '') + (f.style === 'forecheck' ? 'They come hard on the forecheck, so move it quick.' : f.style === 'rush' ? 'They love a rush, so backcheck all the way.' : f.style === 'cycle' ? 'They cycle it low, so stay tight to your man.' : 'They wait for mistakes, so keep it simple.'); carRoom('pre'); }, 28);
+    pBtn(34, yy + bh + 8, (W - 76) / 2, 54, 'Sim it', '#2a1a44', () => carGameSim(), 22);
+    pBtn(42 + (W - 76) / 2, yy + bh + 8, (W - 76) / 2, 54, 'Lines', '#2a1a44', () => { spApply(); PH.scr = 'lines'; PH.scroll = 0; PH.sel = null; PH.note2 = ''; }, 22);
+  } else {
+    pg.fillStyle = '#e0a928'; pg.font = '700 24px system-ui, sans-serif'; pg.fillText(T.res || 'Waiting on the other results', 44, yy + 20);
+    pBtn(34, yy + 44, W - 68, 76, 'Finish the tournament', '#5a2bb0', () => { while (T.stage !== 'awards') { const before = JSON.stringify(T.games) + JSON.stringify(T.ko) + T.stage; tourAdvance(vc); if (JSON.stringify(T.games) + JSON.stringify(T.ko) + T.stage === before) break; } carSave(); }, 26);
+  }
+}
+function phAwards(y) {
+  const vc = CAR.vc, T = vc.tour, W = PHW, A = T.aw || [], shown = A.slice(0, T.awI);
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 30px system-ui, sans-serif'; pg.fillText('Awards night', 44, y + 18);
+  pg.fillStyle = '#9a8fb3'; pg.font = '500 19px system-ui, sans-serif'; pg.fillText('Season ' + vc.season + ' · Tournament: ' + (T.res || '') + (T.champ && T.champ !== 'Ravens' ? ' (' + T.champ + ' won it)' : ''), 44, y + 48);
+  const top = y + 68, bot = PHH - 230, rh = 88, off = PH.scroll = clamp(PH.scroll, 0, Math.max(0, shown.length * rh - (bot - top)));
+  pg.save(); pg.beginPath(); pg.rect(20, top, W - 40, bot - top); pg.clip();
+  shown.forEach((a, i) => { const ry = top + i * rh - off, me = a.n === 'Drew', last = i === shown.length - 1; pRect(34, ry, W - 68, rh - 8, 14, me ? '#5a2bb0' : last ? '#3d1778' : '#211836');
+    pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '700 18px system-ui, sans-serif'; pg.fillText(a.k.toUpperCase(), 52, ry + 22);
+    pg.fillStyle = '#ffffff'; pg.font = '800 26px system-ui, sans-serif'; pg.fillText(me ? 'You!' : a.n, 52, ry + 52);
+    pg.fillStyle = '#c9bde3'; pg.font = '500 17px system-ui, sans-serif'; pg.textAlign = 'right'; let t = a.line || ''; while (pg.measureText(t).width > 300 && t.length > 6) t = t.slice(0, -1); pg.fillText(t, W - 52, ry + 52); });
+  pg.restore();
+  const cur = shown[shown.length - 1]; if (cur) { pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '600 20px system-ui, sans-serif'; pWrap('Crofty: "' + cur.cro + '"', W - 88, '600 20px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 44, bot + 26 + k * 26)); }
+  if (T.awI < A.length) pBtn(34, PHH - 196, W - 68, 76, T.awI ? 'Next award' : 'Start the awards', '#5a2bb0', () => { T.awI++; const a = A[T.awI - 1]; PH.scroll = 9999; if (a && a.n === 'Drew') { toast('You won ' + a.k + '!', 2.5); buzz('right', 0.8, 200); buzz('left', 0.8, 200); } carSave(); }, 28);
+  else pBtn(34, PHH - 196, W - 68, 76, 'On to the season review', '#5a2bb0', () => { T.stage = 'done'; PH.scr = 'season'; carSave(); }, 26);
 }
 // off-ice hands: on the knees in the room, one on the table and a pint in the other in the pub, on the boards for Crofty; the free hand talks
 const _hl = new THREE.Vector3(), _hr = new THREE.Vector3();
@@ -5471,7 +5625,7 @@ async function carLoad() {
   CAR.vc = ok(rem) && (!ok(loc) || (rem.ts || 0) > (loc.ts || 0)) ? rem : ok(loc) ? loc : carNew(1); CAR.ths = {};
   return CAR.vc;
 }
-const fxNow = () => { const vc = CAR.vc; return vc && vc.fx[vc.week - 1]; };
+const fxNow = () => { const vc = CAR.vc; if (!vc) return null; if (vc.week > CWEEKS) return vc.tour ? tourFx(vc) : null; return vc.fx[vc.week - 1]; };
 const carNext = () => { const vc = CAR.vc; for (const k of ['chat', 'train', 'game', 'after']) if (!vc.wk[k]) return k; return null; };
 const stepName = k => ({ chat: 'Texts from the lads', train: 'Thursday training', game: 'Game night', after: CAR.vc && CAR.vc.week % 4 === 0 ? 'Social night at the pub' : 'Pub after the game' })[k];
 const lineMates = () => ['17', '12', '44', '5', '27', '19', '22', '2', '8', '14', '16', '10', '3', '6'].map(s => RN.map && RN.map[s] && RN.map[s].n).filter(Boolean);
@@ -5515,7 +5669,7 @@ function drawPhone() {
   PH.hits = []; const vc = CAR.vc, W = PHW;
   pg.clearRect(0, 0, W, PHH); pRect(0, 0, W, PHH, 56, '#0b0812'); pRect(14, 14, W - 28, PHH - 28, 44, '#160f24');
   pg.textBaseline = 'middle'; pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '800 30px system-ui, sans-serif'; pg.fillText('RAVENS', 44, 62);
-  pg.textAlign = 'right'; pg.fillStyle = '#b9a8d8'; pg.font = '600 24px system-ui, sans-serif'; pg.fillText(vc ? 'Season ' + vc.season + ' · Week ' + Math.min(vc.week, CWEEKS) : '', W - 44, 62);
+  pg.textAlign = 'right'; pg.fillStyle = '#b9a8d8'; pg.font = '600 24px system-ui, sans-serif'; pg.fillText(vc ? 'Season ' + vc.season + ' · ' + (vc.week > CWEEKS ? 'Tournament' : 'Week ' + vc.week) : '', W - 44, 62);
   const y0 = 100, yB = PHH - 120;
   if (!vc) { pg.fillStyle = '#fff'; pg.textAlign = 'center'; pg.fillText('Loading...', W / 2, 400); }
   else if (PH.scr === 'home') phHome(y0);
@@ -5530,6 +5684,7 @@ function drawPhone() {
   else if (PH.scr === 'season') phSeason(y0);
   else if (PH.scr === 'spond') phSpond(y0);
   else if (PH.scr === 'lines') phLines(y0);
+  else if (PH.scr === 'tour') { if (vc.tour) phTour(y0); else phHome(y0); }
   if (PH.scr !== 'thread') {                                            // bottom bar
     const un = Object.keys(vc && vc.unread || {}).length;
     const nb = [['Home', () => { PH.scr = 'home'; }], [un ? 'Texts (' + un + ')' : 'Texts', () => { PH.scr = 'contacts'; PH.scroll = 0; }], ['Talon', () => { PH.scr = 'table'; }], ['Stats', () => { PH.scr = 'stats'; PH.scroll = 0; }], ['Lines', () => { if (CAR.mode === 'career' && RN.players) { PH.scr = 'lines'; PH.scroll = 0; PH.sel = null; PH.note2 = ''; } else { MENU.tab = TABS.indexOf('Lines'); openMenu(); } }], ['Settings', () => { openMenu(); }]];
@@ -5539,7 +5694,7 @@ function drawPhone() {
 }
 function phHome(y) {
   const vc = CAR.vc, f = fxNow(), W = PHW;
-  if (vc.week > CWEEKS) { PH.scr = 'season'; return phSeason(y); }
+  if (vc.week > CWEEKS) { if (!vc.tour) { tourNew(vc); carSave(); } if (vc.tour.stage !== 'done') { PH.scr = 'tour'; return phTour(y); } PH.scr = 'season'; return phSeason(y); }
   pRect(34, y, W - 68, 170, 24, '#24183c');
   pg.textAlign = 'left'; pg.fillStyle = '#b9a8d8'; pg.font = '600 22px system-ui, sans-serif'; pg.fillText(f.cup ? 'TALON CUP' : 'FRIENDLY', 58, y + 34);
   pg.fillStyle = '#ffffff'; pg.font = '800 34px system-ui, sans-serif'; pWrap('Ravens vs ' + f.opp, W - 120, '800 34px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 58, y + 78 + k * 40));
@@ -5688,10 +5843,12 @@ function phPlayer(y) {                                                  // one p
   pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText(me ? 'You (Drew)' : n, 44, y + 24);
   pg.fillStyle = '#9a8fb3'; pg.font = '500 21px system-ui, sans-serif'; pg.fillText((me ? '#11 · LW' : pl ? '#' + pl.num + ' · ' + pl.pos : '') + (n === CAPS.C ? ' · Captain' : CAPS.A.includes(n) ? ' · Alternate captain' : ''), 44, y + 56);
   const ltr = x => x.lC ? (x.lC + ' as C' + (x.lA ? ', ' + x.lA + ' as A' : '')) : x.lA ? x.lA + ' as A' : '', tag = x => x.lC ? '  (C)' : x.lA ? '  (A)' : '';
-  const rows = [{ s: vc.season, gp: r.gp || 0, g: r.g || 0, a: r.a || 0, lC: r.lC || 0, lA: r.lA || 0, pim: r.pim || 0, now: true }].concat(((vc.hist || {})[n] || []).slice().reverse());
+  const awNow = ((vc.tour && vc.tour.aw) || []).filter(a => a.n === n && vc.tour.stage !== 'awards').map(a => a.k);
+  const rows = [{ s: vc.season, gp: r.gp || 0, g: r.g || 0, a: r.a || 0, lC: r.lC || 0, lA: r.lA || 0, pim: r.pim || 0, aw: awNow, now: true }].concat(((vc.hist || {})[n] || []).slice().reverse());
   pg.fillStyle = '#ffffff'; pg.font = '800 24px system-ui, sans-serif'; pg.fillText('Season by season', 44, y + 104);
   rows.slice(0, 9).forEach((x, i) => { const yy = y + 122 + i * 84; pRect(34, yy, W - 68, 76, 14, x.now ? '#3d1778' : '#211836');
     pg.fillStyle = '#e0a928'; pg.font = '700 22px system-ui, sans-serif'; pg.fillText('Season ' + x.s + (x.now ? ' (now)' : '') + tag(x), 50, yy + 28);
+    if (x.aw && x.aw.length) { pg.textAlign = 'right'; pg.fillStyle = '#ffd36a'; pg.font = '700 17px system-ui, sans-serif'; let t = x.aw.join(' · '); while (pg.measureText(t).width > 290 && t.length > 6) t = t.slice(0, -1); pg.fillText(t, W - 50, yy + 28); pg.textAlign = 'left'; }
     pg.fillStyle = '#ffffff'; pg.font = '500 20px system-ui, sans-serif'; pg.fillText(x.gp + ' GP · ' + x.g + ' G · ' + x.a + ' A · ' + (x.g + x.a) + ' P' + (x.pim ? ' · ' + x.pim + ' PIM' : '') + (ltr(x) ? ' · ' + ltr(x) : ''), 50, yy + 58); });
   const all = rows.reduce((t, x) => ({ gp: t.gp + x.gp, g: t.g + x.g, a: t.a + x.a }), { gp: 0, g: 0, a: 0 });
   pg.fillStyle = '#c9bde3'; pg.font = '600 21px system-ui, sans-serif'; pg.fillText('Career: ' + all.gp + ' GP · ' + all.g + ' G · ' + all.a + ' A', 44, y + 122 + Math.min(9, rows.length) * 84 + 30);
@@ -5714,14 +5871,18 @@ function phHistory(y) {
 function phSeason(y) {
   const vc = CAR.vc, W = PHW, pos = Object.entries(vc.tab).sort((a, b) => b[1].pts - a[1].pts || (b[1].gf - b[1].ga) - (a[1].gf - a[1].ga)).findIndex(e => e[0] === 'Ravens') + 1;
   pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 34px system-ui, sans-serif'; pg.fillText('Season ' + vc.season + ' done', 44, y + 30);
-  const L = [`The Ravens finished ${ordN(pos)} of 6 in the Talon Cup${pos === 1 ? '. Champions!' : '.'}`, `Record ${vc.rec.w}-${vc.rec.d}-${vc.rec.l}, goals ${vc.rec.gf} for and ${vc.rec.ga} against.`, `You: ${vc.me.gp} games, ${vc.me.g} goals, ${vc.me.a} assists.`, 'Crofty: "Proud of you lot. Same again next year, but better."'];
-  pg.font = '500 27px system-ui, sans-serif'; let yy = y + 90; for (const t of L) { for (const l of pWrap(t, W - 88, '500 27px system-ui, sans-serif')) { pg.fillText(l, 44, yy); yy += 36; } yy += 14; }
+  const T = vc.tour || {}, myAw = (T.aw || []).filter(a => a.n === 'Drew').map(a => a.k);
+  const L = [`The Ravens finished ${ordN(pos)} of 6 in the Talon Cup${pos === 1 ? '. Champions!' : '.'}`, `Record ${vc.rec.w}-${vc.rec.d}-${vc.rec.l}, goals ${vc.rec.gf} for and ${vc.rec.ga} against.`, T.res ? `Season-end tournament: ${T.res.replace(/!$/, '')}${T.champ && T.champ !== 'Ravens' ? ' (' + T.champ + ' won it)' : ''}${/!$/.test(T.res) ? '!' : '.'}` : '', `You: ${vc.me.gp} games, ${vc.me.g} goals, ${vc.me.a} assists${T.me && T.me.gp ? ', plus ' + T.me.g + 'G ' + T.me.a + 'A at the tournament' : ''}.`, myAw.length ? 'Your awards: ' + myAw.join(', ') + '.' : '', 'Crofty: "Proud of you lot. Same again next year, but better."'].filter(Boolean);
+  pg.font = '500 25px system-ui, sans-serif'; let yy = y + 90; for (const t of L) { for (const l of pWrap(t, W - 88, '500 25px system-ui, sans-serif')) { pg.fillText(l, 44, yy); yy += 33; } yy += 12; }
+  if (T.aw) pBtn(34, y + 548, W - 68, 70, 'Awards night again', '#2a1a44', () => { T.stage = 'awards'; T.awI = T.aw.length; PH.scr = 'tour'; PH.scroll = 0; }, 23);
   pBtn(34, y + 640, W - 68, 92, 'Start season ' + (vc.season + 1), '#5a2bb0', () => {
     const old = CAR.vc, top = psRows(old, 'season').filter(r => r.n !== 'Drew')[0], ps = {};
     for (const [n, r] of Object.entries(old.ps || {})) ps[n] = { agp: (r.agp || 0) + (r.gp || 0), ag: (r.ag || 0) + (r.g || 0), aa: (r.aa || 0) + (r.a || 0) };      // all-time numbers carry over
-    const hist = Object.assign({}, old.hist || {}); for (const [n, r] of Object.entries(old.ps || {})) if (r.gp) (hist[n] = (hist[n] || []).slice(-19)).push({ s: old.season, gp: r.gp, g: r.g || 0, a: r.a || 0, tgp: r.tgp || 0, tg: r.tg || 0, ta: r.ta || 0, lC: r.lC || 0, lA: r.lA || 0, pim: r.pim || 0 });
+    const hist = Object.assign({}, old.hist || {}), aw = {}; for (const a of (old.tour && old.tour.aw) || []) (aw[a.n] = aw[a.n] || []).push(a.k);
+    for (const [n, r] of Object.entries(old.ps || {})) if (r.gp || r.xgp || aw[n]) (hist[n] = (hist[n] || []).slice(-19)).push({ s: old.season, gp: r.gp || 0, g: r.g || 0, a: r.a || 0, tgp: r.tgp || 0, tg: r.tg || 0, ta: r.ta || 0, lC: r.lC || 0, lA: r.lA || 0, pim: r.pim || 0, xgp: r.xgp || 0, xg: r.xg || 0, xa: r.xa || 0, aw: aw[n] || [] });
+    spRestore();
     CAR.vc = carNew(old.season + 1); CAR.vc.ps = ps; CAR.vc.hist = hist; CAR.vc.chatI = old.chatI || 0; CAR.vc.threads = old.threads; CAR.vc.thT = old.thT;
-    CAR.vc.past = (old.past || []).concat([{ season: old.season, pos, rec: old.rec, me: old.me, top: top ? top.n + ' (' + top.g + 'G ' + top.a + 'A)' : '' }]).slice(-10); carSave(); PH.scr = 'home';
+    CAR.vc.past = (old.past || []).concat([{ season: old.season, pos, rec: old.rec, me: old.me, top: top ? top.n + ' (' + top.g + 'G ' + top.a + 'A)' : '', tour: old.tour ? old.tour.res : '', aw: old.tour && old.tour.aw ? old.tour.aw.map(a => a.k + ': ' + a.n) : [] }]).slice(-10); carSave(); PH.scr = 'home';
   }, 32);
 }
 // ---- your texts: the group chat and everyone in the squad, most recent first. Pick anyone and text them.
@@ -5939,7 +6100,7 @@ function carTrainDone(sc, reps) {
   setTimeout(() => carHub(), 3500);
 }
 // ---- game night
-function carGameGo() { const f = fxNow(), vc = CAR.vc; phoneClose(); spApply(); CAR.step = 'game'; scStart('5', { id: 'VC' + vc.season + 'W' + vc.week, opp: f.opp, r: f.r, style: f.style, home: f.home, cup: f.cup }); }
+function carGameGo() { const f = fxNow(), vc = CAR.vc; if (!f) return; phoneClose(); spApply(); CAR.step = 'game'; scStart('5', { id: f.id || 'VC' + vc.season + 'W' + vc.week, opp: f.opp, r: f.r, style: f.style, home: f.home, cup: f.cup, tour: !!f.tour, ko: !!f.ko }); }
 function poisson(l) { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; }
 function simScore(ra, rb) { return [poisson(clamp(2.9 + (ra - rb) * 12, 0.8, 6)), poisson(clamp(2.9 + (rb - ra) * 12, 0.8, 6))]; }
 function carLineup() { const L = ['Drew']; for (const [sl] of LSLOTS) { const m = RN.map && RN.map[sl]; if (m && !m.spare) L.push(m.n); else if (!m && !RN.spSaved) L.push('#' + sl); } return L; }
@@ -5955,6 +6116,7 @@ function carCredit(goals, gf, me) {                                     // Raven
   return { lu, goals: out };
 }
 function carRecord(gf, ga, me, sim, goals, pens) {
+  if (fxNow() && fxNow().tour) return tourRecord(gf, ga, me, sim, goals, pens);
   const vc = CAR.vc, f = fxNow(), res = gf > ga ? 'W' : gf < ga ? 'L' : 'D';
   { vc.ps = vc.ps || {}; const cr = carCredit(goals || [], gf, me), P = n => /^Spare /.test(n) ? {} : (vc.ps[n] = vc.ps[n] || { gp: 0, g: 0, a: 0, tgp: 0, tg: 0, ta: 0 });
     for (const n of cr.lu) { P(n).gp++; if (f.cup) P(n).tgp++; }
@@ -5974,7 +6136,7 @@ function carRecord(gf, ga, me, sim, goals, pens) {
   vc.conf = clamp(vc.conf + (res === 'W' ? 6 : res === 'D' ? 2 : -1) + 3 * (me.g || 0), 0, 100); vc.vibe = clamp(vc.vibe + (res === 'W' ? 5 : res === 'D' ? 2 : 0), 0, 100);
   vc.wk.game = 1; carSave();
 }
-function carGameSim() { spApply(); const f = fxNow(), s = simScore(RAV_R + (CAR.vc.conf - 55) / 1000, f.r), g = Math.min(s[0], Math.random() < 0.35 ? 1 : 0), a = Math.min(s[0] - g, Math.random() < 0.35 ? 1 : 0); carRecord(s[0], s[1], { g, a, sh: 1 + Math.floor(Math.random() * 3) }, true); PH.note = CAR.vc.last.line; PH.scr = 'home'; }
+function carGameSim() { spApply(); if (!fxNow()) return; const f = fxNow(), s = simScore(RAV_R + (CAR.vc.conf - 55) / 1000, f.r), g = Math.min(s[0], Math.random() < 0.35 ? 1 : 0), a = Math.min(s[0] - g, Math.random() < 0.35 ? 1 : 0); carRecord(s[0], s[1], { g, a, sh: 1 + Math.floor(Math.random() * 3) }, true); PH.note = CAR.vc.last.line; PH.scr = 'home'; }
 function carGameDone() {
   CAR.step = null; carRecord(SC.score[0], SC.score[1], { g: SC.my.g, a: SC.my.a, sh: SC.my.sh }, false, (SC.goals || []).filter(g => g.t === 'R').map(g => ({ sc: g.sc, as: g.as })), (SC.pens || []).filter(p => p.team === 'ravens').map(p => p.nm));
   PH.note = CAR.vc.last.line;
@@ -7834,7 +7996,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
