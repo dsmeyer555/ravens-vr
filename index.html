@@ -543,11 +543,11 @@ const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
 const DEFAULT_LU = { '17': 'Nicky', '12': 'Robbins', '27': 'Will', '19': 'Crofty', '22': 'Mids', '14': 'Tony', '16': 'Iain M.', '10': 'Ewan O.', '44': 'Samy', '5': 'Aidan', '2': 'Callum', '8': 'Mickey', '3': 'Oliver K.', '6': 'Grant', G: 'Craig' };
-const DEF = { realP: true, capSub: [], sys: {}, roles: {}, myRole: '', autoSkip: false, retire: true, calls: true, passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 5, rulesOn: true, scrimM: '5', voices: true };
+const DEF = { realP: true, capSub: [], sys: {}, roles: {}, myRole: '', autoSkip: false, retire: true, calls: true, faces: true, passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 5, rulesOn: true, scrimM: '5', voices: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
-    const j = JSON.parse(localStorage.getItem(SKEY) || localStorage.getItem(SKEY_OLD) || 'null');
+    const j = renameIn(JSON.parse(localStorage.getItem(SKEY) || localStorage.getItem(SKEY_OLD) || 'null'));
     if (j && typeof j === 'object' && !(j.cfg >= 3)) { delete j.oneM; delete j.goalP; delete j.oppP; }
     if (j && typeof j === 'object' && !(j.cfg >= 5) && j.oppP === 0) delete j.oppP;   // the new AI: Easy was the old default, Rec is now   // the arcade update: new defaults for the hands and the levels (an Easy level was added)
     if (j && typeof j === 'object') {
@@ -2498,6 +2498,7 @@ function avMake(t) {
   const along = (k, to) => { if (!B[k] || !B[to]) return; B[to].getWorldPosition(wv); R.dir[k] = B[k].worldToLocal(wv.clone()).normalize(); };
   along('sp', 'neck'); along('upL', 'foL'); along('foL', 'haL'); along('upR', 'foR'); along('foR', 'haR'); along('thL', 'caL'); along('caL', 'ftL'); along('thR', 'caR'); along('caR', 'ftR');
   B.eL.getWorldPosition(wv); B.eR.getWorldPosition(wv2); const eyes = wv.clone().add(wv2).multiplyScalar(0.5);
+  R.eyes = eyes.clone(); R.eyesDbg = eyes.toArray().map(x => +x.toFixed(3)); R.eyeL = wv.toArray(); R.eyeR = wv2.toArray();
   R.anchor = B.head.worldToLocal(new THREE.Vector3(0, eyes.y - 0.018, eyes.z - 0.085));    // the middle of his skull, in head space
   R.footY = B.ftL.getWorldPosition(wv).y;
   R.helm = clamp(t.wide / 0.105, 1, 1.16); R.helmUp = Math.max(0, t.top - (eyes.y - 0.018) + 0.008 - 0.012 - 0.113 * R.helm);   // the helmet sits up at his brow, wider only for big hair
@@ -2512,8 +2513,43 @@ function avAttach(P, key) {
     if (!t || P.avId !== id) return;
     if (P.av) P.root.remove(P.av.root);
     const A = avMake(t); try { kitBuild(P, A, kitWay(P.team)); } catch (e) { A.kit = null; run.kitErr = String(e); }
-    P.av = A; P.root.add(A.root); A.root.visible = !P.far; P.avMode = null; P.sm = null;
+    P.av = A; P.root.add(A.root); A.root.visible = !P.far; P.avMode = null; P.sm = null; faceApply(P);
   });
+}
+// ---- the lads' real faces (only those who've said yes). The photos live on your server, behind your key; the page asks for one when that
+// player's model is built, keeps it in memory only (never saved on the headset) and projects it onto the front of his model's head, feathered
+// into the skin at the edges, so it moves with his head, his blinks and his jaw. No server, no key, no photo: he keeps the stock face.
+const FACE = { tex: {}, busy: {}, fail: {} };
+function faceHas(n) { if (!n || st.faces === false || !brainOK()) return false; return n === 'Drew' ? !!(RN.drew && RN.drew.face) : !!(rnP(n) || {}).face; }
+function faceLoad(n) {
+  if (FACE.tex[n] || FACE.busy[n] || FACE.fail[n] || !faceHas(n)) return;
+  FACE.busy[n] = true;
+  fetch(st.brainUrl.replace(/\/+$/, '') + '/face?n=' + encodeURIComponent(n), { headers: { 'X-Ravens-Key': st.brainKey }, cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+    .then(b => createImageBitmap(b, { imageOrientation: 'flipY' }))
+    .then(bmp => { const t = new THREE.Texture(bmp); t.flipY = false; if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true; FACE.tex[n] = t; faceRefresh(n); })
+    .catch(() => { FACE.fail[n] = true; }).finally(() => { FACE.busy[n] = false; });
+}
+function faceRefresh(n) { const L = []; for (const k in SKP) L.push(SKP[k].p); for (const o of PUBP) L.push(o.p); for (const o of ROOMP) L.push(o.p); if (CROF.p) L.push(CROF.p); for (const P of L) if (P && P.name === n && P.av) faceApply(P); }
+function faceApply(P) {
+  const A = P && P.av, n = P && P.name; if (!A || !A.meshes.head || !n) return;
+  if (!faceHas(n)) { if (A.faceOn) { A.meshes.head.material = A.faceBase; A.faceOn = false; } return; }
+  const tx = FACE.tex[n]; if (!tx) return faceLoad(n);
+  if (A.faceOn === n) return;
+  const head = A.meshes.head, base = A.faceBase || (A.faceBase = head.material), g = head.geometry; if (!g.boundingBox) g.computeBoundingBox();
+  const e = A.R.eyes, k = (g.boundingBox.max.x - g.boundingBox.min.x) / 0.182;
+  const m = base.clone(), U = { faceMap: { value: tx }, faceC: { value: new THREE.Vector3(e.x, -e.z, e.y - 0.034 * k) }, faceS: { value: new THREE.Vector2(0.17 * k, 0.21 * k) } };
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, U);
+    sh.vertexShader = 'varying vec3 vFaceP; varying vec3 vFaceN;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vFaceP = position; vFaceN = normal;');
+    sh.fragmentShader = 'uniform sampler2D faceMap; uniform vec3 faceC; uniform vec2 faceS; varying vec3 vFaceP; varying vec3 vFaceN;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+  { vec3 fd = vFaceP - faceC; vec2 fuv = vec2(fd.x / faceS.x + 0.5, fd.z / faceS.y + 0.5);
+    float fm = 1.0 - smoothstep(0.72, 1.0, length((fuv - 0.5) * vec2(2.15, 2.0)));
+    fm *= smoothstep(0.12, 0.5, -normalize(vFaceN).y) * step(fd.y, 0.04);
+    if (fm > 0.001) { vec4 fc = texture2D(faceMap, clamp(fuv, 0.0, 1.0)); diffuseColor.rgb = mix(diffuseColor.rgb, fc.rgb, fm); } }`);
+  };
+  m.customProgramCacheKey = () => 'face1';
+  head.material = m; A.faceOn = n; run.faces = (run.faces || 0) + 1;
 }
 // what shows: the whole person off the ice, only his head (inside the helmet) on it
 function avSetMode(P, mode) {
@@ -3153,7 +3189,7 @@ function phSpond(y) {
     const chase = !sp.fin && sp.left > 0 && (r.s === 'none' || r.s === 'maybe'), res = B && B.res.includes(r.n);
     if (chase && ry >= top - 1 && ry + rh <= bot + 1) pBtn(34, ry + 3, W - 68, rh - 6, '', '#2a1a44', () => spNudge(r.n)); else pRect(34, ry + 3, W - 68, rh - 6, 12, chase ? '#2a1a44' : '#1c1430');
     pg.fillStyle = SP_COL[r.s]; pg.beginPath(); pg.arc(60, ry + rh / 2, 9, 0, 7); pg.fill();
-    pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '600 23px system-ui, sans-serif'; pg.fillText((r.me ? 'You' : r.n) + (r.pos === 'G' ? '  (G)' : r.pos === 'D' ? '  (D)' : ''), 80, ry + rh / 2 + 1);
+    pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '600 23px system-ui, sans-serif'; pg.fillText((r.me ? 'You' : sur(r.n)) + (r.pos === 'G' ? '  (G)' : r.pos === 'D' ? '  (D)' : ''), 80, ry + rh / 2 + 1);
     pg.textAlign = 'right'; pg.fillStyle = res ? '#e0a928' : SP_COL[r.s]; pg.font = '600 19px system-ui, sans-serif'; pg.fillText(res ? 'Reserve' : chase ? SP_TXT[r.s] + ' · nudge' : SP_TXT[r.s], W - 52, ry + rh / 2 + 1);
   });
   pg.restore();
@@ -3200,6 +3236,9 @@ function lnApply(nu) {                                                   // writ
   } else { st.lineup = pref; saveSettings(); rosterApply({ players: RN.players }); }
   KIT.ltT = -9; PH.dirty = true; if (CAR.vc) carSave();
 }
+// surnames on the stat and lineup screens (they come from your server with the roster; first names everywhere people talk)
+function sur(n) { if (!n || /^Spare /.test(n)) return n || ''; const j = n === 'Drew' ? RN.drew && RN.drew.jn : (rnP(n) || {}).jn; return j ? String(j) : n; }
+const fullN = n => { const s = sur(n); return s && s !== n ? firstN(n) + ' ' + s : n; };
 function lnChip(x, y, w, h, key, name, sub, opts) {
   const o = opts || {}, i = PH.hits.length; PH.hits.push({ x, y, w, h, act: () => { }, dk: o.fixed ? null : key });
   const sel = PH.sel === key || (PH.drag && PH.drag.k === key), tgt = PH.drag && PH.drag.k !== key && PH.hov === i && !o.fixed;
@@ -3207,7 +3246,7 @@ function lnChip(x, y, w, h, key, name, sub, opts) {
   if (sel || tgt || (PH.hov === i && !PH.drag)) { pg.lineWidth = 4; pg.strokeStyle = tgt ? '#6fd07a' : '#e0a928'; pg.stroke(); }
   if (o.dot) { pg.fillStyle = o.dot; pg.beginPath(); pg.arc(x + 16, y + h / 2, 7, 0, 7); pg.fill(); }
   pg.textAlign = 'left'; pg.textBaseline = 'middle'; pg.fillStyle = '#ffffff'; pg.font = '700 21px system-ui, sans-serif';
-  let t = name || '-'; while (pg.measureText(t).width > w - (o.dot ? 40 : 22) - (o.tag ? 26 : 0) && t.length > 3) t = t.slice(0, -1); pg.fillText(t, x + (o.dot ? 30 : 12), y + h / 2 - (sub ? 8 : 0));
+  let t = (name && name !== 'You' ? sur(name) : name) || '-'; while (pg.measureText(t).width > w - (o.dot ? 40 : 22) - (o.tag ? 26 : 0) && t.length > 3) t = t.slice(0, -1); pg.fillText(t, x + (o.dot ? 30 : 12), y + h / 2 - (sub ? 8 : 0));
   if (sub) { pg.fillStyle = '#9a8fb3'; pg.font = '600 15px system-ui, sans-serif'; pg.fillText(sub, x + (o.dot ? 30 : 12), y + h / 2 + 13); }
   if (o.tag) { pg.textAlign = 'right'; pg.fillStyle = '#e0a928'; pg.font = '800 19px system-ui, sans-serif'; pg.fillText(o.tag, x + w - 10, y + h / 2); }
 }
@@ -3215,7 +3254,7 @@ function phLines(y) {
   const W = PHW, lu = lnCur(), LT = lettersFor(), tn = lnTonight(), dotOf = n => !n || /^Spare/.test(n) || !CAR.vc ? null : SP_COL[spStatus(n)] || null;
   pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 30px system-ui, sans-serif'; pg.fillText(tn ? "Tonight's lines" : 'Your lines', 44, y + 18);
   { const sk = PH.sel, sn = sk === 'me' ? 'Drew' : sk && sk.startsWith('b:') ? sk.slice(2) : sk && sk !== 'G' ? lu[sk] : null, ok = sn && !/^Spare/.test(sn) && (sn === 'Drew' || (rnP(sn) || {}).pos !== 'G');
-    pg.fillStyle = '#9a8fb3'; pg.font = '500 18px system-ui, sans-serif'; pg.fillText(ok ? 'Selected: ' + (sn === 'Drew' ? 'you' : sn) : PH.note2 || 'Drag a player onto another to swap (or tap one, then the other)', 44, y + 48);
+    pg.fillStyle = '#9a8fb3'; pg.font = '500 18px system-ui, sans-serif'; pg.fillText(ok ? 'Selected: ' + (sn === 'Drew' ? 'you' : sur(sn)) : PH.note2 || 'Drag a player onto another to swap (or tap one, then the other)', 44, y + 48);
     if (ok) pBtn(W - 196, y + 28, 160, 40, 'Set role', '#5a2bb0', () => { PH.roleFor = sn; PH.roleBack = 'lines'; PH.scr = 'role'; PH.sel = null; }, 18); }
   if (!RN.players) { pg.fillStyle = '#e0a928'; pg.fillText('Needs the team list from your server.', 44, y + 90); return; }
   pBtn(W - 176, y - 6, 140, 44, 'Systems', '#3d1778', () => { PH.scr = 'sys'; }, 19);
@@ -3395,7 +3434,7 @@ function phAwards(y) {
   pg.save(); pg.beginPath(); pg.rect(20, top, W - 40, bot - top); pg.clip();
   shown.forEach((a, i) => { const ry = top + i * rh - off, me = a.n === 'Drew', last = i === shown.length - 1; pRect(34, ry, W - 68, rh - 8, 14, me ? '#5a2bb0' : last ? '#3d1778' : '#211836');
     pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '700 18px system-ui, sans-serif'; pg.fillText(a.k.toUpperCase(), 52, ry + 22);
-    pg.fillStyle = '#ffffff'; pg.font = '800 26px system-ui, sans-serif'; pg.fillText(me ? 'You!' : a.n, 52, ry + 52);
+    pg.fillStyle = '#ffffff'; pg.font = '800 26px system-ui, sans-serif'; pg.fillText(me ? 'You!' : fullN(a.n), 52, ry + 52);
     pg.fillStyle = '#c9bde3'; pg.font = '500 17px system-ui, sans-serif'; pg.textAlign = 'right'; let t = a.line || ''; while (pg.measureText(t).width > 300 && t.length > 6) t = t.slice(0, -1); pg.fillText(t, W - 52, ry + 52); });
   pg.restore();
   const cur = shown[shown.length - 1]; if (cur) { pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '600 20px system-ui, sans-serif'; pWrap('Crofty: "' + cur.cro + '"', W - 88, '600 20px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 44, bot + 26 + k * 26)); }
@@ -6537,11 +6576,20 @@ function carSave() {
 function carReset() {                                                   // a fresh career: season 1, week 1, no stats, no texts
   CAR.vc = carNew(1); CAR.ths = {}; histLoad(); CAR.step = null; CAR.train = null; PH.th = null; PH.scr = 'home'; PH.note = 'New career: 2026-27, week 1.'; carSave(); toast('Career reset: 2026-27, week 1', 2.5);
 }
+// names that changed: old saves and settings follow them (Raz is Rasty now)
+function renameIn(o) {
+  const RENAMES = { Raz: 'Rasty' };
+  if (!o || typeof o !== 'object') return o; let t = JSON.stringify(o), hit = false;
+  for (const a in RENAMES) { const re = new RegExp('(["|])' + a.replace(/\./g, '\\.') + '(?=["|])', 'g'); if (re.test(t)) { hit = true; t = t.replace(re, '$1' + RENAMES[a]); } }
+  if (!hit) return o; const n = JSON.parse(t);
+  if (n.chem) { const c = {}; for (const k in n.chem) { const [a, b] = k.split('|'); c[b ? (a < b ? a + '|' + b : b + '|' + a) : k] = n.chem[k]; } n.chem = c; }
+  return n;
+}
 async function carLoad() {
   let loc = null; try { loc = JSON.parse(localStorage.getItem('ravens-vr3-career') || 'null'); } catch (e) { }
   let rem = null; if (brainOK()) { try { const j = await brainFetch('/vrcareer', null, 6000); rem = j && j.career; } catch (e) { } }
   const ok = c => c && c.v === 2 && Array.isArray(c.fx) && c.fx.length === CWEEKS && c.tab;
-  CAR.vc = ok(rem) && (!ok(loc) || (rem.ts || 0) > (loc.ts || 0)) ? rem : ok(loc) ? loc : carNew(1); CAR.ths = {};
+  CAR.vc = renameIn(ok(rem) && (!ok(loc) || (rem.ts || 0) > (loc.ts || 0)) ? rem : ok(loc) ? loc : carNew(1)); CAR.ths = {};
   return CAR.vc;
 }
 const fxNow = () => { const vc = CAR.vc; if (!vc) return null; if (vc.week > CWEEKS) return vc.tour ? tourFx(vc) : null; return vc.fx[vc.week - 1]; };
@@ -6748,7 +6796,7 @@ function phStats(y) {
   rows.slice(off, off + vis).forEach((p, i) => {
     const yy = top + i * rowH, me = p.n === 'Drew', hi = PH.hits.length; PH.hits.push({ x: 34, y: yy, w: W - 68, h: rowH - 4, act: () => { PSV.who = p.n; PH.scr = 'player'; PH.scroll = 0; } }); pRect(34, yy, W - 68, rowH - 4, 10, PH.hov === hi ? '#4a2c80' : me ? '#3d1778' : i % 2 ? '#1c1430' : '#211836');
     const lt = t !== 'talon' && ((vc.ps[p.n] || {}).lC ? ' (C)' : (vc.ps[p.n] || {}).lA ? ' (A)' : '');
-    pg.textAlign = 'left'; pg.fillStyle = me ? '#e0a928' : '#ffffff'; pg.font = '600 21px system-ui, sans-serif'; pg.fillText((off + i + 1) + '. ' + (me ? 'You (Drew)' : p.n) + (lt || ''), 46, yy + 19);
+    pg.textAlign = 'left'; pg.fillStyle = me ? '#e0a928' : '#ffffff'; pg.font = '600 21px system-ui, sans-serif'; pg.fillText((off + i + 1) + '. ' + (me ? sur('Drew') + ' (you)' : sur(p.n)) + (lt || ''), 46, yy + 19);
     pg.textAlign = 'right'; [p.gp, p.g, p.a, p.g + p.a].forEach((v, k) => pg.fillText(String(v), cx[k], yy + 19));
   });
   if (rows.length > vis) { pg.textAlign = 'center'; pg.fillStyle = '#7d70a0'; pg.font = '500 18px system-ui, sans-serif'; pg.fillText((off + 1) + '-' + Math.min(rows.length, off + vis) + ' of ' + rows.length + ' · right stick scrolls', W / 2, PHH - 116); }
@@ -6762,13 +6810,13 @@ function phLetters(y) {                                                 // who w
   pg.fillStyle = '#e0a928'; pg.font = '700 22px system-ui, sans-serif'; pg.fillText(capText(names), 44, y + 168);
   const pool = names.filter(n => n !== 'Drew' && n !== CAPS.C && !CAPS.A.includes(n) && !/^Spare /.test(n));
   pool.forEach((n, i) => { const on = L[n] === 'A', x = 34 + (i % 2) * ((W - 78) / 2 + 10), yy = y + 196 + Math.floor(i / 2) * 62;
-    pBtn(x, yy, (W - 78) / 2, 54, (on ? 'A  ' : '') + n, on ? '#5a2bb0' : '#2a1a44', () => { let s2 = (st.capSub || []).filter(Boolean); if (s2.includes(n)) s2 = s2.filter(x => x !== n); else { s2.push(n); s2 = s2.slice(-Math.max(1, need)); } setSetting('capSub', s2); KIT.ltT = -9; }, 22); });
+    pBtn(x, yy, (W - 78) / 2, 54, (on ? 'A  ' : '') + sur(n), on ? '#5a2bb0' : '#2a1a44', () => { let s2 = (st.capSub || []).filter(Boolean); if (s2.includes(n)) s2 = s2.filter(x => x !== n); else { s2.push(n); s2 = s2.slice(-Math.max(1, need)); } setSetting('capSub', s2); KIT.ltT = -9; }, 22); });
   if (!need) { pg.textAlign = 'center'; pg.fillStyle = '#7d70a0'; pg.font = '500 19px system-ui, sans-serif'; pg.fillText('(Picks only count when someone with a letter is out)', W / 2, y + 196 + Math.ceil(pool.length / 2) * 62 + 24); }
   pBtn(34, PHH - 220, W - 68, 70, 'Done', '#3d1778', () => { PH.scr = 'game'; }, 26);
 }
 function phPlayer(y) {                                                  // one player's page: this season and the ones before, with any letter he wore
   const vc = CAR.vc, W = PHW, n = PSV.who || 'Drew', r = (vc.ps || {})[n] || {}, pl = (RN.players || []).find(p => p.n === n), me = n === 'Drew';
-  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText(me ? 'You (Drew)' : n, 44, y + 24);
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText(me ? fullN('Drew') + ' (you)' : fullN(n), 44, y + 24);
   pg.fillStyle = '#9a8fb3'; pg.font = '500 21px system-ui, sans-serif'; pg.fillText((me ? '#11 · LW' : pl ? '#' + pl.num + ' · ' + pl.pos + (pl.pos !== 'G' ? ' · ' + roleOf(n, pl.pos) : '') : '') + (ageOf(n) ? ' · Age ' + ageOf(n) : '') + (n === CAPS.C ? ' · Captain' : CAPS.A.includes(n) ? ' · Alternate captain' : ''), 44, y + 56);
   if (isRecruit(n)) { const wp = vc.wl.find(q => q.n === n && q.st === 'signed'); pg.fillStyle = '#9fe0b0'; pg.font = '600 17px system-ui, sans-serif'; pg.textAlign = 'left'; pg.fillText('Joined from the waiting list, ' + seasonName(wp.joined.s) + ' week ' + wp.joined.w, 44, y + 84); pBtn(34, PHH - 296, W - 68, 60, 'Release from the club', '#5a2020', () => { wlRelease(n); PH.scr = 'wl'; }, 21); }
   if (me || (pl && pl.pos !== 'G')) pBtn(W - 200, y + 70, 166, 40, me ? (st.myRole ? 'Your role' : 'Pick a role') : 'Set role', '#3d1778', () => { PH.roleFor = n; PH.roleBack = 'player'; PH.scr = 'role'; }, 18);
@@ -6799,7 +6847,7 @@ function phHistory(y) {
   });
   const all = psRows(vc, 'all').slice(0, 5);
   if (all.length) { const y2 = y + 34 + Math.min(5, Math.max(1, past.length)) * 96 + 20; pg.fillStyle = '#ffffff'; pg.font = '800 24px system-ui, sans-serif'; pg.fillText('All-time (finished seasons)', 44, y2);
-    all.forEach((p, i) => { pg.fillStyle = p.n === 'Drew' ? '#e0a928' : '#ffffff'; pg.font = '500 21px system-ui, sans-serif'; pg.fillText((i + 1) + '. ' + (p.n === 'Drew' ? 'You' : p.n) + '  ' + p.gp + ' GP · ' + p.g + 'G ' + p.a + 'A', 50, y2 + 34 + i * 30); }); }
+    all.forEach((p, i) => { pg.fillStyle = p.n === 'Drew' ? '#e0a928' : '#ffffff'; pg.font = '500 21px system-ui, sans-serif'; pg.fillText((i + 1) + '. ' + (p.n === 'Drew' ? sur('Drew') + ' (you)' : sur(p.n)) + '  ' + p.gp + ' GP · ' + p.g + 'G ' + p.a + 'A', 50, y2 + 34 + i * 30); }); }
 }
 function phSeason(y) {
   const vc = CAR.vc, W = PHW, pos = Object.entries(vc.tab).sort((a, b) => b[1].pts - a[1].pts || (b[1].gf - b[1].ga) - (a[1].gf - a[1].ga)).findIndex(e => e[0] === 'Ravens') + 1;
@@ -8571,11 +8619,12 @@ function menuRows(tab) {
     const R = [{ l: 'Line 1 left wing', v: () => 'You  #11', s: () => toast('You always play left wing on line 1', 1.5) }];
     R.push({ l: 'Difficulty', v: () => DIFF_NAMES[diffNow()], s: d => { const O = ['relaxed', 'normal', 'proper'], i = O.indexOf(diffNow()); diffSet(O[cyc(3, i < 0 ? 1 : i, d)]); } });
     R.push({ l: 'Retirements (from 50)', v: () => st.retire !== false ? 'On' : 'Off', s: () => setSetting('retire', st.retire === false) });
+    R.push({ l: 'Real faces', v: () => st.faces !== false ? 'On' : 'Off', s: () => { setSetting('faces', st.faces === false); for (const n in FACE.tex) faceRefresh(n); } });
     R.push({ l: 'Calls on the ice', v: () => st.calls !== false ? 'On' : 'Off', s: () => setSetting('calls', st.calls === false) });
     R.push({ l: 'Bench', v: () => st.autoSkip ? 'Auto-skip to my shift' : 'Watch the other lines (B skips)', s: () => setSetting('autoSkip', !st.autoSkip) });
     for (const [key, lab] of [['fc', 'Forecheck'], ['dz', 'In our end'], ['d', 'The D']]) R.push({ l: lab, v: () => (SYS_OPT[key].find(o => o[0] === sysOf('ravens')[key]) || SYS_OPT[key][0])[1], s: d => { const O = SYS_OPT[key], i = O.findIndex(o => o[0] === sysOf('ravens')[key]); st.sys = Object.assign({}, st.sys || {}, { [key]: O[cyc(O.length, i < 0 ? 0 : i, d)][0] }); saveSettings(); } });
     if (!RN.players) return R.concat([{ l: 'Your teammates', v: () => brainOK() ? 'Loading names... (press)' : 'Needs your server', s: () => { if (brainOK()) rosterLoad(); } }]);
-    for (const [sl, lab] of LSLOTS) R.push({ l: lab, v: () => { const m = RN.map && RN.map[sl]; return m ? m.n + '  #' + m.num : '-'; }, s: d => lineSet(sl, d) });
+    for (const [sl, lab] of LSLOTS) R.push({ l: lab, v: () => { const m = RN.map && RN.map[sl]; return m ? sur(m.n) + '  #' + m.num : '-'; }, s: d => lineSet(sl, d) });
     R.push({ l: 'Letters tonight', v: () => capText(), s: () => toast(capNeed() ? 'Pick the stand-in A below' : 'Tony has the C; you and Robbins the A', 2) });
     for (let k = 0; k < 2; k++) R.push({ l: 'Stand-in A ' + (k + 1) + (capNeed() > k ? '' : ' (not needed)'), v: () => (st.capSub || [])[k] || 'none', s: d => { const pool = ['none'].concat(tonightNames().filter(n => n !== 'Drew' && n !== CAPS.C && !CAPS.A.includes(n))), cur = (st.capSub || [])[k] || 'none', sub = (st.capSub || []).slice(); sub[k] = pool[cyc(pool.length, Math.max(0, pool.indexOf(cur)), d)]; if (sub[k] === 'none') sub[k] = ''; if (sub[0] && sub[0] === sub[1]) sub[1 - k] = ''; setSetting('capSub', sub); } });
     const gks = RN.players.filter(p => p.pos === 'G');
@@ -9049,7 +9098,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { AGMOBJ, carAgm, agmY, agmLeave, speechPick, speechFit, speechKind, SPEECH, spiritApply, GOAL, GOALIES, CLUBS, otStart, soStart, soResult, scPeriodEnd, callsFrame, LADS, scFaceoff, foSk, DFN, drillRep, GX, BLUEL, scGap, scRoles, GX, BLUEL, scGap, scRoles, SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { FACE, faceApply, faceRefresh, faceLoad, sur, fullN, AGMOBJ, carAgm, agmY, agmLeave, speechPick, speechFit, speechKind, SPEECH, spiritApply, GOAL, GOALIES, CLUBS, otStart, soStart, soResult, scPeriodEnd, callsFrame, LADS, scFaceoff, foSk, DFN, drillRep, GX, BLUEL, scGap, scRoles, GX, BLUEL, scGap, scRoles, SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
