@@ -883,7 +883,7 @@ const ROLLS = [0, 0.6, 1.0, 1.4, 1.9], ROLL_NAMES = ['Off (blade stays flat)', '
 const ASSISTS = [0, 0.5, 1, 1.6], ASSIST_NAMES = ['Off', 'Light', 'Normal', 'Strong'];
 const AIMS = [0, 0.35, 0.6], AIM_NAMES = ['Off', 'Light', 'Normal'];                         // how far a shot or pass is turned toward a net or a teammate's stick
 const HAPS = [0, 0.6, 1.3, 2.0], HAP_NAMES = ['Off', 'Light', 'Normal', 'Strong'];            // puck buzz in the controllers
-const GOALIES = [{ rt: 0.5, rr: 0.26, hs: 1.0, bd: 2.6, sl: 1.5, err: 0.4, out: 0.3 }, { rt: 0.38, rr: 0.2, hs: 1.3, bd: 3.5, sl: 1.9, err: 0.28, out: 0.35 }, { rt: 0.28, rr: 0.14, hs: 2.0, bd: 5, sl: 2.4, err: 0.17, out: 0.5 }, { rt: 0.15, rr: 0.08, hs: 3.4, bd: 9, sl: 3.0, err: 0.06, out: 0.65 }], GOALIE_NAMES = ['Easy', 'Rec', 'Good', 'Pro'];   // reaction time, hand speed, how fast he drops, how fast he slides
+const GOALIES = [{ rt: 0.45, rr: 0.24, hs: 1.12, bd: 2.95, sl: 1.65, err: 0.35, out: 0.32 }, { rt: 0.38, rr: 0.2, hs: 1.3, bd: 3.5, sl: 1.9, err: 0.28, out: 0.35 }, { rt: 0.32, rr: 0.16, hs: 1.65, bd: 4.3, sl: 2.2, err: 0.21, out: 0.44 }, { rt: 0.15, rr: 0.08, hs: 3.4, bd: 9, sl: 3.0, err: 0.06, out: 0.65 }], GOALIE_NAMES = ['Easy', 'Rec', 'Good', 'Pro'];   // reaction time, hand speed, how fast he drops, how fast he slides
 const NETS = [1, 1.15, 1.3], NET_NAMES = ['Regulation (6 x 4 ft)', 'Bigger (7 x 4.6 ft)', 'Biggest (8 x 5.2 ft)'];
 function applyNetSize() { const k = NETS[st.netP] || 1; NETW = 0.915 * k; FRAME_H = 1.22 * k; NBL = Math.hypot(FRAME_H, NETD - NETDT); NBX = FRAME_H / NBL; NBY = (NETD - NETDT) / NBL; for (const g of NET_G) { g.scale.y = k; g.scale.z = k; } }
 const OTHERS = ['both', 'mate', 'goalie', 'none'], OTHER_NAMES = { both: 'Pass partner and goalie', mate: 'Pass partner', goalie: 'Goalie', none: 'Nobody' };
@@ -4305,10 +4305,10 @@ function defFrame(dt) {
   const two = DR.id === 'twoone', C = DR.c17, cHas = two && C && C.has, cx0 = cHas ? C.x : H.x, cz0 = cHas ? C.z : H.z;
   const kr = 1 - Math.exp(-dt / Q.read); D.ax = D.ax == null ? cx0 : D.ax + (cx0 - D.ax) * kr; D.az = D.az == null ? cz0 : D.az + (cz0 - D.az) * kr;   // he reads the carrier a moment late
   const ax = D.ax, az = D.az, nx = GX, toN = Math.hypot(nx - ax, az) || 1, dC = Math.hypot(D.x - ax, D.z - az);
-  const beaten = (D.x - ax) * (nx - ax) / toN < 0.3, trig = [3.6, 2.8, 2.0, 1.3][st.oppP] || 2;
+  const beaten = (D.x - ax) * (nx - ax) / toN < 0.3, trig = [3.4, 2.9, 2.4, 1.6][st.oppP] || 2.4;
   const cSpd = cHas ? Math.hypot(C.vx, C.vz) : Math.hypot(S.vx, S.vz); D.slowT = cSpd < 1.5 ? (D.slowT || 0) + dt : 0;
   if (D.ph === 'back' && (toN < 19 || D.x > GX - 10 || dC < 4.2 || D.slowT > 1.2 || D.phT > 5)) { D.ph = 'close'; D.phT = 0; }   // you stopped (or took too long): he comes to you
-  if (D.ph === 'close' && !two && (toN < 11.5 || dC < 2.4 || D.phT > trig || D.slowT > 2.5)) { D.ph = 'attack'; D.phT = 0; }
+  if (D.ph === 'close' && !two && (toN < 9.5 || dC < 2.1 || D.phT > trig || D.slowT > 2.5)) { D.ph = 'attack'; D.phT = 0; }
   if (D.ph === 'attack' && D.phT > 2.2 && dC > 3.2) { D.ph = 'close'; D.phT = 0; }      // you got away from him: he gathers himself
   let tx, tz, vmax = Q.spd;
   if (beaten) { tx = PK.x; tz = PK.z; vmax += 0.6; }
@@ -4316,7 +4316,7 @@ function defFrame(dt) {
     const ox = cHas ? H.x : C.x, oz = cHas ? H.z : C.z, lead = Math.max(ax, ox), gap = D.ph === 'back' ? clamp(toN * 0.3, 3.5, 6) : clamp(toN * 0.16, 1.8, 3);
     tx = Math.min(lead + gap, GX - 3.5); tz = az * 0.45 + oz * 0.55;
     if (toN < 8.5 && Math.abs(az) < 3.5) { D.ph = 'attack'; D.phT = 0; }
-  } else if (D.ph === 'attack') { const pn = Math.hypot(nx - PK.x, PK.z) || 1; tx = PK.x + (nx - PK.x) / pn * 0.5; tz = PK.z - PK.z / pn * 0.5; vmax = Q.spd + 0.8; }
+  } else if (D.ph === 'attack') { const pn = Math.hypot(nx - PK.x, PK.z) || 1; tx = PK.x + (nx - PK.x) / pn * 0.5; tz = PK.z - PK.z / pn * 0.5; vmax = Q.spd + 0.35; }
   else { const gap = D.ph === 'back' ? clamp(toN * 0.3, 3.6, 6.5) : clamp(toN * 0.14, 1.6, 2.6); tx = ax + (nx - ax) / toN * gap; tz = az - az / toN * gap; if (D.ph === 'back') vmax *= 0.85; }
   aiSkate(D, tx, tz, dt, vmax * (D.cool > 0.45 ? 0.55 : 1), 0, 0);
   const lx = PK.x - D.x, lz = PK.z - D.z, ll = Math.hypot(lx, lz) || 1, k = 1 - Math.exp(-dt * 6), y0 = Math.atan2(D.fx, D.fz);
@@ -4329,7 +4329,7 @@ function defFrame(dt) {
   else if (!D.pw) D.pw = pClock + (Q.wind || 0.3) * (st.arcade ? 1.3 : 1);                        // he reaches first: his ring flashes
   if (canPoke && D.pw && pClock >= D.pw && dPk < 0.6) {
     D.cool = 0.9; D.pw = 0;
-    const onYou = humanHas(), chance = onYou ? Q.poke * (D.ph === 'attack' ? 1.25 : 0.8) : cHas ? Q.poke : 0.75;
+    const onYou = humanHas(), chance = onYou ? Q.poke * (D.ph === 'attack' ? 1.0 : 0.75) : cHas ? Q.poke : 0.75;
     if (Math.random() < chance) {
       if (cHas) { C.has = false; C.act = ''; C.cool = 0.6; }
       const a = Math.atan2(D.fz, D.fx) + (Math.random() - 0.5) * 1.2, v = 3 + Math.random() * 3;
@@ -4693,6 +4693,7 @@ function stamFrame(dt, mag, brake) {
 function stamSpeed() {
   let k = STAM.on ? SPR.burst : SPR.cruise;
   if (STAM.v < 0.25 && !STAM.on) k *= 0.95 + 0.2 * STAM.v;                                  // dead legs
+  if (humanHas()) k *= 0.96;                                                              // the puck slows you a touch, same as everyone
   if (SC.on && SC.mode === '5' && !BN.on) k *= 1 - clamp(((BN.shift || 0) - 50) / 60, 0, 0.08);   // a long shift
   return k;
 }
@@ -5386,7 +5387,7 @@ const AI2 = { on: true, ravens: true, visitors: true }, ai2 = t => true;   // (k
 //  - The carrier scores every option (shoot, pass to each teammate, carry, dump, chip it out, protect) on shot quality, how open the lane is,
 //    how open the receiver is and how much pressure he's under, then picks with a little randomness (less the better the team).
 //  - Passes lead the receiver properly; shots go to spots away from the goalie. Defenders step into shooting lanes.
-const AISK = { lv: [0.28, 0.56, 0.74, 0.9] };
+const AISK = { lv: [0.42, 0.56, 0.68, 0.86] };                      // close steps: each level a notch harder, not a cliff
 const lerp = (a, b, t) => a + (b - a) * t;
 function skillQ(sk) {
   const top = SPEEDS[st.speed] || 6.5;
@@ -5585,6 +5586,24 @@ function scGap(s, carrier, dir, gmin) {                                  // betw
   const cs = Math.hypot(cvx, cvz), ld = cs > 4 ? 0.6 : 0.35, ox = -dir * GX, lx = cx + cvx * ld, lz = cz + cvz * ld, tn = Math.hypot(ox - lx, lz) || 1, gap = clamp(1.6 + 0.3 * cs + ((s.q && s.q.gap) || 0), (gmin || 2) + ((s.q && s.q.gap) || 0), 4.5);
   return [lx + (ox - lx) / tn * gap, lz - lz / tn * gap - Math.sign(cz) * 0.7];
 }
+// a D never lets a man get in behind him: anyone on his side (the puck carrier included) level with him or close to it and coming at speed, he
+// drops off early enough to stay goal-side, the carrier with a bigger cushion. Where the man is going matters more than where he is.
+function scNoneBehind(s, t, carrier, dir) {
+  const rushIn = carrier && dir * PK.x > -GX + 9 && -dir * (carrier === 'human' ? S.vx : carrier.vx) > 3;
+  if (dir * PK.x < -BLUEL && !rushIn) return t;                         // our end: zone coverage (unless he's still coming at speed)
+  const opp = SC.sk.filter(o => o.team !== s.team && !o.chg && o.role !== 'G').map(o => [o.x, o.z, o.vx, o.vz, o === carrier]);
+  if (!BN.on && s.team === 'visitors') opp.push([H.x, H.z, S.vx, S.vz, carrier === 'human']);
+  const su = dir * s.x; let tu = dir * t[0], tz = t[1], hit = false;
+  for (const [x, z, vx, vz, hasIt] of opp) {
+    const u = dir * x, au = -dir * vx;
+    if (Math.abs(z - s.z) > 8 || (Math.sign(z) !== Math.sign(s.z) && Math.abs(z) > 2.5 && Math.abs(s.z) > 2.5)) continue;   // his side only
+    if (au < 1.5 || u > su + 7) continue;                                  // not going anywhere, or a long way off
+    const lu = u - au * 1.6, want = Math.max(-GX + 4, lu - (hasIt ? 2.4 + 0.25 * Math.hypot(vx, vz) : 2.2));
+    if (want < tu) { tu = want; tz = hasIt ? z - Math.sign(z) * clamp(Math.abs(z) * 0.22, 0.9, 2.2) : z * 0.75; hit = true; }
+  }
+  if (hit) { s.gm = true; if (tu < su - 1.5) s.urg = true; return [dir * tu, tz]; }
+  return t;
+}
 function scTargets(s, carrier, carrierTeam) {
   if (s.chg) return BENCH[s.team];
   const dir = teamDir(s.team), Q = s.team === 'visitors' && SC.Qopp ? SC.Qopp : (s.team === 'ravens' ? SC.Qr : SC.Qv) || ravensQ();
@@ -5606,6 +5625,7 @@ function scTargets(s, carrier, carrierTeam) {
     if (dir * (s.x - cx) > (s.q && s.q.bc ? 1 : 2) && dir * cx < BLUEL) s.urg = true;
   }
   let t = scSlot(s, carrier, carrierTeam);
+  if (s.role === 'D' && carrierTeam !== s.team) t = scNoneBehind(s, t, carrier, dir);
   if (s.team === 'ravens' && !BN.on && carrier !== 'human') {            // don't stand where Drew is: take his slot (left wing) instead, or move off him
     const dh = Math.hypot(t[0] - H.x, t[1] - H.z);
     if (dh < 3) {
@@ -5629,7 +5649,8 @@ function scRoles(carrier, carrierTeam) {
       let b = null, bc = 99;
       for (const s of mine) {
         const d = Math.hypot(cx - s.x, cz - s.z), behind = dir * (s.x - cx) > 1.5;                // a forward who's beaten (behind the play) can still chase
-        if (s.role === 'D' && !inZone && d > (sysOf(team).fc === 'aggressive' ? 4.5 : 3)) continue;   // D keep their gap in the neutral zone (they step up when he's close)
+        if (s.role === 'D' && !inZone && d > (sysOf(team).fc === 'aggressive' ? 4.5 : 3)) continue;
+        if (s.role === 'D' && !inZone && -dir * (carrier === 'human' ? S.vx : carrier.vx) > 3.5 && -dir * s.vx < 2.5 && d > 1.6) continue;   // he's flying at me and I'm standing: drop off, don't lunge   // D keep their gap in the neutral zone (they step up when he's close)
         if (sysOf(team).fc === 'trap' && cu > BLUEL && s.role !== 'D' && d > 6) continue;             // the trap: nobody chases him round his own end
         if (s.role === 'D' && inZone && Math.sign(dir * cz) !== s.ln && s.ln && d > 3 && Math.abs(cz) > 3) continue;   // the D on his side takes him in our end
         const c = d * (behind ? 1.4 : 1) - (SC.press[team] === s ? 1.5 : 0) - (s.q && s.q.chk ? 1.2 : 0); if (c < bc) { bc = c; b = s; }
@@ -5735,15 +5756,15 @@ function scFrame(dt) {
     else if (SC.pause > 0) t = [s.x, s.z];
     else if (s.has && s.act === 'carry') t = scCarry(s);
     else if (s.has) t = st.rulesOn && dir0(s) * s.x < BLUEL && dir0(s) * s.x > BLUEL - 4 && offAhead(s) ? [s.x - dir0(s) * 1.5, s.z] : [s.x, s.z];   // (don't drift over the line with a mate offside)
-    else { s.urg = false; inc = !s.chg && skIncoming(s); t = inc || scTargets(s, carrier, carrierTeam); }
+    else { s.urg = false; s.gm = false; inc = !s.chg && skIncoming(s); t = inc || scTargets(s, carrier, carrierTeam); }
     t = s.chg ? t : inRink(t[0], t[1], 1.0);
-    TG.push({ s, t, fix: stopped || s.has || s.chg || !!inc || SC.chase[s.team] === s || SC.press[s.team] === s || s.urg });
+    TG.push({ s, t, fix: stopped || s.has || s.chg || !!inc || SC.chase[s.team] === s || SC.press[s.team] === s || s.urg || s.gm });
   }
   if (!stopped) scSpace(TG, carrier, carrierTeam);
   for (const { s, t } of TG) {
     const k = s.has || SC.chase[s.team] === s || s.urg ? 1 : 1 - Math.exp(-dt / 0.3);
     if (s.gx == null) { s.gx = t[0]; s.gz = t[1]; } else { s.gx += (t[0] - s.gx) * k; s.gz += (t[1] - s.gz) * k; }
-    const qs = qf(s), hot = SC.chase[s.team] === s || SC.press[s.team] === s || s.urg;
+    const qs = qf(s), hot = SC.chase[s.team] === s || SC.press[s.team] === s || s.urg || s.gm;
     // a D skates backwards to hold his gap, but turns and skates once the man with the puck comes at speed (or he'd just get burned)
     const cs = carrier === 'human' ? Math.hypot(S.vx, S.vz) : carrier ? Math.hypot(carrier.vx, carrier.vz) : 0;
     const back = s.role === 'D' && !s.has && carrierTeam !== s.team && SC.press[s.team] !== s && cs < qs.spd * 0.62;
@@ -8608,7 +8629,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { DFN, drillRep, GX, BLUEL, scGap, scRoles, GX, BLUEL, scGap, scRoles, SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
