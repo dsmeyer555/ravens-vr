@@ -2036,8 +2036,9 @@ function pollInput(dt, hw, hy) {
     } else {
       if (edge(4) && st.oneM === 'btn') toggleHands();
       else if (st.oneM !== 'btn' && st.talk !== 'off') { const aD = !!(gp.buttons[4] && gp.buttons[4].pressed); if (aD !== MIC.ptt) micPTT(aD); }
-      if (edge(5)) { if (BN.box && SC.on) penSkip(); else if (BN.on && SC.on) benchSkip(); else puckBack(); }
-      if (edge(3)) { if (SC.on || DR.on) myCall(shoutWhat()); else nextCurve(); }
+      if (edge(5)) { if (RP.on) rpStop(); else if (BN.box && SC.on) penSkip(); else if (BN.on && SC.on) benchSkip(); else puckBack(); }
+      if (RP.on && edge(0)) rpSlow();
+      if (edge(3)) { if (RP.on) rpView(); else if (SC.on || DR.on) myCall(shoutWhat()); else nextCurve(); }
       const lt = gp.buttons[0], lv = lt ? (lt.value || (lt.pressed ? 1 : 0)) : 0;                    // the right trigger keeps the puck on the blade (unless it holds the stick)
       if (st.oneM === 'hold' && h === (st.shot === 'right' ? 'right' : 'left')) { if (keepOn) setKeep(false); }
       else if (st.keepM === 'hold') { const want = keepOn ? lv > 0.3 : lv > 0.55; if (want !== keepOn) setKeep(want); }
@@ -3267,17 +3268,19 @@ function tourAdvance(vc) {                                                // the
 }
 // a Ravens game finished (played or simmed): the score, a shootout if a knockout game is level, the tournament stats, then the rest of the round
 function tourRecord(gf, ga, me, sim, goals, pens) {
-  const vc = CAR.vc, T = vc.tour, g = tourNext(T), f = tourFx(vc); if (!g) return;
+  const vc = CAR.vc, T = vc.tour, g = tourNext(T), f = tourFx(vc), MB = milSnap(vc); if (!g) return;
   const rh = g.h === 'Ravens'; g.gf = rh ? gf : ga; g.ga = rh ? ga : gf; let so = '';
   if (g.st && gf === ga) { const w = Math.random() < 0.5 + (tourR('Ravens') - tourR(f.opp)) * 4; g.so = (w === rh) ? 'h' : 'a'; so = w ? ', won in a shootout' : ', lost in a shootout'; }
   { vc.ps = vc.ps || {}; const cr = carCredit(goals || [], gf, me), P = n => /^Spare /.test(n) ? {} : (vc.ps[n] = vc.ps[n] || { gp: 0, g: 0, a: 0, tgp: 0, tg: 0, ta: 0 });
     for (const n of cr.lu) P(n).xgp = (P(n).xgp || 0) + 1;
     for (const n of pens || []) P(n).pim = (P(n).pim || 0) + 2;
-    for (const q of cr.goals) { P(q.sc).xg = (P(q.sc).xg || 0) + 1; for (const a of q.as) P(a).xa = (P(a).xa || 0) + 1; } }
+    for (const q of cr.goals) { P(q.sc).xg = (P(q.sc).xg || 0) + 1; for (const a of q.as) P(a).xa = (P(a).xa || 0) + 1; }
+    milCheck(vc, MB, milGame(cr)); }
   T.me.gp++; T.me.g += me.g || 0; T.me.a += me.a || 0;
   const res = gf > ga || so.includes('won') ? 'beat' : gf < ga || so.includes('lost') ? 'lost to' : 'drew with';
   const mine = [me.g ? me.g + (me.g > 1 ? ' goals' : ' goal') : '', me.a ? me.a + (me.a > 1 ? ' assists' : ' assist') : ''].filter(Boolean).join(', ');
   vc.last = { gf, ga, opp: f.opp, g: me.g || 0, a: me.a || 0, sh: me.sh || 0, line: `${f.lab}: the Ravens ${res} ${f.opp} ${gf}-${ga}${so}${sim ? ' (simmed)' : ''}.${mine ? ' Drew: ' + mine + '.' : ''}` };
+  if (PH.milNote) { vc.last.line += ' Milestones: ' + PH.milNote + '.'; PH.milNote = ''; }
   T.log.push(vc.last.line);
   vc.conf = clamp(vc.conf + (res === 'beat' ? 4 : res === 'drew with' ? 1 : -1), 0, 100);
   tourAdvance(vc); carSave();
@@ -3348,6 +3351,135 @@ function phAwards(y) {
   const cur = shown[shown.length - 1]; if (cur) { pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '600 20px system-ui, sans-serif'; pWrap('Crofty: "' + cur.cro + '"', W - 88, '600 20px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 44, bot + 26 + k * 26)); }
   if (T.awI < A.length) pBtn(34, PHH - 196, W - 68, 76, T.awI ? 'Next award' : 'Start the awards', '#5a2bb0', () => { T.awI++; const a = A[T.awI - 1]; PH.scroll = 9999; if (a && a.n === 'Drew') { toast('You won ' + a.k + '!', 2.5); buzz('right', 0.8, 200); buzz('left', 0.8, 200); } carSave(); }, 28);
   else pBtn(34, PHH - 196, W - 68, 76, 'On to the season review', '#5a2bb0', () => { T.stage = 'done'; PH.scr = 'season'; carSave(); }, 26);
+}
+// ---- milestones: games, goals, assists and points for the club (all seasons and the tournaments), hat-tricks, big nights, and the first
+// time someone wears a letter. Checked after every career game; the big ones get a shout from Crofty in the group chat.
+const MILES = { gp: [25, 50, 100, 150, 200, 250, 300, 400, 500], g: [10, 25, 50, 75, 100, 150, 200, 250], a: [10, 25, 50, 100, 150, 200, 300], p: [50, 100, 150, 200, 300, 400, 500] };
+function milTot(vc, n) { const r = (vc.ps || {})[n] || {}, gp = (r.agp || 0) + (r.gp || 0) + (r.xgp || 0), g = (r.ag || 0) + (r.g || 0) + (r.xg || 0), a = (r.aa || 0) + (r.a || 0) + (r.xa || 0); return { gp, g, a, p: g + a, lC: r.lC || 0, lA: r.lA || 0 }; }
+function milSnap(vc) { const o = {}; for (const n of Object.keys(vc.ps || {})) o[n] = milTot(vc, n); return o; }
+function milCheck(vc, before, game) {                                     // game: { goals: {name: n}, pts: {name: n} } from this game
+  const ev = [], who = n => n === 'Drew' ? 'You' : n, whose = n => n === 'Drew' ? 'Your' : n + "'s", ever = (n, k) => ((vc.hist || {})[n] || []).some(h => h[k]);
+  for (const n of Object.keys(vc.ps || {})) {
+    if (/^Spare /.test(n)) continue; const b = before[n] || { gp: 0, g: 0, a: 0, p: 0, lC: 0, lA: 0 }, a = milTot(vc, n);
+    for (const k of ['gp', 'g', 'a', 'p']) for (const v of MILES[k]) if (b[k] < v && a[k] >= v) {
+      const t = k === 'gp' ? `${whose(n)} ${ordN(v)} game for the Ravens` : k === 'g' ? (v === 1 ? `${whose(n)} first goal for the club` : `${whose(n)} ${ordN(v)} goal for the Ravens`) : k === 'a' ? `${whose(n)} ${ordN(v)} assist for the Ravens` : `${v} points for the club: ${who(n)}`;
+      const what = k === 'gp' ? v + ' games' : k === 'g' ? v + ' goals' : k === 'a' ? v + ' assists' : v + ' points';
+      ev.push({ n, t, imp: 3 + v / 50 + (n === 'Drew' ? 3 : 0), sh: (n === 'Drew' ? 'Big shout to Drew: ' : 'Big shout to ' + firstN(n) + ': ') + what + ' for the club. ' + (n === 'Drew' ? 'Get in.' : 'Legend.') });
+    }
+    if (a.lC > b.lC && b.lC === 0 && !ever(n, 'lC') && n !== CAPS.C) ev.push({ n, t: `${who(n)} wore the C for the first time`, imp: 4, sh: 'First time with the C for ' + firstN(n) + '. Wore it well.' });
+    if (a.lA > b.lA && b.lA === 0 && !ever(n, 'lA') && !CAPS.A.includes(n)) ev.push({ n, t: `${who(n)} wore the A for the first time`, imp: 3.5, sh: 'First time with the A for ' + firstN(n) + '. Wore it well.' });
+  }
+  for (const [n, k] of Object.entries(game.goals || {})) if (k >= 3) { const first = !(vc.miles || []).some(m => m.n === n && /Hat-trick/.test(m.t)); ev.push({ n, t: `Hat-trick for ${n === 'Drew' ? 'you' : n}!${first ? ' (first in the career)' : ''}`, imp: 8 + (n === 'Drew' ? 3 : 0), sh: 'Hat-trick for ' + firstN(n) + ' tonight! Hats off.' }); }
+  for (const [n, k] of Object.entries(game.pts || {})) if (k >= 4 && !((game.goals || {})[n] >= 3)) ev.push({ n, t: `${k}-point night for ${n === 'Drew' ? 'you' : n}`, imp: 5 + (n === 'Drew' ? 2 : 0), sh: k + ' points for ' + firstN(n) + ' tonight. Some night.' });
+  ev.sort((x, y) => y.imp - x.imp);
+  vc.miles = (vc.miles || []).concat(ev.map(e => ({ s: vc.season, w: Math.min(vc.week, CWEEKS + 1), n: e.n, t: e.t }))).slice(-200);
+  if (ev.length) {
+    const top = ev.slice(0, 3); PH.milNote = top.map(e => e.t).join(' · ');
+    const shout = top.filter(e => e.imp >= 4)[0]; if (shout) { const th = thGet(GRPK); th.msgs.push({ n: 'Crofty', t: shout.sh }); thSave(th); vc.unread = vc.unread || {}; vc.unread[GRPK] = 1; }
+    setTimeout(() => toast('Milestone: ' + top[0].t, 3), 2600);
+  }
+  return ev;
+}
+function milGame(cr) { const goals = {}, pts = {}; for (const q of cr.goals) { goals[q.sc] = (goals[q.sc] || 0) + 1; pts[q.sc] = (pts[q.sc] || 0) + 1; for (const a of q.as) pts[a] = (pts[a] || 0) + 1; } return { goals, pts }; }
+// ---- highlights: the last 8 seconds or so of every goal, recorded as everyone's positions (15 a second) and kept small. The last game's goals
+// are there to watch afterwards; your goals and assists also go in your reel (the best 24 are kept). Watch them back on the ice, from the
+// glass by the net or from the bench, slow it down, or play the whole reel.
+const HL = { game: [], reel: [], gameLab: '' }, HLR = { buf: [], acc: 0, pend: null }, HL_DT = 1 / 15;
+try { const j = JSON.parse(localStorage.getItem('ravens-vr3-hl') || 'null'); if (j) { HL.game = j.game || []; HL.reel = j.reel || []; HL.gameLab = j.gameLab || ''; } } catch (e) { }
+function hlSave() { try { localStorage.setItem('ravens-vr3-hl', JSON.stringify({ game: HL.game, reel: HL.reel, gameLab: HL.gameLab })); } catch (e) { HL.reel = HL.reel.slice(-12); try { localStorage.setItem('ravens-vr3-hl', JSON.stringify({ game: HL.game.slice(-4), reel: HL.reel, gameLab: HL.gameLab })); } catch (e2) { } } }
+function hlRecord(dt) {                                                   // from scFrame: a snapshot every 1/15 s, the last 11 s kept
+  if (!SC.on) return; HLR.acc += dt; if (HLR.acc < HL_DT) return; HLR.acc -= HL_DT; if (HLR.acc > HL_DT) HLR.acc = 0;
+  const b = BN.on ? null : humanBlade(), gs = [GOAL.on ? GOAL : null, SC.g2 || null].map(G => G ? [G.x, G.z, Math.atan2(G.ax || 1, G.az || 0), G.p && G.p.s ? G.p.s.b || 0 : 0] : null);
+  HLR.buf.push({ t: pClock, sk: SC.sk.filter(s => s.vis).map(s => [s.team + s.num, s.x, s.z, Math.atan2(s.fx, s.fz), s.has ? 1 : 0]), pk: [PK.x, PK.y, PK.z], d: BN.on ? null : [H.x, H.z, Math.atan2(H.fx || 1, H.fz || 0), b ? b[0] : H.x, b ? b[1] : H.z], g: gs });
+  while (HLR.buf.length && HLR.buf[0].t < pClock - 11) HLR.buf.shift();
+  if (HLR.pend && pClock >= HLR.pend.until) hlFinish();
+}
+function hlMark(meta) { if (!SC.on || SC.mode !== '5') return; if (HLR.pend) hlFinish(); HLR.pend = Object.assign({ t0: pClock, until: pClock + 1.8 }, meta); }
+function hlPack(frames) {
+  const K = []; for (const f of frames) for (const r of f.sk) if (!K.includes(r[0])) K.push(r[0]);
+  const st0 = 4 * K.length + 3 + 6 + 8, A = new Int16Array(frames.length * st0), q = v => clamp(Math.round(v), -32767, 32767);
+  frames.forEach((f, i) => { const o = i * st0; for (let k = 0; k < K.length; k++) { const r = f.sk.find(x => x[0] === K[k]); const j = o + k * 4; if (r) { A[j] = q(r[1] * 100); A[j + 1] = q(r[2] * 100); A[j + 2] = q(r[3] * 1000); A[j + 3] = r[4]; } else A[j] = -32768; }
+    let j = o + 4 * K.length; A[j++] = q(f.pk[0] * 100); A[j++] = q(f.pk[1] * 100); A[j++] = q(f.pk[2] * 100);
+    if (f.d) { A[j++] = q(f.d[0] * 100); A[j++] = q(f.d[1] * 100); A[j++] = q(f.d[2] * 1000); A[j++] = q(f.d[3] * 100); A[j++] = q(f.d[4] * 100); A[j++] = 1; } else { A[j] = -32768; j += 6; }
+    for (const g of f.g) { if (g) { A[j++] = q(g[0] * 100); A[j++] = q(g[1] * 100); A[j++] = q(g[2] * 1000); A[j++] = q(g[3] * 1000); } else { A[j] = -32768; j += 4; } } });
+  let s = ''; const u8 = new Uint8Array(A.buffer); for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return { K, st: st0, n: frames.length, d: btoa(s) };
+}
+function hlFinish() {
+  const P = HLR.pend; HLR.pend = null; if (!P) return;
+  const fr = HLR.buf.filter(f => f.t >= P.t0 - 7.5); if (fr.length < 20) return;
+  const clip = Object.assign(hlPack(fr), { id: 'h' + Date.now().toString(36), lab: P.lab, sub: P.sub, mine: !!P.mine, ravens: !!P.ravens, gx: P.gx, sd: SC.flip || 1 });
+  HL.game.push(clip); if (HL.game.length > 12) HL.game.shift();
+  if (P.mine) { HL.reel.push(clip); if (HL.reel.length > 24) HL.reel.shift(); }
+  hlSave();
+}
+function hlNewGame() { HL.game = []; HLR.buf = []; HLR.pend = null; HL.gameLab = (SC.fx ? 'vs ' + SC.fx.opp : 'Scrimmage') + (CAR.vc && CAR.mode === 'career' ? ' · S' + CAR.vc.season + (CAR.vc.week > CWEEKS ? ' tournament' : ' wk ' + CAR.vc.week) : ''); }
+function hlKeep(c) { if (!HL.reel.some(x => x.id === c.id)) { HL.reel.push(c); if (HL.reel.length > 24) HL.reel.shift(); hlSave(); toast('Kept in your reel', 1.2); } }
+// ---- watching one back
+const RP = { on: false, list: [], li: 0, c: null, A: null, t: 0, slow: false, view: 0, hold: 0, ghost: null, used: [] };
+const RP_VIEWS = ['By the glass', 'From the bench', 'Behind the net'];
+function rpUnpack(c) { const bin = atob(c.d), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return new Int16Array(u8.buffer); }
+function rpStart(list, i) {
+  if (!st.inVR || !list.length) return; phoneClose(); if (MENU.open) closeMenu();
+  if (DR.on) drillStop(true); if (SC.on) scStop(true); if (CAR.place === 'room') roomHide(); if (CAR.place === 'pub') { CAR.place = null; for (const o of PUBP) o.p.root.visible = false; }
+  if (!GOAL.on) { st.others = 'both'; othersInit(); } g2Show(true); if (MATE.p) MATE.p.root.visible = false;
+  for (const k in SKP) skShow(SKP[k], false);
+  RP.on = true; RP.list = list; rpLoad(i); showStick(false); stickOn = false;
+  toast('Replay. B: back · right stick click: camera · trigger: slow-mo', 3);
+}
+function rpLoad(i) {
+  RP.li = i; RP.c = RP.list[i]; RP.A = rpUnpack(RP.c); RP.t = 0; RP.hold = 0;
+  RP.used = RP.c.K.map(k => { const team = k.startsWith('ravens') ? 'ravens' : 'visitors', num = k.slice(team.length); return SKP[k] || skGet(team, num, 'right', 'W', 0); });
+  if (!RP.ghost) { RP.ghost = skGet('ravens', '11', st.shot === 'left' ? 'left' : 'right', 'W', -1); RP.ghost.p.name = 'Drew'; }
+  rpCam(); SC.msg = RP.c.lab; boardText && boardText();
+}
+function rpCam() {
+  const c = RP.c, A = RP.A, n = c.n - 1, o = n * c.st + 4 * c.K.length, px = A[o] / 100, pz = A[o + 2] / 100, sx = Math.sign(c.gx || px || 1);
+  const V = RP.view % RP_VIEWS.length; let x, z;
+  if (V === 0) { x = sx * (GX - 6); z = (pz >= 0 ? -1 : 1) * 9.5; }
+  else if (V === 1) { x = sx * 9; z = 11.2; }
+  else { x = sx * (GX + 2.2); z = pz >= 0 ? -1.4 : 1.4; }
+  teleportTo(x, z, Math.atan2(pz * 0.5 - z, sx * (GX - 8) - x));
+}
+function rpFrame(dt) {
+  const c = RP.c, A = RP.A; if (!c) return;
+  if (RP.hold > 0) { RP.hold -= dt; if (RP.hold <= 0) { if (RP.li + 1 < RP.list.length) { for (const q of RP.used) skShow(q, false); rpLoad(RP.li + 1); return; } RP.t = 0; } }
+  else { RP.t += dt * (RP.slow ? 0.35 : 1); if (RP.t >= (c.n - 1) * HL_DT) { RP.t = (c.n - 1) * HL_DT; RP.hold = 1.6; } }
+  const fi = Math.min(c.n - 1.001, RP.t / HL_DT), i0 = Math.floor(fi), u = fi - i0, o0 = i0 * c.st, o1 = Math.min(c.n - 1, i0 + 1) * c.st;
+  const L = (a, b) => a + (b - a) * u, ang = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * u; };
+  c.K.forEach((k, j) => { const s = RP.used[j], a = o0 + j * 4, b = o1 + j * 4; if (A[a] === -32768) { if (s.vis) skShow(s, false); return; } if (!s.vis) skShow(s, true);
+    const bx = A[b] === -32768 ? A[a] : A[b], bz = A[b] === -32768 ? A[a + 1] : A[b + 1], x = L(A[a], bx) / 100, z = L(A[a + 1], bz) / 100, an = ang(A[a + 2] / 1000, (A[b] === -32768 ? A[a + 2] : A[b + 2]) / 1000);
+    s.vx = (bx - A[a]) / 100 / HL_DT; s.vz = (bz - A[a + 1]) / 100 / HL_DT; s.x = x; s.z = z; s.fx = Math.sin(an); s.fz = Math.cos(an); s.has = !!A[a + 3];
+    skSync(s, Math.hypot(s.vx, s.vz), 0, dt); });
+  let j = 4 * c.K.length; PK.x = L(A[o0 + j], A[o1 + j]) / 100; PK.y = Math.max(PUCK.HH, L(A[o0 + j + 1], A[o1 + j + 1]) / 100); PK.z = L(A[o0 + j + 2], A[o1 + j + 2]) / 100; PK.vx = PK.vz = PK.vy = 0; j += 3;
+  const gh = RP.ghost; if (A[o0 + j] === -32768) { if (gh.vis) skShow(gh, false); } else { if (!gh.vis) skShow(gh, true); const x = L(A[o0 + j], A[o1 + j]) / 100, z = L(A[o0 + j + 1], A[o1 + j + 1]) / 100, an = A[o0 + j + 2] / 1000;
+    gh.vx = (A[o1 + j] - A[o0 + j]) / 100 / HL_DT; gh.vz = (A[o1 + j + 1] - A[o0 + j + 1]) / 100 / HL_DT; gh.x = x; gh.z = z; gh.fx = Math.sin(an); gh.fz = Math.cos(an); gh.has = Math.hypot(PK.x - L(A[o0 + j + 3], A[o1 + j + 3]) / 100, PK.z - L(A[o0 + j + 4], A[o1 + j + 4]) / 100) < 0.4; skSync(gh, Math.hypot(gh.vx, gh.vz), 0, dt); }
+  j += 6;
+  [GOAL.on ? GOAL : null, SC.g2].forEach((G, k) => { const a = o0 + j + k * 4, b = o1 + j + k * 4; if (!G || A[a] === -32768) return; G.x = L(A[a], A[b]) / 100; G.z = L(A[a + 1], A[b + 1]) / 100; const an = A[a + 2] / 1000; G.ax = Math.sin(an); G.az = Math.cos(an);
+    const s = G.p.s; s.x = G.x; s.z = G.z; s.fx = G.ax; s.fz = G.az; s.b = L(A[a + 3], A[b + 3]) / 1000; posePlayer(G.p, dt); });
+}
+function rpView() { RP.view++; rpCam(); toast(RP_VIEWS[RP.view % RP_VIEWS.length], 1); }
+function rpSlow() { RP.slow = !RP.slow; toast(RP.slow ? 'Slow motion' : 'Full speed', 0.8); }
+function rpStop() {
+  RP.on = false; for (const s of RP.used.concat(RP.ghost ? [RP.ghost] : [])) skShow(s, false); RP.used = []; SC.msg = ''; resetPuck(0, 0);
+  if (CAR.mode === 'career') carHub(); else teleportTo(0, 0, 0);
+}
+// ---- the phone: highlights and milestones (in Stats)
+function phHigh(y) {
+  const vc = CAR.vc, W = PHW; let yy = y;
+  const row = (c, keep) => { pRect(34, yy, W - 68, 62, 14, c.mine ? '#3d1778' : '#211836'); pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '700 21px system-ui, sans-serif'; let t = c.lab || 'Goal'; while (pg.measureText(t).width > W - 300 && t.length > 6) t = t.slice(0, -1); pg.fillText(t, 50, yy + 24);
+    pg.fillStyle = '#9a8fb3'; pg.font = '500 16px system-ui, sans-serif'; pg.fillText(c.sub || '', 50, yy + 47);
+    const list = keep ? HL.game : HL.reel; pBtn(W - (keep ? 232 : 140), yy + 9, 100, 44, 'Watch', '#5a2bb0', () => rpStart(list, list.indexOf(c)), 19);
+    if (keep) { const inR = HL.reel.some(x => x.id === c.id); pBtn(W - 124, yy + 9, 86, 44, inR ? 'Kept' : 'Keep', inR ? '#1c1430' : '#2a1a44', () => hlKeep(c), 18); }
+    yy += 68; };
+  pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '700 21px system-ui, sans-serif'; pg.fillText('Last game ' + (HL.gameLab ? '(' + HL.gameLab + ')' : ''), 44, yy + 14); yy += 28;
+  if (!HL.game.length) { pg.fillStyle = '#9a8fb3'; pg.font = '500 19px system-ui, sans-serif'; pg.fillText('Goals from your next game show up here.', 44, yy + 12); yy += 34; } else HL.game.slice(-4).reverse().forEach(c => row(c, true));
+  pg.fillStyle = '#e0a928'; pg.font = '700 21px system-ui, sans-serif'; pg.textAlign = 'left'; pg.fillText('Your reel (' + HL.reel.length + ')', 44, yy + 14);
+  if (HL.reel.length) pBtn(W - 200, yy - 8, 162, 42, 'Play the reel', '#5a2bb0', () => rpStart(HL.reel.slice().reverse(), 0), 18);
+  yy += 40; HL.reel.slice(-3).reverse().forEach(c => row(c, false));
+  pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '700 21px system-ui, sans-serif'; pg.fillText('Milestones', 44, yy + 14); yy += 30;
+  const M = (vc.miles || []).slice().reverse(); if (!M.length) { pg.fillStyle = '#9a8fb3'; pg.font = '500 19px system-ui, sans-serif'; pg.fillText('None yet: 25 games, first goals, hat-tricks...', 44, yy + 10); }
+  M.slice(0, Math.max(0, Math.floor((PHH - 130 - yy) / 28))).forEach((m, i) => { pg.fillStyle = m.n === 'Drew' ? '#ffd36a' : '#ffffff'; pg.font = '500 18px system-ui, sans-serif'; let t = 'S' + m.s + (m.w > CWEEKS ? ' T' : ' W' + m.w) + '  ' + m.t; while (pg.measureText(t).width > W - 88 && t.length > 6) t = t.slice(0, -1); pg.fillText(t, 44, yy + 10 + i * 28); });
 }
 // off-ice hands: on the knees in the room, one on the table and a pint in the other in the pub, on the boards for Crofty; the free hand talks
 const _hl = new THREE.Vector3(), _hr = new THREE.Vector3();
@@ -4500,7 +4632,7 @@ function scStart(mode, fx) {
     SC.lines = { ravens: [...SC.grp.ravens.F, ...SC.grp.ravens.D], visitors: [...SC.grp.visitors.F, ...SC.grp.visitors.D] };
   } else { SC.grp = null; SC.lines = { ravens: R.ravens.map(L => mkLine('ravens', L)), visitors: R.visitors.map(L => mkLine('visitors', L)) }; }
   SC.fPrev = 2; SC.fChgT = -99; SC.goals = [];
-  SC.fx = SC.mode === '5' ? (fx || null) : null; SC.Qr = ravensQ(); SC.Qv = skillQ(levelSk()); SC.Qopp = fxSkill(SC.fx); if (SC.fx) fxLineup(SC.fx);
+  SC.fx = SC.mode === '5' ? (fx || null) : null; if (SC.mode === '5') hlNewGame(); SC.Qr = ravensQ(); SC.Qv = skillQ(levelSk()); SC.Qopp = fxSkill(SC.fx); if (SC.fx) fxLineup(SC.fx);
   for (const L of [...SC.lines.ravens, ...SC.lines.visitors]) for (const q of L) skShow(q, false);   // everyone starts on the bench
   SC.sk = SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0], ...SC.grp.visitors.F[0], ...SC.grp.visitors.D[0]] : [...SC.lines.ravens[0], ...SC.lines.visitors[0]];
   for (const s of SC.sk) { skShow(s, true); s.shift = 0; s.chg = false; }
@@ -4513,6 +4645,7 @@ function scStart(mode, fx) {
 }
 function scStop(quiet) {
   if (!SC.on) return;
+  if (HLR.pend) hlFinish();
   penReset();
   if (CAR.step === 'game' && !SC.over) { carAbort(); setTimeout(carHub, 600); }
   benchLeave(); benchClear(); if (SC.fx) fxLineupOff();
@@ -4807,7 +4940,8 @@ function scGoal(xSide) {
   SC.msg = (ravens ? 'Ravens' : oppN()) + ' score!  ' + SC.score[0] + ' - ' + SC.score[1]; toast(SC.msg, 2.5);
   { const nm = w => w === 'you' ? 'Drew' : w && w[0] === 'r' ? ((RN.map && RN.map[w.slice(1)] || {}).n || '') : '';
     const scn = ravens ? nm(SC.tc.last) : '', asn = ravens && SC.tc.prev && SC.tc.prev !== SC.tc.last ? nm(SC.tc.prev) : '';
-    SC.goals.push({ t: ravens ? 'R' : 'O', sc: scn, as: asn ? [asn] : [], per: SC.per, clk: Math.round(SC.clk) }); }
+    SC.goals.push({ t: ravens ? 'R' : 'O', sc: scn, as: asn ? [asn] : [], per: SC.per, clk: Math.round(SC.clk) });
+    hlMark({ lab: ravens ? (scn === 'Drew' ? 'Your goal' : (scn || 'Ravens') + (scn ? ' scores' : ' goal')) : oppN() + ' score', sub: ordN(SC.per) + ' ' + clockStr(SC.clk) + ' · ' + SC.score[0] + '-' + SC.score[1] + (asn ? ' · assist ' + (asn === 'Drew' ? 'you' : asn) : '') + (HL.gameLab ? ' · ' + HL.gameLab : ''), mine: scn === 'Drew' || asn === 'Drew', ravens, gx: Math.sign(xSide) * GX }); }
   { const sc = SC.tc.last === 'you' ? 'Drew' : SC.tc.last && SC.tc.last[0] === 'r' ? ((RN.map && RN.map[SC.tc.last.slice(1)] || {}).n || 'a teammate') : ''; (SC.log = SC.log || []).push(ordN(SC.per) + ' ' + clockStr(SC.clk) + ' ' + (ravens ? 'Ravens goal' + (sc ? ' by ' + sc : '') + (SC.tc.prev === 'you' && sc !== 'Drew' ? ', Drew assist' : '') : 'Visitors goal') + ' (' + SC.score[0] + '-' + SC.score[1] + ')'); }
   SC.after = 3; for (const s of SC.sk) { s.has = false; s.act = ''; }
   { const mate = SC.sk.find(q => q.team === 'ravens'); if (mate) say(mate.p, ravens ? (PK.lastT === 'ravens' && pClock - (PK.htouch || -9) < 3 ? pick(['Get in, Drew!', 'What a finish!', 'Yes, Drew!']) : pick(['Get in!', 'Yes boys!', 'Lovely!'])) : pick(['Unlucky. Next one.', 'Heads up, lads.', 'Come on, Ravens!']), { force: true }); }
@@ -5119,6 +5253,7 @@ function scRules(carrier, carrierTeam) {
 }
 function scFrame(dt) {
   if (!SC.on) return;
+  hlRecord(dt);
   const Q = SC.Qr || (SC.Qr = ravensQ()); SC.t += dt;
   benchFrame(dt);
   // stoppages and the clock
@@ -5808,8 +5943,9 @@ function psRows(vc, k) { const P = vc.ps || {}; return Object.entries(P).map(([n
 function phStats(y) {
   const vc = CAR.vc, W = PHW; vc.ps = vc.ps || {};
   pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText('Ravens stats', 44, y + 24);
-  [['season', 'Season'], ['talon', 'Talon Cup'], ['history', 'History']].forEach(([k, l], i) => pBtn(34 + i * 180, y + 50, 170, 50, l, PSV.tab === k ? '#5a2bb0' : '#2a1a44', () => { PSV.tab = k; PH.scroll = 0; }, 22));
+  [['season', 'Season'], ['talon', 'Talon'], ['history', 'History'], ['high', 'Highlights']].forEach(([k, l], i) => pBtn(34 + i * 134, y + 50, 128, 50, l, PSV.tab === k ? '#5a2bb0' : PSV.tab !== 'high' && k === 'high' && HL.game.length ? '#3d1778' : '#2a1a44', () => { PSV.tab = k; PH.scroll = 0; }, 20));
   if (PSV.tab === 'history') return phHistory(y + 116);
+  if (PSV.tab === 'high') return phHigh(y + 116);
   const t = PSV.tab, r = t === 'talon' ? (() => { const x = vc.tab.Ravens || {}; return { w: x.w || 0, d: x.d || 0, l: x.l || 0, gf: x.gf || 0, ga: x.ga || 0 }; })() : vc.rec;
   const pos = talonRows(vc).findIndex(e => e[0] === 'Ravens') + 1;
   pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '700 24px system-ui, sans-serif'; pg.fillText((t === 'talon' ? 'Talon Cup: ' + ordN(pos) + ' of 6 · ' : 'Season ' + vc.season + ': ') + r.w + '-' + r.d + '-' + r.l + ' · GF ' + r.gf + ' GA ' + r.ga, 44, y + 134);
@@ -5852,6 +5988,7 @@ function phPlayer(y) {                                                  // one p
     pg.fillStyle = '#ffffff'; pg.font = '500 20px system-ui, sans-serif'; pg.fillText(x.gp + ' GP · ' + x.g + ' G · ' + x.a + ' A · ' + (x.g + x.a) + ' P' + (x.pim ? ' · ' + x.pim + ' PIM' : '') + (ltr(x) ? ' · ' + ltr(x) : ''), 50, yy + 58); });
   const all = rows.reduce((t, x) => ({ gp: t.gp + x.gp, g: t.g + x.g, a: t.a + x.a }), { gp: 0, g: 0, a: 0 });
   pg.fillStyle = '#c9bde3'; pg.font = '600 21px system-ui, sans-serif'; pg.fillText('Career: ' + all.gp + ' GP · ' + all.g + ' G · ' + all.a + ' A', 44, y + 122 + Math.min(9, rows.length) * 84 + 30);
+  { const M = (vc.miles || []).filter(m => m.n === n).slice(-4).reverse(), y2 = y + 122 + Math.min(9, rows.length) * 84 + 64; M.forEach((m, i) => { if (y2 + i * 26 > PHH - 240) return; pg.fillStyle = '#ffd36a'; pg.font = '500 18px system-ui, sans-serif'; let t = 'S' + m.s + ': ' + m.t; while (pg.measureText(t).width > W - 88 && t.length > 6) t = t.slice(0, -1); pg.fillText(t, 44, y2 + i * 26); }); }
   pBtn(34, PHH - 220, W - 68, 70, 'Back to stats', '#3d1778', () => { PH.scr = 'stats'; }, 26);
 }
 function phHistory(y) {
@@ -5877,7 +6014,7 @@ function phSeason(y) {
   if (T.aw) pBtn(34, y + 548, W - 68, 70, 'Awards night again', '#2a1a44', () => { T.stage = 'awards'; T.awI = T.aw.length; PH.scr = 'tour'; PH.scroll = 0; }, 23);
   pBtn(34, y + 640, W - 68, 92, 'Start season ' + (vc.season + 1), '#5a2bb0', () => {
     const old = CAR.vc, top = psRows(old, 'season').filter(r => r.n !== 'Drew')[0], ps = {};
-    for (const [n, r] of Object.entries(old.ps || {})) ps[n] = { agp: (r.agp || 0) + (r.gp || 0), ag: (r.ag || 0) + (r.g || 0), aa: (r.aa || 0) + (r.a || 0) };      // all-time numbers carry over
+    for (const [n, r] of Object.entries(old.ps || {})) ps[n] = { agp: (r.agp || 0) + (r.gp || 0) + (r.xgp || 0), ag: (r.ag || 0) + (r.g || 0) + (r.xg || 0), aa: (r.aa || 0) + (r.a || 0) + (r.xa || 0) };      // all-time numbers carry over
     const hist = Object.assign({}, old.hist || {}), aw = {}; for (const a of (old.tour && old.tour.aw) || []) (aw[a.n] = aw[a.n] || []).push(a.k);
     for (const [n, r] of Object.entries(old.ps || {})) if (r.gp || r.xgp || aw[n]) (hist[n] = (hist[n] || []).slice(-19)).push({ s: old.season, gp: r.gp || 0, g: r.g || 0, a: r.a || 0, tgp: r.tgp || 0, tg: r.tg || 0, ta: r.ta || 0, lC: r.lC || 0, lA: r.lA || 0, pim: r.pim || 0, xgp: r.xgp || 0, xg: r.xg || 0, xa: r.xa || 0, aw: aw[n] || [] });
     spRestore();
@@ -6117,13 +6254,14 @@ function carCredit(goals, gf, me) {                                     // Raven
 }
 function carRecord(gf, ga, me, sim, goals, pens) {
   if (fxNow() && fxNow().tour) return tourRecord(gf, ga, me, sim, goals, pens);
-  const vc = CAR.vc, f = fxNow(), res = gf > ga ? 'W' : gf < ga ? 'L' : 'D';
+  const vc = CAR.vc, f = fxNow(), res = gf > ga ? 'W' : gf < ga ? 'L' : 'D', MB = milSnap(vc);
   { vc.ps = vc.ps || {}; const cr = carCredit(goals || [], gf, me), P = n => /^Spare /.test(n) ? {} : (vc.ps[n] = vc.ps[n] || { gp: 0, g: 0, a: 0, tgp: 0, tg: 0, ta: 0 });
     for (const n of cr.lu) { P(n).gp++; if (f.cup) P(n).tgp++; }
     for (const n of pens || []) P(n).pim = (P(n).pim || 0) + 2;
     { const L = lettersFor(cr.lu); for (const n in L) { if (L[n] === 'C') P(n).lC = (P(n).lC || 0) + 1; else P(n).lA = (P(n).lA || 0) + 1; } }
     for (const g of cr.goals) { P(g.sc).g++; if (f.cup) P(g.sc).tg++; for (const a of g.as) { P(a).a++; if (f.cup) P(a).ta++; } }
-    const sc = {}; cr.goals.forEach(g => { sc[g.sc] = (sc[g.sc] || 0) + 1; }); vc.lastScorers = Object.entries(sc).map(([n, k]) => n + (k > 1 ? ' (' + k + ')' : '')).join(', '); }
+    const sc = {}; cr.goals.forEach(g => { sc[g.sc] = (sc[g.sc] || 0) + 1; }); vc.lastScorers = Object.entries(sc).map(([n, k]) => n + (k > 1 ? ' (' + k + ')' : '')).join(', ');
+    milCheck(vc, MB, milGame(cr)); }
   vc.rec.gf += gf; vc.rec.ga += ga; vc.rec[res === 'W' ? 'w' : res === 'L' ? 'l' : 'd']++;
   vc.me.gp++; vc.me.g += me.g || 0; vc.me.a += me.a || 0; vc.me.sh += me.sh || 0;
   vc.results.push({ week: vc.week, opp: f.opp, gf, ga, home: f.home, cup: f.cup, sim: !!sim });
@@ -6134,6 +6272,7 @@ function carRecord(gf, ga, me, sim, goals, pens) {
   const mine = [me.g ? me.g + (me.g > 1 ? ' goals' : ' goal') : '', me.a ? me.a + (me.a > 1 ? ' assists' : ' assist') : ''].filter(Boolean).join(', ');
   vc.last = { scorers: (vc.lastScorers || ''), gf, ga, opp: f.opp, g: me.g || 0, a: me.a || 0, sh: me.sh || 0, line: `The Ravens ${res === 'W' ? 'beat' : res === 'L' ? 'lost to' : 'drew with'} ${f.opp} ${gf}-${ga}${sim ? ' (simmed)' : ''}.${mine ? ' Drew: ' + mine + '.' : ''}` };
   vc.conf = clamp(vc.conf + (res === 'W' ? 6 : res === 'D' ? 2 : -1) + 3 * (me.g || 0), 0, 100); vc.vibe = clamp(vc.vibe + (res === 'W' ? 5 : res === 'D' ? 2 : 0), 0, 100);
+  if (PH.milNote) { vc.last.line += ' Milestones: ' + PH.milNote + '.'; PH.milNote = ''; }
   vc.wk.game = 1; carSave();
 }
 function carGameSim() { spApply(); if (!fxNow()) return; const f = fxNow(), s = simScore(RAV_R + (CAR.vc.conf - 55) / 1000, f.r), g = Math.min(s[0], Math.random() < 0.35 ? 1 : 0), a = Math.min(s[0] - g, Math.random() < 0.35 ? 1 : 0); carRecord(s[0], s[1], { g, a, sh: 1 + Math.floor(Math.random() * 3) }, true); PH.note = CAR.vc.last.line; PH.scr = 'home'; }
@@ -7333,6 +7472,7 @@ function hudFrame(dt) {
 
 
 function puckFrame(dt) {
+  if (RP.on) { rpFrame(dt); puck.position.set(PK.x, PK.y, PK.z); return; }
   pClock += dt;
   if (PK.out > 1.2) { EV.length = 0; run.pk.outs++; if (SC.on) scFaceoff('Puck out of play. Faceoff', nearestDot(clamp(PK.x, -25, 25), clamp(PK.z, -9, 9))); else { placePuck(); toast('Puck out of play'); } }
   PA.s = ASSISTS[st.assistP] || 0; if (st.arcade) PA.s = Math.max(PA.s, 2.2); PA.arc = st.arcade ? 1 : 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz; PA.aim = AIMS[st.aimP] || 0;
@@ -7996,7 +8136,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
