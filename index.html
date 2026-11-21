@@ -541,7 +541,7 @@ const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
 const DEFAULT_LU = { '17': 'Nicky', '12': 'Robbins', '27': 'Will', '19': 'Crofty', '22': 'Mids', '14': 'Tony', '16': 'Iain M.', '10': 'Ewan O.', '44': 'Samy', '5': 'Aidan', '2': 'Callum', '8': 'Mickey', '3': 'Oliver K.', '6': 'Grant', G: 'Craig' };
-const DEF = { realP: true, capSub: [], sys: {}, roles: {}, myRole: '', reads: 'some', passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 5, rulesOn: true, scrimM: '5', voices: true };
+const DEF = { realP: true, capSub: [], sys: {}, roles: {}, myRole: '', passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 5, rulesOn: true, scrimM: '5', voices: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -556,7 +556,7 @@ function loadSettings() {
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
       if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['hold', 'btn', 'grip', 'off'])) o.oneM = j.oneM; if (typeof j.arcade === 'boolean') o.arcade = j.arcade; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2, 3])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'oneone', 'defend', 'scrim', 'scrim3', 'random', 'fd-cycle', 'fd-retrieve', 'fd-netfront', 'fd-giveandgo', 'fd-bump', 'fd-regroup', 'fd-stretch', 'fd-fourlines', 'fd-twoone', 'fd-breakout', 'fd-closeout', 'fd-backcheck'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2, 3])) o.oppP = j.oppP;
       if (typeof j.realP === 'boolean') o.realP = j.realP; if (Array.isArray(j.capSub)) o.capSub = j.capSub.filter(x => typeof x === 'string').slice(0, 2);
-      if (j.roles && typeof j.roles === 'object') { o.roles = {}; for (const k in j.roles) if (typeof j.roles[k] === 'string') o.roles[k] = j.roles[k]; } if (typeof j.myRole === 'string') o.myRole = j.myRole; if (['off', 'some', 'lots'].includes(j.reads)) o.reads = j.reads;
+      if (j.roles && typeof j.roles === 'object') { o.roles = {}; for (const k in j.roles) if (typeof j.roles[k] === 'string') o.roles[k] = j.roles[k]; } if (typeof j.myRole === 'string') o.myRole = j.myRole;
       if (j.sys && typeof j.sys === 'object') o.sys = { fc: ['aggressive', 'balanced', 'trap'].includes(j.sys.fc) ? j.sys.fc : 'balanced', dz: ['zone', 'collapse'].includes(j.sys.dz) ? j.sys.dz : 'zone', d: ['home', 'pick', 'active'].includes(j.sys.d) ? j.sys.d : 'pick' };
       if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM; if (typeof j.voices === 'boolean') o.voices = j.voices; if (typeof j.brainUrl === 'string') o.brainUrl = j.brainUrl.trim().slice(0, 200); if (typeof j.brainKey === 'string') o.brainKey = j.brainKey.trim().slice(0, 200); if (ok(j.talk, ['off', 'free', 'hold'])) o.talk = j.talk; o.lineup = Object.assign({}, DEFAULT_LU); if (j.cfg >= 4 && j.lineup && typeof j.lineup === 'object') for (const [k, v] of Object.entries(j.lineup).slice(0, 16)) if (typeof v === 'string' && v.length < 40) o.lineup[k] = v;   // the new default lines replace older picks once
       if (typeof j.passHelp === 'boolean') o.passHelp = j.passHelp;
@@ -2040,7 +2040,6 @@ function pollInput(dt, hw, hy) {
       else if (st.oneM !== 'btn' && st.talk !== 'off') { const aD = !!(gp.buttons[4] && gp.buttons[4].pressed); if (aD !== MIC.ptt) micPTT(aD); }
       if (edge(5)) { if (RP.on) rpStop(); else if (BN.box && SC.on) penSkip(); else if (BN.on && SC.on) benchSkip(); else puckBack(); }
       if (RP.on && edge(0)) rpSlow();
-      if (FRZ.on && edge(0)) frzPick();
       if (edge(3)) { if (RP.on) rpView(); else if (SC.on || DR.on) myCall(shoutWhat()); else nextCurve(); }
       const lt = gp.buttons[0], lv = lt ? (lt.value || (lt.pressed ? 1 : 0)) : 0;                    // the right trigger keeps the puck on the blade (unless it holds the stick)
       if (st.oneM === 'hold' && h === (st.shot === 'right' ? 'right' : 'left')) { if (keepOn) setKeep(false); }
@@ -2080,7 +2079,6 @@ function pollInput(dt, hw, hy) {
     const fx = Math.cos(yaw), fz = Math.sin(yaw), fw = -sy / mag, rt = sx / mag;
     dx = fx * fw - fz * rt; dz = fz * fw + fx * rt;
   }
-  if (FRZ.on) { S.x = hw.x; S.z = hw.z; S.vx = S.vz = 0; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0, brake: 0 }; return; }   // a freeze-frame: everything stops, you included
   if (BN.on) { stamFrame(dt, 0, 0); S.x = hw.x; S.z = hw.z; S.vx = S.vz = 0; BN.sy = sy; skInfo = { speed: 0, lat: 0, turn: 0, pushing: false, hit: 0, brake: 0 }; return; }
   S.x = hw.x; S.z = hw.z;                                                  // your body is where your head is
   stamFrame(dt, mag, brake);
@@ -3631,7 +3629,7 @@ const legsK = () => { const l = legsOf() / 100; return { drain: lerp(1.3, 0.8, l
 // ---- hockey IQ: how you play without the puck as well as with it, scored every game. Positioning (in the right spot for the system), shoulder
 // checks (looking round before the puck comes), decisions (your passes that find a Raven), and being goal-side when they have it in our half.
 const IQ = { on: false, posT: 0, posG: 0, iceT: 0, chk: 0, chkT: -9, away: 0, pass: 0, ok: 0, bad: 0, gsT: 0, gsG: 0, had: false, pend: null, acc: 0 };
-function iqReset() { Object.assign(IQ, { rd: 0, rdS: 0, yA: null, on: true, posT: 0, posG: 0, iceT: 0, chk: 0, chkT: -9, away: 0, pass: 0, ok: 0, bad: 0, gsT: 0, gsG: 0, had: false, pend: null, acc: 0 }); }
+function iqReset() { Object.assign(IQ, { yA: null, on: true, posT: 0, posG: 0, iceT: 0, chk: 0, chkT: -9, away: 0, pass: 0, ok: 0, bad: 0, gsT: 0, gsG: 0, had: false, pend: null, acc: 0 }); }
 function iqFrame(dt, carrier, carrierTeam, stopped) {
   if (!IQ.on || BN.on || stopped || SC.pause > 0) { IQ.had = humanHas(); return; }
   IQ.iceT += dt; const has = humanHas();
@@ -3655,13 +3653,12 @@ function iqFrame(dt, carrier, carrierTeam, stopped) {
 }
 function iqScore() {
   const min = Math.max(0.5, IQ.iceT / 60), pos = IQ.posT ? IQ.posG / IQ.posT : 0.5, chk = clamp(IQ.chk / min / 5, 0, 1), dec = IQ.pass ? IQ.ok / IQ.pass : 0.6, gs = IQ.gsT ? IQ.gsG / IQ.gsT : 0.6;
-  const rd = IQ.rd ? IQ.rdS / IQ.rd : null;
-  return { pos, chk, chkPM: IQ.chk / min, dec, passes: IQ.pass, gs, rd, rds: IQ.rd || 0, iq: Math.round(100 * (rd == null ? 0.35 * pos + 0.2 * chk + 0.25 * dec + 0.2 * gs : 0.3 * pos + 0.15 * chk + 0.2 * dec + 0.15 * gs + 0.2 * rd)), min: IQ.iceT / 60 };
+  return { pos, chk, chkPM: IQ.chk / min, dec, passes: IQ.pass, gs, iq: Math.round(100 * (0.35 * pos + 0.2 * chk + 0.25 * dec + 0.2 * gs)), min: IQ.iceT / 60 };
 }
 const IQ_TIP = { pos: 'Watch where I want you without the puck: wingers on the wall in our end, wide lanes on the rush.', chk: 'Shoulder checks. Look round before the puck gets to you, every time.', dec: 'Your passes: find the open man, not the first man. If nobody is open, chip it in or hold it.', gs: 'When they have it in our half, get between your man and our net.' };
 function iqAfterGame() {
   const vc = CAR.vc; if (!vc || IQ.iceT < 60) return null; const r = iqScore();
-  vc.iqLast = { iq: r.iq, pos: Math.round(r.pos * 100), chk: +r.chkPM.toFixed(1), dec: Math.round(r.dec * 100), passes: r.passes, gs: Math.round(r.gs * 100), min: Math.round(r.min), rd: r.rd == null ? null : Math.round(r.rd * 100), rds: r.rds };
+  vc.iqLast = { iq: r.iq, pos: Math.round(r.pos * 100), chk: +r.chkPM.toFixed(1), dec: Math.round(r.dec * 100), passes: r.passes, gs: Math.round(r.gs * 100), min: Math.round(r.min) };
   vc.iq = Math.round(vc.iq == null ? r.iq : vc.iq * 0.75 + r.iq * 0.25);
   const worst = ['pos', 'chk', 'dec', 'gs'].sort((a, b) => (a === 'chk' ? r.chk : r[a]) - (b === 'chk' ? r.chk : r[b]))[0]; vc.iqLast.tip = IQ_TIP[worst];
   return vc.iqLast;
@@ -3690,7 +3687,7 @@ function phIQ(y) {
   if (L) {
     pg.fillStyle = '#ffffff'; pg.font = '800 22px system-ui, sans-serif'; pg.fillText('Last game: IQ ' + L.iq + ' (' + L.min + ' min on the ice)', 44, yy); yy += 18;
     const bar = (lab, v, txt) => { yy += 40; pg.fillStyle = '#c9bde3'; pg.font = '600 19px system-ui, sans-serif'; pg.textAlign = 'left'; pg.fillText(lab, 44, yy); pg.textAlign = 'right'; pg.fillText(txt, W - 44, yy); pRect(44, yy + 10, W - 88, 10, 5, '#2a1f40'); pRect(44, yy + 10, (W - 88) * clamp(v, 0, 1), 10, 5, v > 0.7 ? '#6fd07a' : v > 0.45 ? '#e0b030' : '#e06a5a'); };
-    bar('Positioning', L.pos / 100, L.pos + '% in the right spot'); bar('Shoulder checks', clamp(L.chk / 5, 0, 1), L.chk + ' a minute'); bar('Decisions', L.dec / 100, L.passes ? L.dec + '% of ' + L.passes + ' passes to a Raven' : 'no passes'); bar('Goal-side', L.gs / 100, L.gs + '% when they had it in our half'); if (L.rd != null) bar('Freeze-frame reads', L.rd / 100, L.rd + '% from ' + L.rds + (L.rds > 1 ? ' reads' : ' read') + (vc.reads ? ' (season ' + Math.round(100 * vc.reads.s / vc.reads.n) + '%)' : ''));
+    bar('Positioning', L.pos / 100, L.pos + '% in the right spot'); bar('Shoulder checks', clamp(L.chk / 5, 0, 1), L.chk + ' a minute'); bar('Decisions', L.dec / 100, L.passes ? L.dec + '% of ' + L.passes + ' passes to a Raven' : 'no passes'); bar('Goal-side', L.gs / 100, L.gs + '% when they had it in our half');
     yy += 50; pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '600 19px system-ui, sans-serif'; pWrap('Crofty: "' + L.tip + '"', W - 88, '600 19px system-ui, sans-serif').slice(0, 3).forEach((l, k) => pg.fillText(l, 44, yy + k * 25)); yy += 85;
     if (vc.roleLast) { pg.fillStyle = '#ffffff'; pg.font = '700 19px system-ui, sans-serif'; pg.fillText(vc.roleLast.role + ' goals:', 44, yy - 12); vc.roleLast.res.forEach((x, k) => { pg.fillStyle = x.ok ? '#6fd07a' : '#e06a5a'; pg.font = '600 18px system-ui, sans-serif'; pg.fillText((x.ok ? '\u2713 ' : '\u2717 ') + x.t, 44, yy + 14 + k * 24); }); yy += 70; }
   } else { pg.fillStyle = '#9a8fb3'; pg.font = '500 20px system-ui, sans-serif'; pg.fillText('Play a game night to get your first report.', 44, yy + 10); yy += 50; }
@@ -3764,119 +3761,6 @@ function phWL(y) {
     else if (p.st === 'signed') pBtn(42, by, bw, 38, 'Player page', '#2a1a44', () => { PSV.who = p.n; PH.scr = 'player'; }, 17);
   });
   pg.restore();
-}
-// ---- freeze-frame reads: now and then in a game the play stops at a moment that matters (the puck has just come to you, or it's just changed
-// hands) and Crofty asks the question. Point at your answer and pull the right trigger, against the clock. The answers come from the same
-// reading of the ice the AI uses: who's open, the shot, the space, where the system wants you. Then play carries on from exactly there.
-const FRZ = { on: false, read: null, t: 0, sel: -1, res: null, hold: 0, vx: 0, vz: 0, last: -999, n: 0, prevHas: false, prevCT: null };
-const FRZ_GAP = { off: 1e9, some: 110, lots: 45 }, FRZ_MAX = { off: 0, some: 6, lots: 14 }, FRZ_TIME = 7;
-const frzGrp = new THREE.Group(); frzGrp.visible = false; scene.add(frzGrp);
-const frzPanelCv = document.createElement('canvas'); frzPanelCv.width = 1024; frzPanelCv.height = 300; const frzPx = frzPanelCv.getContext('2d'), frzPTex = new THREE.CanvasTexture(frzPanelCv);
-const frzPanel = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.18), new THREE.MeshBasicMaterial({ map: frzPTex, transparent: true, depthTest: false, depthWrite: false, fog: false }));
-frzPanel.position.set(0, 0.2, -0.9); frzPanel.renderOrder = 1001; frzPanel.visible = false; frzPanel.frustumCulled = false; camera.add(frzPanel);
-const frzDim = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), new THREE.MeshBasicMaterial({ color: 0x0a0d14, transparent: true, opacity: 0.28, depthTest: false, depthWrite: false, fog: false }));
-frzDim.position.set(0, 0, -0.5); frzDim.renderOrder = 900; frzDim.visible = false; frzDim.frustumCulled = false; camera.add(frzDim);
-const frzMk = [];
-function frzMarker(i) {
-  if (frzMk[i]) return frzMk[i];
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.78, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xe0a928, transparent: true, opacity: 0.9, depthTest: false, depthWrite: false, fog: false }));
-  ring.renderOrder = 940; const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const tex = new THREE.CanvasTexture(cv);
-  const lab = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.4), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, fog: false })); lab.renderOrder = 950;
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.3, 6), new THREE.MeshBasicMaterial({ color: 0xe0a928, transparent: true, opacity: 0.6, depthTest: false, fog: false })); pole.renderOrder = 941;
-  const g = new THREE.Group(); g.add(ring, lab, pole); frzGrp.add(g);
-  return frzMk[i] = { g, ring, lab, pole, cv, tex };
-}
-function frzLabel(m, text, col) { const x = m.cv.getContext('2d'); x.clearRect(0, 0, 512, 128); pRectX(x, 4, 4, 504, 120, 26, col); x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; let fs = 46; x.font = '700 ' + fs + 'px sans-serif'; while (x.measureText(text).width > 470 && fs > 22) { fs -= 2; x.font = '700 ' + fs + 'px sans-serif'; } x.fillText(text, 256, 66); m.tex.needsUpdate = true; }
-function pRectX(x, a, b, w, h, r, fill) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); x.fillStyle = fill; x.fill(); }
-function frzPanelDraw(top, body, col) {
-  const x = frzPx; x.clearRect(0, 0, 1024, 300); pRectX(x, 0, 0, 1024, 300, 34, 'rgba(14,10,24,0.9)');
-  x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillStyle = col || '#e0a928'; x.font = '800 44px sans-serif'; x.fillText(top, 40, 56);
-  x.fillStyle = '#ffffff'; x.font = '500 34px sans-serif'; const words = String(body).split(' '); let line = '', y = 120;
-  for (const w of words) { const t = line ? line + ' ' + w : w; if (x.measureText(t).width > 940 && line) { x.fillText(line, 40, y); y += 46; line = w; if (y > 260) break; } else line = t; } if (line && y <= 260) x.fillText(line, 40, y);
-  frzPTex.needsUpdate = true;
-}
-// what a read looks like: { kind, q, opts: [{ lab, x, z, ok: 1 | 0.5 | 0, why }] }
-function frzReadPuck() {                                                   // the puck's just come to you: shoot, pass to who, carry, or protect it?
-  const v = { team: 'ravens', role: 'W', ln: -1, x: H.x, z: H.z, vx: S.vx, vz: S.vz, fx: H.fx || 1, fz: H.fz || 0, num: 'you', p: { s: {} } };
-  const opts = scDecide(v, SC.Qr || ravensQ(), true); if (!opts || opts.length < 2) return null;
-  const dir = teamDir('ravens'), nm = o => o.m && o.m.o && o.m.o.num ? firstN(((RN.map || {})[o.m.o.num] || {}).n || '#' + o.m.o.num) : 'a teammate';
-  const passes = opts.filter(o => o.k === 'pass').sort((a, b) => b.sc - a.sc).slice(0, 2), oth = opts.filter(o => o.k !== 'pass');
-  const L = oth.concat(passes).filter(o => o.k !== 'clear' || dir * H.x < -BLUEL); if (L.length < 2) return null;
-  const mx = Math.max(...L.map(o => o.sc));
-  const out = L.slice(0, 4).map(o => {
-    let lab, x, z, why;
-    if (o.k === 'shoot') { lab = 'Shoot'; x = dir * (GX - 1); z = 0; why = 'You had the angle and a lane to the net: get it off quick.'; }
-    else if (o.k === 'pass') { lab = 'Pass to ' + nm(o); x = o.aim[0]; z = o.aim[1]; why = nm(o) + ' was open with a clear lane, in a better spot than you.'; }
-    else if (o.k === 'carry') { lab = 'Carry it'; const a = Math.atan2(H.fz || 0, H.fx || 1); x = H.x + dir * 5; z = H.z * 0.6; why = 'Free ice in front of you: skate it into the space and make them come to you.'; }
-    else if (o.k === 'dump') { lab = 'Chip it in'; x = dir * (GX - 2); z = -(Math.sign(H.z) || 1) * 9; why = 'No room to carry it in and nobody open: get it deep and go get it.'; }
-    else if (o.k === 'clear') { lab = 'Get it out'; x = dir * 2; z = (Math.sign(H.z) || 1) * 11; why = 'Under pressure in our end: off the boards and out, no risks.'; }
-    else { lab = 'Protect it'; x = H.x + dir * 1.5; z = (Math.sign(H.z) || 1) * 11.5; why = 'Pressure on you along the wall: protect it, buy time, let support arrive.'; }
-    return { lab, x, z, ok: o.sc >= mx - 1e-6 ? 1 : o.sc >= mx * 0.75 ? 0.5 : 0, why };
-  });
-  return { kind: 'puck', q: "It's on your stick. What's the play?", opts: out };
-}
-function frzPhase(carrier, carrierTeam) {                                  // where the play is, as the system sees it
-  const dir = teamDir('ravens'), cx = carrier ? (carrier === 'human' ? H.x : carrier.x) : PK.x, pu = dir * cx, ours = carrierTeam === 'ravens', fc = sysOf('ravens').fc;
-  if (ours) return pu < -BLUEL ? ['breakout', 'Breakout, you on the strong side: get to the wall low and give your D an outlet. Weak side: curl through the middle.'] : pu < BLUEL ? ['rush', 'On the rush: a wide lane, ahead of the puck, and stay onside.'] : ['ozone', 'In their end: half-wall on your side, or the back door when it is on the far side.'];
-  if (pu > BLUEL) return ['forecheck', fc === 'trap' ? 'We are trapping: back to the neutral zone and wait in your lane.' : fc === 'aggressive' ? '2-1-2: second man in hard, take away the wall.' : '1-2-2: one in hard; you take the lane on your side and stay above the puck.'];
-  if (pu > -BLUEL) return ['nz', 'They have it coming through the middle: get back in your lane above their winger.'];
-  return ['dzone', 'In our end: winger covers the point on his side and gets in the shooting lane. Do not chase it into the corner.'];
-}
-function frzReadPos(carrier, carrierTeam) {                               // it's just changed hands: where should you be?
-  const v = { team: 'ravens', role: 'W', ln: -1, x: H.x, z: H.z, num: 'you' }, t = scSlot(v, carrier, carrierTeam), [ph, why] = frzPhase(carrier, carrierTeam), dir = teamDir('ravens');
-  if (Math.hypot(t[0] - H.x, t[1] - H.z) < 4) return null;                 // already there: no question
-  const cx = carrier ? (carrier === 'human' ? H.x : carrier.x) : PK.x, cz = carrier ? (carrier === 'human' ? H.z : carrier.z) : PK.z;
-  const cand = [['Chase the puck', cx, cz], ['Net front', dir * (carrierTeam === 'ravens' ? GX - 3 : -GX + 3.5), 0], ['Far wall', H.x * 0.5 + t[0] * 0.5, -Math.sign(t[1] || 1) * 10.5], ['Centre ice', 0, 0], ['Their blue line', dir * BLUEL, t[1]], ['Our slot', -dir * (GX - 8), 0]];
-  const good = { breakout: 'Strong-side wall', rush: 'Wide lane', ozone: 'Half-wall', forecheck: 'Your lane', nz: 'Back in your lane', dzone: 'Cover the point' }[ph] || 'Your spot';
-  const opts = [{ lab: good, x: t[0], z: t[1], ok: 1, why }];
-  for (const [lab, x, z] of cand) { if (opts.length >= 3) break; const [ix, iz] = inRink(x, z, 1.2); if (opts.every(o => Math.hypot(o.x - ix, o.z - iz) > 6)) opts.push({ lab, x: ix, z: iz, ok: 0, why }); }
-  if (opts.length < 2) return null;
-  opts.sort(() => Math.random() - 0.5);
-  return { kind: 'pos', q: carrierTeam === 'ravens' ? 'We have just won it. Where do you go?' : 'They have just won it. Where do you go?', opts };
-}
-function frzCheck(carrier, carrierTeam, stopped) {
-  const mode = st.reads || 'some', has = humanHas(), ct = carrierTeam; const prev = FRZ.prevHas, prevCT = FRZ.prevCT; FRZ.prevHas = has; FRZ.prevCT = ct || prevCT;
-  if (FRZ.on || mode === 'off' || stopped || BN.on || !SC.grp || SC.over || !st.inVR) return;
-  if (FRZ.n >= FRZ_MAX[mode] || SC.t - FRZ.last < FRZ_GAP[mode]) return;
-  let read = null;
-  if (has && !prev) read = frzReadPuck();
-  else if (ct && prevCT && ct !== prevCT && carrier !== 'human' && Math.random() < 0.6) read = frzReadPos(carrier, ct);
-  if (read) frzStart(read);
-}
-function frzStart(read) {
-  FRZ.on = true; FRZ.read = read; FRZ.t = FRZ_TIME; FRZ.sel = -1; FRZ.res = null; FRZ.hold = 0; FRZ.vx = S.vx; FRZ.vz = S.vz; FRZ.pv = [PK.vx, PK.vy, PK.vz]; FRZ.last = SC.t; FRZ.n++;
-  read.opts.forEach((o, i) => { const m = frzMarker(i); m.g.visible = true; m.g.position.set(o.x, 0.02, o.z); m.lab.position.set(0, 1.6, 0); m.pole.position.set(0, 0.8, 0); frzLabel(m, o.lab, 'rgba(58,26,110,0.95)'); m.ring.material.color.setHex(0xe0a928); });
-  for (let i = read.opts.length; i < frzMk.length; i++) frzMk[i].g.visible = false;
-  frzGrp.visible = true; frzDim.visible = true; frzPanel.visible = true; frzPanelDraw('Freeze! ' + read.q, 'Point at your answer and pull the right trigger.');
-  buzz('left', 0.5, 80); buzz('right', 0.5, 80); if (audio) audio.whistle({ x: H.x, y: 1.6, z: H.z });
-}
-const _fq = new THREE.Quaternion(), _fd = new THREE.Vector3(), _fo = new THREE.Vector3(), _fp = new THREE.Vector3();
-function frzFrame(dt) {
-  const R = FRZ.read; if (!R) return;
-  for (const m of frzMk) if (m.g.visible) m.lab.quaternion.copy(camera.getWorldQuaternion(_fq));
-  if (FRZ.res) { FRZ.hold -= dt; if (FRZ.hold <= 0) frzEnd(); return; }
-  FRZ.t -= dt;
-  const ray = rays.right; if (ray) { ray.updateWorldMatrix(true, false); _fo.setFromMatrixPosition(ray.matrixWorld); _fd.set(0, 0, -1).transformDirection(ray.matrixWorld); }
-  else { _fo.copy(HEADW); _fd.set(HF.x, -0.25, HF.z).normalize(); }
-  let best = -1, ba = 0.22; R.opts.forEach((o, i) => { _fp.set(o.x, 1.0, o.z).sub(_fo).normalize(); const a = Math.acos(clamp(_fp.dot(_fd), -1, 1)); if (a < ba) { ba = a; best = i; } });
-  if (best !== FRZ.sel) { if (FRZ.sel >= 0) frzLabel(frzMk[FRZ.sel], R.opts[FRZ.sel].lab, 'rgba(58,26,110,0.95)'); FRZ.sel = best; if (best >= 0) { frzLabel(frzMk[best], R.opts[best].lab, 'rgba(224,169,40,0.95)'); buzz('right', 0.15, 15); } }
-  for (let i = 0; i < R.opts.length; i++) frzMk[i].ring.scale.setScalar(i === FRZ.sel ? 1.25 + 0.08 * Math.sin(pClock * 8) : 1);
-  if (Math.floor(FRZ.t) !== Math.floor(FRZ.t + dt)) frzPanelDraw('Freeze! ' + R.q, Math.ceil(FRZ.t) + ' s. Point at your answer and pull the right trigger.');
-  if (FRZ.t <= 0) frzResolve(-1);
-}
-function frzPick() { if (FRZ.on && !FRZ.res && FRZ.sel >= 0) frzResolve(FRZ.sel); }
-function frzResolve(i) {
-  const R = FRZ.read, o = i >= 0 ? R.opts[i] : null, best = R.opts.find(x => x.ok === 1) || R.opts[0], sc = o ? o.ok : 0;
-  FRZ.res = { i, sc }; FRZ.hold = 2.6;
-  R.opts.forEach((x, k) => { const m = frzMk[k]; m.ring.material.color.setHex(x.ok === 1 ? 0x6fd07a : k === i ? 0xe06a5a : 0x5d5470); frzLabel(m, x.lab, x.ok === 1 ? 'rgba(40,120,60,0.95)' : k === i ? 'rgba(150,40,40,0.95)' : 'rgba(40,30,60,0.9)'); });
-  const top = sc === 1 ? 'Good read!' : sc === 0.5 ? 'Not bad.' : i < 0 ? 'Too slow.' : 'Not this time.';
-  frzPanelDraw(top, (sc === 1 ? '' : 'Best: ' + best.lab + '. ') + best.why, sc === 1 ? '#6fd07a' : sc === 0.5 ? '#e0b030' : '#e06a5a');
-  IQ.rd = (IQ.rd || 0) + 1; IQ.rdS = (IQ.rdS || 0) + sc; buzz('right', sc === 1 ? 0.6 : 0.25, sc === 1 ? 90 : 40);
-  if (CAR.mode === 'career' && CAR.vc) { const v = CAR.vc; v.reads = v.reads || { n: 0, s: 0 }; v.reads.n++; v.reads.s += sc; }
-}
-function frzEnd() {
-  FRZ.on = false; FRZ.read = null; frzGrp.visible = false; frzDim.visible = false; frzPanel.visible = false;
-  S.vx = FRZ.vx; S.vz = FRZ.vz; if (FRZ.pv) { PK.vx = FRZ.pv[0]; PK.vy = FRZ.pv[1]; PK.vz = FRZ.pv[2]; }
 }
 // off-ice hands: on the knees in the room, one on the table and a pint in the other in the pub, on the boards for Crofty; the free hand talks
 const _hl = new THREE.Vector3(), _hr = new THREE.Vector3();
@@ -5030,7 +4914,7 @@ function scStart(mode, fx) {
   } else { SC.grp = null; SC.lines = { ravens: R.ravens.map(L => mkLine('ravens', L)), visitors: R.visitors.map(L => mkLine('visitors', L)) }; }
   SC.fPrev = 2; SC.fChgT = -99; SC.goals = [];
   SC.fx = SC.mode === '5' ? (fx || null) : null; if (SC.mode === '5') hlNewGame(); SC.Qr = ravensQ(); SC.Qv = skillQ(levelSk()); SC.Qopp = fxSkill(SC.fx); if (SC.fx) fxLineup(SC.fx);
-  for (const k in SKP) SKP[k].q = null; if (SC.mode === '5') sysPrep(); iqReset(); FRZ.n = 0; FRZ.last = 0; FRZ.prevCT = null; FRZ.prevHas = false;
+  for (const k in SKP) SKP[k].q = null; if (SC.mode === '5') sysPrep(); iqReset();
   for (const L of [...SC.lines.ravens, ...SC.lines.visitors]) for (const q of L) skShow(q, false);   // everyone starts on the bench
   SC.sk = SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0], ...SC.grp.visitors.F[0], ...SC.grp.visitors.D[0]] : [...SC.lines.ravens[0], ...SC.lines.visitors[0]];
   for (const s of SC.sk) { skShow(s, true); s.shift = 0; s.chg = false; }
@@ -5432,7 +5316,7 @@ function passLead(px, pz, rx, rz, rvx, rvz, spd) {                       // wher
   t = clamp(t, 0, 2.5); return [rx + rvx * t, rz + rvz * t];
 }
 // ---- the carrier: score every option, pick one (softmax by skill), stick with it for a moment
-function scDecide(s, Q, peek) {
+function scDecide(s, Q) {
   const dir = teamDir(s.team), u = dir * s.x, nx = dir * GX, G = s.team === 'ravens' ? GOAL : SC.g2, pr = pressureOn(s), five = SC.mode === '5';
   const opts = [];
   // shoot
@@ -5468,7 +5352,6 @@ function scDecide(s, Q, peek) {
   if (u > 0.5 && u < BLUEL + 1) { let wall = 0; for (const o of oppsOf(s.team)) if (dir * (o.x - s.x) > -0.5 && dir * (o.x - s.x) < 8 && Math.abs(o.z - s.z) < 5) wall++; opts.push({ k: 'dump', sc: (pr * 0.6 + 0.12 * wall) * 0.85 * (st.rulesOn && offAhead(s) ? 0.25 : 1) + (Q.dumpB || 0) }); }
   if (u < -BLUEL) opts.push({ k: 'clear', sc: pr * 0.5 * (u < -GX + 10 && Math.abs(s.z) < 6 ? 1.6 : 1) - 0.05 + (Q.clearB || 0) * pr });
   if (Math.abs(s.z) > 9.5) opts.push({ k: 'protect', sc: pr * 0.25 + (Q.protB || 0) });
-  if (peek) return opts;
   // pick: softmax over the scores (a better team almost always takes the best one)
   s.dbgOpts = opts.map(o => o.k + (o.m ? (o.m.human ? ':you' : ':' + o.m.o.num) : '') + ' ' + o.sc.toFixed(2)).join(', ');
   const T = Q.temp || 0.1, mx = Math.max(...opts.map(o => o.sc)); let sum = 0; for (const o of opts) { o.w = Math.exp((o.sc - mx) / T); sum += o.w; }
@@ -5710,7 +5593,6 @@ function scFrame(dt) {
   if (!stopped && scRules(carrier, carrierTeam)) return;
   scLines(dt, carrierTeam, stopped);
   scRoles(carrier, carrierTeam);
-  frzCheck(carrier, carrierTeam, stopped); if (FRZ.on) return;
   iqFrame(dt, carrier, carrierTeam, stopped);
   // move: a smoothed target from the structure, or straight to a pass coming to him
   const all = skVis(), TG = [];
@@ -7898,7 +7780,6 @@ function hudFrame(dt) {
 
 
 function puckFrame(dt) {
-  if (FRZ.on) { frzFrame(dt); return; }
   if (RP.on) { rpFrame(dt); puck.position.set(PK.x, PK.y, PK.z); return; }
   pClock += dt;
   if (PK.out > 1.2) { EV.length = 0; run.pk.outs++; if (SC.on) scFaceoff('Puck out of play. Faceoff', nearestDot(clamp(PK.x, -25, 25), clamp(PK.z, -9, 9))); else { placePuck(); toast('Puck out of play'); } }
@@ -8088,7 +7969,6 @@ function lineSet(sl, d) {                                                // who 
 function menuRows(tab) {
   if (tab === 5) {
     const R = [{ l: 'Line 1 left wing', v: () => 'You  #11', s: () => toast('You always play left wing on line 1', 1.5) }];
-    R.push({ l: 'Freeze-frame reads', v: () => ({ off: 'Off', some: 'Now and then', lots: 'Lots' })[st.reads || 'some'], s: d => { const O = ['off', 'some', 'lots']; setSetting('reads', O[cyc(3, O.indexOf(st.reads || 'some'), d)]); } });
     for (const [key, lab] of [['fc', 'Forecheck'], ['dz', 'In our end'], ['d', 'The D']]) R.push({ l: lab, v: () => (SYS_OPT[key].find(o => o[0] === sysOf('ravens')[key]) || SYS_OPT[key][0])[1], s: d => { const O = SYS_OPT[key], i = O.findIndex(o => o[0] === sysOf('ravens')[key]); st.sys = Object.assign({}, st.sys || {}, { [key]: O[cyc(O.length, i < 0 ? 0 : i, d)][0] }); saveSettings(); } });
     if (!RN.players) return R.concat([{ l: 'Your teammates', v: () => brainOK() ? 'Loading names... (press)' : 'Needs your server', s: () => { if (brainOK()) rosterLoad(); } }]);
     for (const [sl, lab] of LSLOTS) R.push({ l: lab, v: () => { const m = RN.map && RN.map[sl]; return m ? m.n + '  #' + m.num : '-'; }, s: d => lineSet(sl, d) });
@@ -8565,7 +8445,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, FRZ, frzStart, frzFrame, frzPick, frzResolve, frzEnd, frzCheck, frzReadPuck, frzReadPos, frzMk, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
