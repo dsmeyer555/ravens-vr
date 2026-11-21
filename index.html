@@ -541,7 +541,7 @@ const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SKEY = 'ravens-vr3-settings', SKEY_OLD = 'ravens-vr2-settings';
 const DEFAULT_LU = { '17': 'Nicky', '12': 'Robbins', '27': 'Will', '19': 'Crofty', '22': 'Mids', '14': 'Tony', '16': 'Iain M.', '10': 'Ewan O.', '44': 'Samy', '5': 'Aidan', '2': 'Callum', '8': 'Mickey', '3': 'Oliver K.', '6': 'Grant', G: 'Craig' };
-const DEF = { realP: true, capSub: [], sys: {}, roles: {}, myRole: '', passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 5, rulesOn: true, scrimM: '5', voices: true };
+const DEF = { realP: true, capSub: [], sys: {}, roles: {}, myRole: '', autoSkip: false, passHelp: true, level: 2, lineup: Object.assign({}, DEFAULT_LU), brainUrl: '', brainKey: '', talk: 'free', shot: 'right', wantHz: 0, speed: 1, steer: 'body', turn: 'snap30', vig: 1, height: 'auto', sound: true, curve: 'jagr', power: 1, assist: true, lenIn: 58, keepM: 'hold', rollG: 2, bendOn: false, assistP: 2, liftP: 2, rollSrc: 'lower', iceP: 2, oneM: 'hold', aimP: 1, hapP: 2, others: 'both', goalP: 0, netP: 0, drillI: 0, startDrill: 'none', oppP: 1, mountH: 'off', mAx: null, mD: 0.9, perP: 1, hudOn: true, arcade: true, cfg: 5, rulesOn: true, scrimM: '5', voices: true };
 function loadSettings() {
   const o = Object.assign({}, DEF);
   try {
@@ -556,7 +556,7 @@ function loadSettings() {
       if (typeof j.curve === 'string') o.curve = j.curve; if (ok(j.power, [0, 1, 2])) o.power = j.power; if (typeof j.assist === 'boolean') o.assist = j.assist;
       if (typeof j.lenIn === 'number' && j.lenIn >= 48 && j.lenIn <= 72) o.lenIn = Math.round(j.lenIn * 10) / 10; if (ok(j.keepM, ['hold', 'toggle', 'off'])) o.keepM = j.keepM; if (ok(j.liftP, [0, 1, 2, 3])) o.liftP = j.liftP; if (ok(j.rollSrc, ['lower', 'top', 'both'])) o.rollSrc = j.rollSrc; if (ok(j.rollG, [0, 1, 2, 3, 4])) o.rollG = j.rollG; if (typeof j.bendOn === 'boolean') o.bendOn = j.bendOn; if (ok(j.assistP, [0, 1, 2, 3])) o.assistP = j.assistP; if (ok(j.iceP, [0, 1, 2, 3])) o.iceP = j.iceP; if (ok(j.oneM, ['hold', 'btn', 'grip', 'off'])) o.oneM = j.oneM; if (typeof j.arcade === 'boolean') o.arcade = j.arcade; if (ok(j.aimP, [0, 1, 2])) o.aimP = j.aimP; if (ok(j.hapP, [0, 1, 2, 3])) o.hapP = j.hapP; if (ok(j.others, ['both', 'mate', 'goalie', 'none'])) o.others = j.others; if (ok(j.goalP, [0, 1, 2, 3])) o.goalP = j.goalP; if (ok(j.netP, [0, 1, 2])) o.netP = j.netP; if (ok(j.drillI, [0, 1, 2])) o.drillI = j.drillI; if (ok(j.startDrill, ['none', 'shoot', 'oneone', 'defend', 'scrim', 'scrim3', 'random', 'fd-cycle', 'fd-retrieve', 'fd-netfront', 'fd-giveandgo', 'fd-bump', 'fd-regroup', 'fd-stretch', 'fd-fourlines', 'fd-twoone', 'fd-breakout', 'fd-closeout', 'fd-backcheck'])) o.startDrill = j.startDrill; if (ok(j.oppP, [0, 1, 2, 3])) o.oppP = j.oppP;
       if (typeof j.realP === 'boolean') o.realP = j.realP; if (Array.isArray(j.capSub)) o.capSub = j.capSub.filter(x => typeof x === 'string').slice(0, 2);
-      if (j.roles && typeof j.roles === 'object') { o.roles = {}; for (const k in j.roles) if (typeof j.roles[k] === 'string') o.roles[k] = j.roles[k]; } if (typeof j.myRole === 'string') o.myRole = j.myRole;
+      if (j.roles && typeof j.roles === 'object') { o.roles = {}; for (const k in j.roles) if (typeof j.roles[k] === 'string') o.roles[k] = j.roles[k]; } if (typeof j.myRole === 'string') o.myRole = j.myRole; if (typeof j.autoSkip === 'boolean') o.autoSkip = j.autoSkip;
       if (j.sys && typeof j.sys === 'object') o.sys = { fc: ['aggressive', 'balanced', 'trap'].includes(j.sys.fc) ? j.sys.fc : 'balanced', dz: ['zone', 'collapse'].includes(j.sys.dz) ? j.sys.dz : 'zone', d: ['home', 'pick', 'active'].includes(j.sys.d) ? j.sys.d : 'pick' };
       if (ok(j.perP, [0, 1, 2, 3, 4])) o.perP = j.perP; if (typeof j.hudOn === 'boolean') o.hudOn = j.hudOn; if (typeof j.rulesOn === 'boolean') o.rulesOn = j.rulesOn; if (ok(j.scrimM, ['5', '3'])) o.scrimM = j.scrimM; if (typeof j.voices === 'boolean') o.voices = j.voices; if (typeof j.brainUrl === 'string') o.brainUrl = j.brainUrl.trim().slice(0, 200); if (typeof j.brainKey === 'string') o.brainKey = j.brainKey.trim().slice(0, 200); if (ok(j.talk, ['off', 'free', 'hold'])) o.talk = j.talk; o.lineup = Object.assign({}, DEFAULT_LU); if (j.cfg >= 4 && j.lineup && typeof j.lineup === 'object') for (const [k, v] of Object.entries(j.lineup).slice(0, 16)) if (typeof v === 'string' && v.length < 40) o.lineup[k] = v;   // the new default lines replace older picks once
       if (typeof j.passHelp === 'boolean') o.passHelp = j.passHelp;
@@ -2900,7 +2900,8 @@ function penGoal(ravens) {
 function penDrewIn(p) {
   BN.on = true; BN.box = p; BN.t = 0; BN.called = false; BN.upCalled = false;
   teleportTo(PEN_BOX.ravens, PEN_Z, Math.PI / 2); stickOn && setKeep && setKeep(false);
-  toast('Two minutes for ' + p.kind + '. B skips to the end of it', 3);
+  toast('Two minutes for ' + p.kind + (st.autoSkip ? '. Skipping to the end of it' : '. B skips to the end of it'), 3);
+  if (st.autoSkip) setTimeout(() => { if (BN.box === p) penSkip(); }, 3000);
 }
 function penDrewOut() {
   if (!BN.box) return; BN.box = null; BN.on = false; BN.shift = 0;
@@ -3289,6 +3290,7 @@ function tourRecord(gf, ga, me, sim, goals, pens) {
   const res = gf > ga || so.includes('won') ? 'beat' : gf < ga || so.includes('lost') ? 'lost to' : 'drew with';
   const mine = [me.g ? me.g + (me.g > 1 ? ' goals' : ' goal') : '', me.a ? me.a + (me.a > 1 ? ' assists' : ' assist') : ''].filter(Boolean).join(', ');
   vc.last = { gf, ga, opp: f.opp, g: me.g || 0, a: me.a || 0, sh: me.sh || 0, line: `${f.lab}: the Ravens ${res} ${f.opp} ${gf}-${ga}${so}${sim ? ' (simmed)' : ''}.${mine ? ' Drew: ' + mine + '.' : ''}` };
+  achGame(gf, ga, me, sim);
   if (PH.milNote) { vc.last.line += ' Milestones: ' + PH.milNote + '.'; PH.milNote = ''; }
   T.log.push(vc.last.line);
   vc.conf = clamp(vc.conf + (res === 'beat' ? 4 : res === 'drew with' ? 1 : -1), 0, 100);
@@ -3358,8 +3360,8 @@ function phAwards(y) {
     pg.fillStyle = '#c9bde3'; pg.font = '500 17px system-ui, sans-serif'; pg.textAlign = 'right'; let t = a.line || ''; while (pg.measureText(t).width > 300 && t.length > 6) t = t.slice(0, -1); pg.fillText(t, W - 52, ry + 52); });
   pg.restore();
   const cur = shown[shown.length - 1]; if (cur) { pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '600 20px system-ui, sans-serif'; pWrap('Crofty: "' + cur.cro + '"', W - 88, '600 20px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 44, bot + 26 + k * 26)); }
-  if (T.awI < A.length) pBtn(34, PHH - 196, W - 68, 76, T.awI ? 'Next award' : 'Start the awards', '#5a2bb0', () => { T.awI++; const a = A[T.awI - 1]; PH.scroll = 9999; if (a && a.n === 'Drew') { toast('You won ' + a.k + '!', 2.5); buzz('right', 0.8, 200); buzz('left', 0.8, 200); } carSave(); }, 28);
-  else pBtn(34, PHH - 196, W - 68, 76, 'On to the season review', '#5a2bb0', () => { T.stage = 'done'; PH.scr = 'season'; carSave(); }, 26);
+  if (T.awI < A.length) pBtn(34, PHH - 196, W - 68, 76, T.awI ? 'Next award' : 'Start the awards', '#5a2bb0', () => { T.awI++; const a = A[T.awI - 1]; PH.scroll = 9999; if (T.awI === A.length) setTimeout(() => achCheck('awards'), 2700); if (a && a.n === 'Drew') { toast('You won ' + a.k + '!', 2.5); buzz('right', 0.8, 200); buzz('left', 0.8, 200); } carSave(); }, 28);
+  else pBtn(34, PHH - 196, W - 68, 76, 'On to the season review', '#5a2bb0', () => { T.stage = 'done'; PH.scr = 'season'; achCheck('awards'); achCheck('season'); homeShelf(); carSave(); }, 26);
 }
 // ---- milestones: games, goals, assists and points for the club (all seasons and the tournaments), hat-tricks, big nights, and the first
 // time someone wears a letter. Checked after every career game; the big ones get a shout from Crofty in the group chat.
@@ -3419,7 +3421,7 @@ function hlFinish() {
   const fr = HLR.buf.filter(f => f.t >= P.t0 - 7.5); if (fr.length < 20) return;
   const clip = Object.assign(hlPack(fr), { id: 'h' + Date.now().toString(36), lab: P.lab, sub: P.sub, mine: !!P.mine, ravens: !!P.ravens, gx: P.gx, sd: SC.flip || 1 });
   HL.game.push(clip); if (HL.game.length > 12) HL.game.shift();
-  if (P.mine) { HL.reel.push(clip); if (HL.reel.length > 24) HL.reel.shift(); }
+  if (P.mine) { HL.reel.push(clip); if (HL.reel.length > 24) HL.reel.shift(); if (CAR.mode === 'career') setTimeout(() => achCheck('reel'), 100); }
   hlSave();
 }
 function hlNewGame() { HL.game = []; HLR.buf = []; HLR.pend = null; HL.gameLab = (SC.fx ? 'vs ' + SC.fx.opp : 'Scrimmage') + (CAR.vc && CAR.mode === 'career' ? ' · S' + CAR.vc.season + (CAR.vc.week > CWEEKS ? ' tournament' : ' wk ' + CAR.vc.week) : ''); }
@@ -3598,8 +3600,8 @@ function chemLines(map) {                                                 // the
 }
 function chemAfterGame(cr) {                                              // after a career game: linemates and pairs grow, assists to a scorer grow more
   const L = chemLines(RN.map), vc = CAR.vc; if (!vc) return;
-  for (const G of L.F.concat(L.D)) { const N = G.filter(Boolean); for (let i = 0; i < N.length; i++) for (let j = i + 1; j < N.length; j++) chemAdd(N[i], N[j], 3); }
-  for (const q of (cr && cr.goals) || []) for (const a of q.as) chemAdd(q.sc, a, 2);
+  for (const G of L.F.concat(L.D)) { const N = G.filter(Boolean); for (let i = 0; i < N.length; i++) for (let j = i + 1; j < N.length; j++) chemAdd(N[i], N[j], 1.2); }
+  for (const q of (cr && cr.goals) || []) for (const a of q.as) chemAdd(q.sc, a, 1.5);
   for (const [n, k] of Object.entries(SC.chemD || {})) chemAdd('Drew', n, Math.min(4, k * 0.5)); SC.chemD = {};
   if (vc.chem) for (const k in vc.chem) { const [a, b] = k.split('|'); const together = L.F.concat(L.D).some(G => G.includes(a) && G.includes(b)); if (!together && vc.chem[k] > 40) vc.chem[k] = Math.max(40, vc.chem[k] - 0.6); }
 }
@@ -3734,7 +3736,7 @@ function wlSign(p) {
   const used = new Set((RN.players || []).map(q => String(q.num)).concat(['11'])); let num = 30 + Math.floor(spR(p.id + 'n') * 60); while (used.has(String(num))) num = num % 98 + 2;
   p.num = String(num); p.st = 'signed'; p.joined = { s: vc.season, w: vc.week };
   rosterApply({ players: RN.base || RN.players }); carSave();
-  toast(p.n + ' ' + p.sur + ' joins the Ravens (#' + num + ')', 2.5);
+  toast(p.n + ' ' + p.sur + ' joins the Ravens (#' + num + ')', 2.5); achCheck('sign');
   const th = thGet(GRPK); th.msgs.push({ n: 'Crofty', t: 'Welcome ' + p.n + ' to the Ravens! ' + (p.pos === 'D' ? 'Another D, love to see it.' : 'Another forward for the mix.') + ' Get yourself on Spond.' }); thSave(th); vc.unread = vc.unread || {}; vc.unread[GRPK] = 1;
 }
 function wlRelease(n) { const p = (CAR.vc.wl || []).find(q => q.n === n && q.st === 'signed'); if (!p) return; p.st = 'gone'; rosterApply({ players: RN.base || RN.players }); carSave(); toast(n + ' has left the club', 1.6); }
@@ -3760,6 +3762,87 @@ function phWL(y) {
     else if (p.st === 'eval' || p.st === 'list') { pBtn(42, by, bw, 38, c.sk >= WL_CAP ? 'Roster full' : 'Offer a spot', c.sk >= WL_CAP ? '#2a1a44' : '#5a2bb0', () => wlSign(p), 17); pBtn(50 + bw, by, bw, 38, p.st === 'eval' ? 'Keep on the list' : 'Remove', '#2a1a44', () => { if (p.st === 'eval') p.st = 'list'; else p.st = 'gone'; carSave(); }, 17); }
     else if (p.st === 'signed') pBtn(42, by, bw, 38, 'Player page', '#2a1a44', () => { PSV.who = p.n; PH.scr = 'player'; }, 17);
   });
+  pg.restore();
+}
+// ---- achievements: things you've done in your career, unlocked once and kept for good (they carry over every season)
+const ACH = [
+  ['first_goal', 'First of many', 'Score your first goal', c => c.T.g >= 1], ['first_assist', 'Set one up', 'Get your first assist', c => c.T.a >= 1],
+  ['hatty', 'Hat-trick', '3 goals in a game you play', c => c.g && !c.g.sim && c.g.me.g >= 3], ['four_pt', 'Big night', '4 points in a game you play', c => c.g && !c.g.sim && (c.g.me.g || 0) + (c.g.me.a || 0) >= 4],
+  ['sniper', 'Shooting gallery', '6 shots in a game you play', c => c.g && !c.g.sim && (c.g.me.sh || 0) >= 6], ['g10s', 'Double figures', '10 goals in one season', c => c.vc.me.g >= 10],
+  ['g25', '25 for the club', '25 career goals', c => c.T.g >= 25], ['g50', 'Half century', '50 career goals', c => c.T.g >= 50], ['p100', 'Century', '100 career points', c => c.T.p >= 100],
+  ['gp50', 'Fifty up', '50 games for the Ravens', c => c.T.gp >= 50], ['gp100', 'Club legend', '100 games for the Ravens', c => c.T.gp >= 100],
+  ['ppg', 'Power play', 'Score on the power play', c => c.my && c.my.ppg >= 1], ['shg', 'Shorthanded', 'Score while we are a man down', c => c.my && c.my.shg >= 1],
+  ['shutout', 'Shutout', 'Win without conceding', c => c.g && c.g.gf > 0 && c.g.ga === 0], ['eight', 'Goal fest', 'The Ravens score 8 in a game', c => c.g && c.g.gf >= 8],
+  ['streak5', 'On a run', '5 wins in a row', c => (c.vc.results || []).slice(-5).length === 5 && (c.vc.results || []).slice(-5).every(r => r.gf > r.ga)],
+  ['unbeaten8', 'Unbeaten in 8', '8 games without a defeat', c => (c.vc.results || []).slice(-8).length === 8 && (c.vc.results || []).slice(-8).every(r => r.gf >= r.ga)],
+  ['talon', 'Talon Cup winners', 'Finish top of the Talon Cup', c => c.ev === 'season' && talonRows(c.vc)[0][0] === 'Ravens'],
+  ['tourney', 'Tournament champions', 'Win the season-end tournament', c => c.vc.tour && c.vc.tour.res === 'Champions!'],
+  ['any_award', 'Silverware', 'Win an award on awards night', c => c.ev === 'awards' && (c.vc.tour.aw || []).some(a => a.n === 'Drew')],
+  ['pots', 'Player of the Season', 'Be named Player of the Season', c => c.ev === 'awards' && (c.vc.tour.aw || []).some(a => a.n === 'Drew' && a.k === 'Player of the Season')],
+  ['ppl', "Players' Player", "Voted Players' Player by the lads", c => c.ev === 'awards' && (c.vc.tour.aw || []).some(a => a.n === 'Drew' && a.k === "Players' Player")],
+  ['iron', 'Never miss a Thursday', 'Go to every training in a season', c => c.ev === 'season' && !c.vc.trainSkip],
+  ['role_all', 'Job done', 'Hit all your role goals in a game', c => c.vc.roleLast && c.g && !c.g.sim && c.vc.roleLast.res.every(x => x.ok)], ['role10', 'Role model', 'All your role goals in 10 games', c => c.vc.roleG && c.vc.roleG.full >= 10],
+  ['iq80', 'Hockey brain', 'Hockey IQ of 80+ in a game', c => c.g && !c.g.sim && c.vc.iqLast && c.vc.iqLast.iq >= 80],
+  ['chem90', 'Telepathy', 'Chemistry of 90 with a teammate', c => (RN.players || []).some(p => p.n !== 'Drew' && chemOf('Drew', p.n) >= 90)],
+  ['sign1', 'Recruiter', 'Sign someone off the waiting list', c => (c.vc.wl || []).some(p => p.st === 'signed')], ['full36', 'Full house', 'Get the roster to 36 skaters', c => wlCount().sk >= WL_CAP],
+  ['clean10', 'Squeaky clean', '10 games in a row without a penalty', c => (c.vc.cleanRun || 0) >= 10], ['pd3', 'Wind-up merchant', 'Draw 3 penalties', c => (c.vc.pdTot || 0) >= 3],
+  ['reel10', 'Highlight reel', '10 clips in your reel', c => HL.reel.length >= 10]
+];
+function achCheck(ev, g) {                                                 // after a game (g), on awards night, at the end of a season, on a signing
+  const vc = CAR.vc; if (!vc || CAR.mode !== 'career') return [];
+  vc.ach = vc.ach || {}; const c = { vc, ev, g, my: g && !g.sim ? SC.my : null, T: milTot(vc, 'Drew') }, got = [];
+  for (const [id, name, , f] of ACH) { if (vc.ach[id]) continue; let ok = false; try { ok = !!f(c); } catch (e) { } if (ok) { vc.ach[id] = { s: vc.season, w: Math.min(vc.week, CWEEKS + 1) }; got.push(name); } }
+  got.forEach((n, i) => setTimeout(() => { toast('Achievement: ' + n, 2.6); buzz('left', 0.6, 120); buzz('right', 0.6, 120); }, 600 + i * 2800));
+  if (got.length) { PH.milNote = (PH.milNote ? PH.milNote + ' · ' : '') + 'Achievement' + (got.length > 1 ? 's' : '') + ': ' + got.join(', '); carSave(); homeShelf(); }
+  return got;
+}
+function achGame(gf, ga, me, sim) {                                       // the bookkeeping some achievements need, then the check
+  const vc = CAR.vc; if (!vc) return;
+  if (!sim) { vc.pdTot = (vc.pdTot || 0) + (SC.my.pd || 0); vc.cleanRun = (SC.my.pim || 0) ? 0 : (vc.cleanRun || 0) + 1; }
+  achCheck('game', { gf, ga, me, sim });
+}
+// ---- trophies: what you've won, for the shelf at home and the Trophies page
+function trophies() {
+  const vc = CAR.vc; if (!vc) return { cups: [], aw: [], miles: [] };
+  const cups = [], aw = [];
+  for (const p of vc.past || []) { if (p.pos === 1) cups.push({ k: 'talon', s: p.season }); if (p.tour === 'Champions!') cups.push({ k: 'tour', s: p.season }); }
+  if (vc.week > CWEEKS && vc.tour && vc.tour.stage === 'done') { if (talonRows(vc)[0][0] === 'Ravens') cups.push({ k: 'talon', s: vc.season }); if (vc.tour.res === 'Champions!') cups.push({ k: 'tour', s: vc.season }); }
+  for (const h of (vc.hist || {}).Drew || []) for (const a of h.aw || []) aw.push({ k: a, s: h.s });
+  if (vc.tour && vc.tour.stage === 'done') for (const a of vc.tour.aw || []) if (a.n === 'Drew') aw.push({ k: a.k, s: vc.season });
+  const T = milTot(vc, 'Drew'), miles = [];
+  for (const v of [25, 50, 100, 150, 200]) if (T.g >= v) miles.push(v + ' goals'); for (const v of [50, 100, 200, 300]) if (T.gp >= v) miles.push(v + ' games'); for (const v of [100, 200]) if (T.p >= v) miles.push(v + ' points');
+  return { cups, aw, miles };
+}
+// the shelf in your living room: cups on top, your awards in the middle, milestone pucks below
+const SHELF = new THREE.Group(); SHELF.position.set(HOME.x - 2.72, 0, HOME.z - 0.45); SHELF.rotation.y = Math.PI / 2; scene.add(SHELF);
+let shelfKey = '';
+function homeShelf() {
+  const tr = trophies(), key = JSON.stringify(tr); if (key === shelfKey) return; shelfKey = key;
+  while (SHELF.children.length) { const o = SHELF.children.pop(); o.traverse(m => { if (m.geometry) m.geometry.dispose(); if (m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } }); }
+  const wood = new THREE.MeshStandardMaterial({ color: 0x5a3b22, roughness: 0.7, emissive: 0x0c0703 }), add = (g, m, x, y, z) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); SHELF.add(o); return o; };
+  const Wd = 1.9; for (const y of [0.85, 1.3, 1.75]) add(new THREE.BoxGeometry(Wd, 0.03, 0.28), wood, 0, y, 0); for (const x of [-Wd / 2, Wd / 2]) add(new THREE.BoxGeometry(0.03, 1.0, 0.28), wood, x, 1.3, 0); add(new THREE.BoxGeometry(Wd, 1.0, 0.02), wood, 0, 1.3, -0.13);
+  const plaque = (text, x, y) => { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const g = cv.getContext('2d'); g.fillStyle = '#1a1208'; g.fillRect(0, 0, 256, 64); g.strokeStyle = '#c9a34a'; g.lineWidth = 4; g.strokeRect(3, 3, 250, 58); g.fillStyle = '#f0d890'; g.textAlign = 'center'; g.textBaseline = 'middle'; let fs = 26; g.font = '700 ' + fs + 'px sans-serif'; while (g.measureText(text).width > 236 && fs > 12) { fs--; g.font = '700 ' + fs + 'px sans-serif'; } g.fillText(text, 128, 33);
+    const m = add(new THREE.PlaneGeometry(0.2, 0.05), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv) }), x, y, 0.145); return m; };
+  const metal = c => new THREE.MeshStandardMaterial({ color: c, metalness: 0.9, roughness: 0.25, emissive: c, emissiveIntensity: 0.08 });
+  const cup = (x, y, big, col) => { const s = big ? 1 : 0.75, pts = [[0, 0], [0.07, 0], [0.07, 0.03], [0.025, 0.05], [0.02, 0.12], [0.03, 0.15], [0.085, 0.2], [0.1, 0.3], [0.095, 0.32], [0.0, 0.32]].map(([a, b]) => new THREE.Vector2(a * s, b * s));
+    add(new THREE.LatheGeometry(pts, 24), metal(col), x, y + 0.015, 0); for (const sx of [-1, 1]) add(new THREE.TorusGeometry(0.04 * s, 0.008 * s, 6, 12, Math.PI), metal(col), x + sx * 0.1 * s, y + 0.26 * s, 0).rotation.set(0, 0, sx * Math.PI / 2); };
+  const cups = tr.cups.slice(-5), aw = tr.aw.slice(-6), mi = tr.miles.slice(-6);
+  cups.forEach((c, i) => { const x = -Wd / 2 + (i + 0.5) * Wd / Math.max(cups.length, 1); cup(x, 1.765, c.k === 'talon', c.k === 'talon' ? 0xd8dde4 : 0xe0b84a); plaque((c.k === 'talon' ? 'Talon Cup ' : 'Tournament ') + 'S' + c.s, x, 1.79); });
+  aw.forEach((a, i) => { const x = -Wd / 2 + (i + 0.5) * Wd / Math.max(aw.length, 1); add(new THREE.BoxGeometry(0.09, 0.05, 0.09), new THREE.MeshStandardMaterial({ color: 0x1b1b1f, roughness: 0.5 }), x, 1.34, 0); add(new THREE.CylinderGeometry(0.035, 0.035, 0.012, 20), metal(0xe0b84a), x, 1.42, 0).rotation.x = Math.PI / 2; add(new THREE.CylinderGeometry(0.008, 0.008, 0.04, 6), metal(0xe0b84a), x, 1.38, 0); plaque(a.k + ' S' + a.s, x, 1.335); });
+  mi.forEach((t, i) => { const x = -Wd / 2 + (i + 0.5) * Wd / Math.max(mi.length, 1); add(new THREE.CylinderGeometry(0.038, 0.038, 0.025, 20), new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.4 }), x, 0.88, 0); add(new THREE.TorusGeometry(0.038, 0.004, 6, 20), metal(0xe0b84a), x, 0.893, 0).rotation.x = Math.PI / 2; plaque(t, x, 0.885); });
+  if (!cups.length && !aw.length && !mi.length) plaque('Win something to fill this shelf', 0, 1.33);
+}
+// ---- the Trophies page (in Stats)
+function phAch(y) {
+  const vc = CAR.vc, W = PHW, A = vc.ach || {}, tr = trophies(), n = ACH.filter(a => A[a[0]]).length;
+  pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '700 21px system-ui, sans-serif'; pg.fillText('Trophies: ' + (tr.cups.length ? tr.cups.map(c => (c.k === 'talon' ? 'Talon Cup' : 'Tournament') + ' S' + c.s).join(', ') : 'none yet'), 44, y + 10);
+  pg.fillStyle = '#c9bde3'; pg.font = '500 18px system-ui, sans-serif'; pg.fillText('Your awards: ' + (tr.aw.length ? tr.aw.map(a => a.k + ' (S' + a.s + ')').join(', ') : 'none yet'), 44, y + 36, W - 88);
+  pg.fillStyle = '#ffffff'; pg.font = '800 22px system-ui, sans-serif'; pg.fillText('Achievements ' + n + ' of ' + ACH.length, 44, y + 72);
+  const rows = ACH.slice().sort((a, b) => (A[b[0]] ? 1 : 0) - (A[a[0]] ? 1 : 0)), top = y + 86, bot = PHH - 120, rh = 50, off = PH.scroll = clamp(PH.scroll, 0, Math.max(0, rows.length * rh - (bot - top)));
+  pg.save(); pg.beginPath(); pg.rect(20, top, W - 40, bot - top); pg.clip();
+  rows.forEach(([id, name, desc], i) => { const ry = top + i * rh - off; if (ry > bot || ry + rh < top) return; const u = A[id];
+    pRect(34, ry + 2, W - 68, rh - 6, 12, u ? '#3d1778' : '#1c1430'); pg.textAlign = 'left'; pg.fillStyle = u ? '#ffd36a' : '#6f6390'; pg.font = '700 19px system-ui, sans-serif'; pg.fillText((u ? '★ ' : '☆ ') + name, 50, ry + 20);
+    pg.fillStyle = u ? '#e6dcf7' : '#6f6390'; pg.font = '500 15px system-ui, sans-serif'; pg.fillText(desc, 50, ry + 38); if (u) { pg.textAlign = 'right'; pg.fillStyle = '#b9a8d8'; pg.fillText('S' + u.s + (u.w > CWEEKS ? ' T' : ' W' + u.w), W - 50, ry + 28); } });
   pg.restore();
 }
 // off-ice hands: on the knees in the room, one on the table and a pint in the other in the pub, on the boards for Crofty; the free hand talks
@@ -5110,7 +5193,8 @@ function benchGo(off) {
   if (off) {
     teleportTo(door, BNG.z0 + 0.6, -Math.PI / 2); BN.on = true; BN.t = 0; BN.shift2 = 0; BN.called = false; BN.upCalled = false; BN.upT = 0; BN.zoneT = 0;
     benchSwapRavens(true); run.benchOff = (run.benchOff || 0) + 1;
-    toast(BN.hint++ < 2 ? 'On the bench. The next two lines go, then Crofty calls you. B skips to your next shift' : 'On the bench. B skips to your shift', 3);
+    toast(st.autoSkip ? 'On the bench: skipping to your next shift' : BN.hint++ < 2 ? 'On the bench. The next two lines go, then Crofty calls you. B skips to your next shift' : 'On the bench. B skips to your shift', 3);
+    if (st.autoSkip) setTimeout(() => { if (BN.on && SC.on && !BN.box && !SC.over) benchSkip(); }, 2500);
     const m = SC.grp.ravens.F[0][Math.floor(Math.random() * SC.grp.ravens.F[0].length)]; if (m && Math.random() < 0.6) setTimeout(() => { if (BN.on) say(m.p, pick(['Nice!', 'Lovely!', 'Yes boys!'])); }, 900);
   } else {
     teleportTo(door, BNG.z0 - 1.25, -Math.PI / 2); BN.on = false; BN.shift = 0; BN.called = false; BN.upCalled = false; BN.zoneT = 0;
@@ -5219,6 +5303,7 @@ function scGoal(xSide) {
   if (SC.over || SC.after > 0) return;
   const ravens = xSide * teamDir('ravens') > 0, k = ravens ? 0 : 1; SC.score[k]++; penGoal(ravens);
   if (!BN.on) { if (ravens) SC.my.gf = (SC.my.gf || 0) + 1; else SC.my.ga = (SC.my.ga || 0) + 1; }
+  if (ravens && SC.tc.last === 'you') { if (penShort('ravens')) SC.my.shg = (SC.my.shg || 0) + 1; else if (penShort('visitors')) SC.my.ppg = (SC.my.ppg || 0) + 1; }
   if (ravens && SC.tc.last === 'you' && SC.relP && Math.hypot(SC.relP[0] - teamDir('ravens') * GX, SC.relP[1]) < 6) SC.my.close = (SC.my.close || 0) + 1;
   if (ravens) { if (SC.tc.last === 'you') { SC.my.g++; SC.my.sh++; } else if (SC.tc.last && SC.tc.last[0] === 'r' && SC.tc.prev === 'you') SC.my.a++; } if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; }
   SC.msg = (ravens ? 'Ravens' : oppN()) + ' score!  ' + SC.score[0] + ' - ' + SC.score[1]; toast(SC.msg, 2.5);
@@ -6221,7 +6306,8 @@ function phGame(y) {
   if (RN.players) { const B = RN.spB || spApply(); if (B) { pg.textAlign = 'right'; pg.fillStyle = '#9fe0b0'; pg.font = '600 19px system-ui, sans-serif'; pg.fillText((B.n + 1) + ' skaters' + (B.res.length ? ' + ' + B.res.length + ' res.' : '') + (B.spares ? ', ' + B.spares + ' spare' : '') + ' · ' + firstN(B.gk) + ' in goal', W - 58, y + 192); pBtn(W - 214, y - 2, 180, 48, 'Spond ' + (B.n + 1) + ' in', '#2a1a44', () => { PH.scr = 'spond'; PH.scroll = 0; }, 20); } }
   pBtn(W - 224, y + 418, 190, 44, capNeed() && Object.keys(lettersFor()).length < 3 ? 'Pick the A' : 'Letters', capNeed() && Object.keys(lettersFor()).length < 3 ? '#8a3b1c' : '#2a1a44', () => { PH.scr = 'letters'; PH.scroll = 0; }, 21);
   pBtn(34, y + 482, W - 68, 92, 'To the dressing room', '#5a2bb0', () => carRoom('pre'), 32);
-  pBtn(34, y + 590, W - 68, 70, 'Sim it (no time tonight)', '#2a1a44', () => carGameSim(), 25);
+  pBtn(34, y + 590, (W - 76) / 2, 70, 'Sim it (no time tonight)', '#2a1a44', () => carGameSim(), 21);
+  pBtn(42 + (W - 76) / 2, y + 590, (W - 76) / 2, 70, st.autoSkip ? 'Bench: auto-skip to my shift' : 'Bench: watch the other lines', st.autoSkip ? '#5a2bb0' : '#2a1a44', () => setSetting('autoSkip', !st.autoSkip), 19);
   if (CAR.cl) pBtn(34, y + 712, W - 68, 70, "Use Crofty's lines", '#3d1778', () => { if (RN.players) lnApply(Object.assign(lnCur(), CAR.cl.lu)); else { st.lineup = Object.assign({}, CAR.cl.lu); saveSettings(); } CAR.vc.lineNews = 'Crofty\'s new lines: ' + CAR.cl.ch.join('; '); CAR.pre = 'Done, new lines are in. ' + CAR.pre.replace(/^Lines: [^.]*\. /, ''); CAR.cl = null; toast("Crofty's lines are in", 1.5); }, 25);
   pg.fillStyle = '#7d70a0'; pg.font = '500 20px system-ui, sans-serif'; pg.textAlign = 'center'; pg.fillText('Periods: 3 x 20 min', W / 2, y + 688 + (CAR.cl ? 112 : 0));
 }
@@ -6246,9 +6332,10 @@ function psRows(vc, k) { const P = vc.ps || {}; return Object.entries(P).map(([n
 function phStats(y) {
   const vc = CAR.vc, W = PHW; vc.ps = vc.ps || {};
   pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText('Ravens stats', 44, y + 24);
-  [['season', 'Season'], ['talon', 'Talon'], ['history', 'History'], ['high', 'Highlights']].forEach(([k, l], i) => pBtn(34 + i * 134, y + 50, 128, 50, l, PSV.tab === k ? '#5a2bb0' : PSV.tab !== 'high' && k === 'high' && HL.game.length ? '#3d1778' : '#2a1a44', () => { PSV.tab = k; PH.scroll = 0; }, 20));
+  [['season', 'Season'], ['talon', 'Talon'], ['history', 'History'], ['high', 'Reel'], ['ach', 'Trophies']].forEach(([k, l], i) => pBtn(34 + i * 107, y + 50, 101, 50, l, PSV.tab === k ? '#5a2bb0' : PSV.tab !== 'high' && k === 'high' && HL.game.length ? '#3d1778' : '#2a1a44', () => { PSV.tab = k; PH.scroll = 0; }, 20));
   if (PSV.tab === 'history') return phHistory(y + 116);
   if (PSV.tab === 'high') return phHigh(y + 116);
+  if (PSV.tab === 'ach') return phAch(y + 116);
   const t = PSV.tab, r = t === 'talon' ? (() => { const x = vc.tab.Ravens || {}; return { w: x.w || 0, d: x.d || 0, l: x.l || 0, gf: x.gf || 0, ga: x.ga || 0 }; })() : vc.rec;
   const pos = talonRows(vc).findIndex(e => e[0] === 'Ravens') + 1;
   pg.textAlign = 'left'; pg.fillStyle = '#e0a928'; pg.font = '700 24px system-ui, sans-serif'; pg.fillText((t === 'talon' ? 'Talon Cup: ' + ordN(pos) + ' of 6 · ' : 'Season ' + vc.season + ': ') + r.w + '-' + r.d + '-' + r.l + ' · GF ' + r.gf + ' GA ' + r.ga, 44, y + 134);
@@ -6325,7 +6412,7 @@ function phSeason(y) {
     const hist = Object.assign({}, old.hist || {}), aw = {}; for (const a of (old.tour && old.tour.aw) || []) (aw[a.n] = aw[a.n] || []).push(a.k);
     for (const [n, r] of Object.entries(old.ps || {})) if (r.gp || r.xgp || aw[n]) (hist[n] = (hist[n] || []).slice(-19)).push({ s: old.season, gp: r.gp || 0, g: r.g || 0, a: r.a || 0, tgp: r.tgp || 0, tg: r.tg || 0, ta: r.ta || 0, lC: r.lC || 0, lA: r.lA || 0, pim: r.pim || 0, xgp: r.xgp || 0, xg: r.xg || 0, xa: r.xa || 0, aw: aw[n] || [] });
     spRestore();
-    CAR.vc = carNew(old.season + 1); CAR.vc.ps = ps; CAR.vc.hist = hist; CAR.vc.wl = (old.wl || []).filter(p => p.st !== 'gone'); CAR.vc.chatI = old.chatI || 0; CAR.vc.threads = old.threads; CAR.vc.thT = old.thT;
+    CAR.vc = carNew(old.season + 1); CAR.vc.ps = ps; CAR.vc.hist = hist; CAR.vc.wl = (old.wl || []).filter(p => p.st !== 'gone'); for (const k of ['ach', 'miles', 'roleG', 'pdTot', 'cleanRun', 'chem', 'legs', 'iq']) if (old[k] != null) CAR.vc[k] = old[k]; CAR.vc.chatI = old.chatI || 0; CAR.vc.threads = old.threads; CAR.vc.thT = old.thT;
     CAR.vc.past = (old.past || []).concat([{ season: old.season, pos, rec: old.rec, me: old.me, top: top ? top.n + ' (' + top.g + 'G ' + top.a + 'A)' : '', tour: old.tour ? old.tour.res : '', aw: old.tour && old.tour.aw ? old.tour.aw.map(a => a.k + ': ' + a.n) : [] }]).slice(-10); carSave(); PH.scr = 'home';
   }, 32);
 }
@@ -6537,7 +6624,7 @@ function pubFrame(dt) {
   talkFrame(dt); updateToast(dt);
 }
 function carTrainGo() { phoneClose(); carRoom('train'); }
-function carTrainSkip() { const vc = CAR.vc; vc.wk.train = 2; vc.conf = clamp(vc.conf - 2, 0, 100); legsAdd(-4); wlTraining(vc); PH.note = 'Crofty: "No bother, see you Saturday."'; PH.scr = 'home'; carSave(); }
+function carTrainSkip() { const vc = CAR.vc; vc.wk.train = 2; vc.trainSkip = (vc.trainSkip || 0) + 1; vc.conf = clamp(vc.conf - 2, 0, 100); legsAdd(-4); wlTraining(vc); PH.note = 'Crofty: "No bother, see you Saturday."'; PH.scr = 'home'; carSave(); }
 function carTrainDone(sc, reps) {
   const vc = CAR.vc; CAR.step = null; vc.wk.train = 1; vc.conf = clamp(vc.conf + (sc * 2 >= reps ? 6 : 3), 0, 100); legsAdd(sc * 2 >= reps ? 7 : 5); wlTraining(vc);
   PH.note = 'Crofty: "' + (sc * 2 >= reps ? 'Sharp tonight. That\'ll pay off on Saturday."' : 'Good work tonight. It\'s coming."'); carSave();
@@ -6580,6 +6667,7 @@ function carRecord(gf, ga, me, sim, goals, pens) {
   const mine = [me.g ? me.g + (me.g > 1 ? ' goals' : ' goal') : '', me.a ? me.a + (me.a > 1 ? ' assists' : ' assist') : ''].filter(Boolean).join(', ');
   vc.last = { scorers: (vc.lastScorers || ''), gf, ga, opp: f.opp, g: me.g || 0, a: me.a || 0, sh: me.sh || 0, line: `The Ravens ${res === 'W' ? 'beat' : res === 'L' ? 'lost to' : 'drew with'} ${f.opp} ${gf}-${ga}${sim ? ' (simmed)' : ''}.${mine ? ' Drew: ' + mine + '.' : ''}` };
   vc.conf = clamp(vc.conf + (res === 'W' ? 6 : res === 'D' ? 2 : -1) + 3 * (me.g || 0), 0, 100); vc.vibe = clamp(vc.vibe + (res === 'W' ? 5 : res === 'D' ? 2 : 0), 0, 100);
+  achGame(gf, ga, me, sim);
   if (PH.milNote) { vc.last.line += ' Milestones: ' + PH.milNote + '.'; PH.milNote = ''; }
   vc.wk.game = 1; carSave();
 }
@@ -6601,7 +6689,7 @@ function carHub() {
   if (CAR.place === 'room') roomHide();
   if (!CAR.step && (PH.scr === 'train' || PH.scr === 'game' || PH.scr === 'thread')) { PH.scr = 'home'; PH.th = null; }   // back from training or a game: your phone's home screen, not that step again
   if (DR.on) drillStop(true); if (SC.on) scStop(true);
-  teleportTo(HOME.x, HOME.z + 0.6, -Math.PI / 2); croftyShow(false); homeTvDraw();
+  teleportTo(HOME.x, HOME.z + 0.6, -Math.PI / 2); croftyShow(false); homeTvDraw(); homeShelf();
   phoneOpen();
 }
 async function carEnter() {
@@ -7969,6 +8057,7 @@ function lineSet(sl, d) {                                                // who 
 function menuRows(tab) {
   if (tab === 5) {
     const R = [{ l: 'Line 1 left wing', v: () => 'You  #11', s: () => toast('You always play left wing on line 1', 1.5) }];
+    R.push({ l: 'Bench', v: () => st.autoSkip ? 'Auto-skip to my shift' : 'Watch the other lines (B skips)', s: () => setSetting('autoSkip', !st.autoSkip) });
     for (const [key, lab] of [['fc', 'Forecheck'], ['dz', 'In our end'], ['d', 'The D']]) R.push({ l: lab, v: () => (SYS_OPT[key].find(o => o[0] === sysOf('ravens')[key]) || SYS_OPT[key][0])[1], s: d => { const O = SYS_OPT[key], i = O.findIndex(o => o[0] === sysOf('ravens')[key]); st.sys = Object.assign({}, st.sys || {}, { [key]: O[cyc(O.length, i < 0 ? 0 : i, d)][0] }); saveSettings(); } });
     if (!RN.players) return R.concat([{ l: 'Your teammates', v: () => brainOK() ? 'Loading names... (press)' : 'Needs your server', s: () => { if (brainOK()) rosterLoad(); } }]);
     for (const [sl, lab] of LSLOTS) R.push({ l: lab, v: () => { const m = RN.map && RN.map[sl]; return m ? m.n + '  #' + m.num : '-'; }, s: d => lineSet(sl, d) });
@@ -8445,7 +8534,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
