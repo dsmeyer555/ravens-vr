@@ -2798,12 +2798,14 @@ const CAPS = { C: 'Tony', A: ['Drew', 'Robbins'] };
 function tonightNames() { const L = ['Drew']; for (const [sl] of LSLOTS) { const m = RN.map && RN.map[sl]; if (m) L.push(m.n); } return L; }
 function capNeed(names) { const inn = new Set(names || tonightNames()); return (inn.has(CAPS.C) ? 0 : 1) + CAPS.A.filter(a => !inn.has(a)).length; }
 function lettersFor(names) {
-  const inn = new Set(names || tonightNames()), L = {}; if (inn.has(CAPS.C)) L[CAPS.C] = 'C'; for (const a of CAPS.A) if (inn.has(a)) L[a] = 'A';
+  LAUTO.clear(); const inn = new Set(names || tonightNames()), L = {}; if (inn.has(CAPS.C)) L[CAPS.C] = 'C'; for (const a of CAPS.A) if (inn.has(a)) L[a] = 'A';
   let k = 0; const need = capNeed([...inn]); for (const s of st.capSub || []) { if (k >= need) break; if (s && inn.has(s) && !L[s]) { L[s] = 'A'; k++; } }
+  if (k < need) for (const n of capAuto(inn, L, need - k)) { L[n] = 'A'; LAUTO.add(n); }
   return L;
 }
+const LAUTO = new Set();                                                // stand-ins picked automatically (shown as "auto")
 function capLetter(name) { if (!name) return ''; const t = nowS(); if (!KIT.lt || t - KIT.ltT > 1) { KIT.lt = lettersFor(); KIT.ltT = t; } return KIT.lt[name] || ''; }
-function capText(names) { const L = lettersFor(names), c = Object.keys(L).filter(n => L[n] === 'C'), a = Object.keys(L).filter(n => L[n] === 'A'); return (c.length ? 'C ' + c[0] : 'No C') + ' · A ' + (a.length ? a.join(', ') : 'none'); }
+function capText(names) { const L = lettersFor(names), c = Object.keys(L).filter(n => L[n] === 'C'), a = Object.keys(L).filter(n => L[n] === 'A'); return (c.length ? 'C ' + c[0] : 'No C') + ' · A ' + (a.length ? a.map(n => n + (LAUTO.has(n) ? ' (auto)' : '')).join(', ') : 'none'); }
 
 // ---- Phase 13d: penalties (first version) and puck protection.
 // Minors only: two minutes of game clock for hooking, tripping, slashing, holding, interference or body checking (rec hockey here is non-contact).
@@ -2993,6 +2995,111 @@ function protShield(s) {                                                // how m
   return clamp(1 - (d - 0.2) / 0.3, 0, 1);
 }
 
+// ---- Spond: who's coming on game night. Every lad has his own habits: some are always in and reply straight away, some reply late or
+// say "maybe" first, a few are hard to pin down. Replies come in as the week goes (after the texts, after training); anyone still quiet on
+// game night either turns up anyway or doesn't. You get three nudges a week to chase a no-reply or a maybe. Tonight's lines, the goalie
+// and the stand-in A all come from who's actually going. The event takes 14 skaters plus you; anyone over that is a reserve, like Spond's
+// own waiting list, and steps in if someone drops out.
+const SP_F = ['17', '12', '27', '19', '22', '14', '16', '10'], SP_D = ['44', '5', '2', '8', '3', '6'], SP_MIN = ['17', '12', '27', '19', '22', '44', '5', '2', '8'], SP_CAP = 14;
+const SP_YES = ['In', "Aye, I'll be there", 'Sorry, forgot to click. In', 'Yes mate', 'Count me in', 'Wouldnae miss it'];
+const SP_NO = ["Can't make this one, sorry", 'Out this week, sorry pal', 'Not this week, gutted', "Can't do this week, next week though"];
+function spR(key) { let h = 2166136261; for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); } h ^= h >>> 15; h = Math.imul(h, 2246822507); h ^= h >>> 13; return (h >>> 0) / 4294967296; }
+const spRoster = () => (RN.players || []).filter(p => p.n && p.n !== 'Drew');
+function spRegular(n) { const lu = st.lineup || {}, M = RN.spSaved || RN.map; return Object.values(lu).includes(n) || (M && Object.values(M).some(m => m && m.n === n)); }
+function spTruth(vc, n) {                                                // what he'll do this week (fixed for the week, so it's the same every time you look)
+  const k = vc.season + '-' + vc.week + '-' + n, rel = 0.22 + 0.45 * spR(n + 'rel') + (spRegular(n) ? 0.2 : 0) + (n === CAPS.C || CAPS.A.includes(n) ? 0.1 : 0), q = spR(n + 'q'), fl = spR(n + 'm');
+  const can = spR(k + 'c') < rel;
+  let r1 = q > 0.62 ? 0 : q > 0.32 ? 1 : q > 0.1 ? 2 : 3; if (spR(k + 'j') < 0.25) r1++; if (spR(k + 'k') < 0.2) r1--; r1 = clamp(r1, 0, 3);
+  const maybe = r1 < 3 && spR(k + 'm') < 0.12 + 0.3 * fl * (can ? 0.6 : 1), drop = can && spR(k + 'd') < 0.04;
+  return { can, r1, maybe, drop, t: r1 + spR(k + 't') };                // t: when he replied (for first come, first served)
+}
+function spWeek() {
+  const vc = CAR.vc; if (!vc) return null;
+  if (!vc.sp || vc.sp.wk !== vc.week || vc.sp.season !== vc.season) vc.sp = { wk: vc.week, season: vc.season, nud: {}, left: 3, fin: 0, log: [] };
+  return vc.sp;
+}
+const spStage = () => { const vc = CAR.vc, sp = spWeek(); return sp.fin ? 3 : vc.wk.train ? 2 : vc.wk.chat ? 1 : 0; };
+function spStatus(n) {                                                  // 'yes' | 'no' | 'maybe' | 'none' | 'late' (turned up without replying) | 'drop' (dropped out today)
+  const vc = CAR.vc, sp = spWeek(), T = spTruth(vc, n), s = spStage();
+  if (sp.nud[n]) return sp.fin && T.drop ? 'drop' : sp.nud[n];
+  if (s >= 3) { if (T.r1 >= 3 || (T.maybe && T.r1 >= 2)) return T.can ? (T.drop ? 'drop' : 'late') : 'no'; return T.can ? (T.drop ? 'drop' : 'yes') : 'no'; }
+  if (s < T.r1) return 'none';
+  if (T.maybe && s < T.r1 + 1) return 'maybe';
+  return T.can ? 'yes' : 'no';
+}
+const spIn = st0 => st0 === 'yes' || st0 === 'late';
+function spNudge(n) {
+  const sp = spWeek(), s0 = spStatus(n); if (sp.fin || sp.left <= 0 || !(s0 === 'none' || s0 === 'maybe')) return;
+  const T = spTruth(CAR.vc, n); sp.left--; sp.nud[n] = T.can ? 'yes' : 'no';
+  const msg = (T.can ? SP_YES : SP_NO)[Math.floor(spR(n + sp.wk + 'msg') * (T.can ? SP_YES : SP_NO).length)];
+  sp.log.unshift(firstN(n) + ': "' + msg + '"'); sp.log = sp.log.slice(0, 3); PH.dirty = true; carSave();
+}
+function spCounts() { const c = { yes: 0, maybe: 0, no: 0, none: 0 }; for (const p of spRoster()) { const s = spStatus(p.n); c[spIn(s) ? 'yes' : s === 'drop' ? 'no' : s]++; } return c; }
+// tonight's team from who's going: your lines where you can, the gaps filled from the rest (a D up front or a forward back if need be),
+// spares from the waiting list only if there aren't enough to ice two lines and two pairs
+function spBuild() {
+  const R = spRoster(), by = {}; for (const p of R) by[p.n] = p;
+  const order = R.map(p => ({ p, s: spStatus(p.n), T: spTruth(CAR.vc, p.n) })).filter(e => spIn(e.s)).sort((a, b) => (spRegular(b.p.n) ? 1 : 0) - (spRegular(a.p.n) ? 1 : 0) || a.T.t - b.T.t);
+  const G = order.filter(e => e.p.pos === 'G'), sk = order.filter(e => e.p.pos !== 'G'), inn = sk.slice(0, SP_CAP), res = sk.slice(SP_CAP).map(e => e.p.n);
+  const pref = RN.spSaved || RN.map || {}, m = {}, used = new Set(), have = new Set(inn.map(e => e.p.n));
+  for (const sl of SP_F.concat(SP_D)) { const n = pref[sl] && pref[sl].n; if (n && have.has(n) && !used.has(n)) { m[sl] = by[n]; used.add(n); } }
+  const fill = (slots, pos) => { for (const sl of slots) if (!m[sl]) { const e = inn.find(e => !used.has(e.p.n) && (!pos || e.p.pos === pos)); if (e) { m[sl] = e.p; used.add(e.p.n); } } };
+  const mF = SP_MIN.filter(x => SP_F.includes(x)), mD = SP_MIN.filter(x => SP_D.includes(x));
+  fill(mF, 'F'); fill(mD, 'D'); fill(SP_MIN, null); fill(SP_F, 'F'); fill(SP_D, 'D'); fill(SP_F, null); fill(SP_D, null);   // two lines and two pairs first, then the rest
+  const moved = []; for (const sl of SP_F) if (m[sl] && m[sl].pos === 'D') moved.push(firstN(m[sl].n) + ' up front'); for (const sl of SP_D) if (m[sl] && m[sl].pos === 'F') moved.push(firstN(m[sl].n) + ' on D');
+  let sp = 0; for (const sl of SP_MIN) if (!m[sl]) m[sl] = { n: 'Spare ' + (++sp), num: String(90 + sp), spare: true };
+  const map = {}; for (const sl in m) map[sl] = { n: m[sl].n, num: m[sl].num, spare: !!m[sl].spare };
+  const absent = new Set(SP_F.concat(SP_D).filter(sl => !map[sl]));
+  const gs = (RN.players || []).filter(p => p.pos === 'G'), g1 = gs.find(p => p.n === (st.lineup || {}).G) || gs[0], gk = G.find(e => g1 && e.p.n === g1.n) || G[0];
+  return { map, absent, gk: gk ? gk.p.n : 'Ringer goalie', res, moved, spares: sp, n: inn.length };
+}
+function spApply() {                                                     // game night: tonight's team takes over the lines (until next week)
+  if (CAR.mode !== 'career' || !CAR.vc || !RN.players || RN.spSaved) return null;
+  const sp = spWeek(); sp.fin = 1; const B = spBuild(); RN.spSaved = RN.map || {}; RN.map = B.map; RN.absent = B.absent; RN.gkTonight = B.gk; RN.spB = B;
+  for (const k in SKP) { const q = SKP[k]; if (q.team === 'ravens') rosterLabel(q.p, q.num); } goalieName(); KIT.ltT = -9; carSave(); return B;
+}
+function spRestore() {
+  if (!RN.spSaved) return; RN.map = RN.spSaved; RN.spSaved = null; RN.absent = null; RN.gkTonight = null; RN.spB = null;
+  for (const k in SKP) { const q = SKP[k]; if (q.team === 'ravens') rosterLabel(q.p, q.num); } goalieName(); KIT.ltT = -9;
+}
+// the stand-in A when you haven't picked one (or your pick isn't there): whoever has played the most games for the club, then roster order
+function capAuto(inn, L, need) {
+  const vc = CAR.vc, ps = vc && vc.ps || {}, ro = (RN.players || []).map(p => p.n), out = [];
+  const gk = new Set((RN.players || []).filter(p => p.pos === 'G').map(p => p.n)), pool = [...inn].filter(n => n !== 'Drew' && !L[n] && !gk.has(n) && !/^Spare /.test(n) && n !== CAPS.C && !CAPS.A.includes(n)).sort((a, b) => ((ps[b] || {}).gp || 0) - ((ps[a] || {}).gp || 0) || (ro.indexOf(a) < 0 ? 99 : ro.indexOf(a)) - (ro.indexOf(b) < 0 ? 99 : ro.indexOf(b)));
+  for (const n of pool) { if (out.length >= need) break; out.push(n); } return out;
+}
+// ---- the Spond screen on your phone
+const SP_COL = { yes: '#6fd07a', late: '#6fd07a', maybe: '#e0b030', no: '#e06a5a', drop: '#e06a5a', none: '#7d70a0' };
+const SP_TXT = { yes: 'Going', late: 'Turned up (no reply)', maybe: 'Maybe', no: "Can't go", drop: 'Dropped out today', none: 'No reply' };
+function phSpond(y) {
+  const W = PHW, f = fxNow(), sp = spWeek(), c = spCounts();
+  pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText('Spond', 44, y + 24);
+  pg.fillStyle = '#b9a8d8'; pg.font = '600 22px system-ui, sans-serif'; { let t = 'Game night vs ' + (f ? f.opp : '') + (f ? (f.home ? ' (home)' : ' (away)') : ''); while (pg.measureText(t).width > W - 88 && t.length > 8) t = t.slice(0, -2); pg.fillText(t, 44, y + 58); }
+  if (!RN.players) { pg.fillStyle = '#e0a928'; pWrap('Spond needs the team list from your server. Set the server up on the start page.', W - 88, '500 23px system-ui, sans-serif').forEach((l, k) => pg.fillText(l, 44, y + 110 + k * 30)); return; }
+  const chip = (x, lab, v, col) => { pRect(x, y + 78, 124, 62, 14, '#211836'); pg.textAlign = 'center'; pg.fillStyle = col; pg.font = '800 28px system-ui, sans-serif'; pg.fillText(String(v), x + 62, y + 102); pg.fillStyle = '#b9a8d8'; pg.font = '600 16px system-ui, sans-serif'; pg.fillText(lab, x + 62, y + 128); };
+  chip(34, 'Going', c.yes + 1, SP_COL.yes); chip(166, 'Maybe', c.maybe, SP_COL.maybe); chip(298, "Can't", c.no, SP_COL.no); chip(430, 'No reply', c.none, SP_COL.none);
+  pg.textAlign = 'left'; pg.font = '600 20px system-ui, sans-serif';
+  const B = sp.fin ? (RN.spB || spBuild()) : null;
+  let note = sp.fin ? 'Tonight: ' + (B.n + 1) + ' skaters' + (B.res.length ? ', ' + B.res.length + ' reserve' + (B.res.length > 1 ? 's' : '') : '') + (B.moved.length ? '. ' + B.moved.join(', ') : '') + (B.spares ? '. ' + B.spares + ' spare' + (B.spares > 1 ? 's' : '') + ' from the waiting list' : '') + '. In goal: ' + B.gk + '.'
+    : 'Nudges left this week: ' + sp.left + '. Tap a maybe or a no-reply to chase him. More replies come in after the texts and after training.';
+  pg.fillStyle = sp.fin ? '#e0a928' : '#c9bde3'; const NL = pWrap(note, W - 88, '600 20px system-ui, sans-serif').slice(0, 3); NL.forEach((l, k) => pg.fillText(l, 44, y + 166 + k * 25));
+  let yy = y + 172 + NL.length * 25;
+  if (sp.log.length) { pg.fillStyle = '#9fe0b0'; pg.font = '500 20px system-ui, sans-serif'; pg.fillText(sp.log[0], 44, yy + 4); yy += 30; }
+  pg.fillStyle = '#e0a928'; pg.font = '700 20px system-ui, sans-serif'; pg.fillText('Letters: ' + capText(sp.fin ? undefined : ['Drew'].concat(spRoster().filter(p => p.pos !== 'G' && spIn(spStatus(p.n))).map(p => p.n))), 44, yy + 4); yy += 22;
+  const rank = { none: 0, maybe: 1, yes: 2, late: 2, no: 3, drop: 3 };
+  const rows = [{ n: 'Drew', s: 'yes', me: true }].concat(spRoster().map(p => ({ n: p.n, pos: p.pos, s: spStatus(p.n) })).sort((a, b) => rank[a.s] - rank[b.s] || a.n.localeCompare(b.n)));
+  const top = yy + 6, bot = PHH - 120, rh = 50, off = PH.scroll = clamp(PH.scroll, 0, Math.max(0, rows.length * rh - (bot - top)));
+  pg.save(); pg.beginPath(); pg.rect(20, top, W - 40, bot - top); pg.clip();
+  rows.forEach((r, i) => {
+    const ry = top + i * rh - off; if (ry < top - rh || ry > bot) return;
+    const chase = !sp.fin && sp.left > 0 && (r.s === 'none' || r.s === 'maybe'), res = B && B.res.includes(r.n);
+    if (chase && ry >= top - 1 && ry + rh <= bot + 1) pBtn(34, ry + 3, W - 68, rh - 6, '', '#2a1a44', () => spNudge(r.n)); else pRect(34, ry + 3, W - 68, rh - 6, 12, chase ? '#2a1a44' : '#1c1430');
+    pg.fillStyle = SP_COL[r.s]; pg.beginPath(); pg.arc(60, ry + rh / 2, 9, 0, 7); pg.fill();
+    pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '600 23px system-ui, sans-serif'; pg.fillText((r.me ? 'You' : r.n) + (r.pos === 'G' ? '  (G)' : r.pos === 'D' ? '  (D)' : ''), 80, ry + rh / 2 + 1);
+    pg.textAlign = 'right'; pg.fillStyle = res ? '#e0a928' : SP_COL[r.s]; pg.font = '600 19px system-ui, sans-serif'; pg.fillText(res ? 'Reserve' : chase ? SP_TXT[r.s] + ' · nudge' : SP_TXT[r.s], W - 52, ry + rh / 2 + 1);
+  });
+  pg.restore();
+}
 // off-ice hands: on the knees in the room, one on the table and a pint in the other in the pub, on the boards for Crofty; the free hand talks
 const _hl = new THREE.Vector3(), _hr = new THREE.Vector3();
 function offArms(P, dt, by, cl, sl, hipY, hy, hz) {
@@ -4137,6 +4244,10 @@ function scStart(mode, fx) {
   const R = SC.mode === '5' ? ROSTER5 : ROSTER3;
   if (SC.mode === '5') {                                                 // forward lines and D pairs, changing separately
     SC.grp = {}; for (const t of ['ravens', 'visitors']) SC.grp[t] = { F: R[t].F.map(L => mkLine(t, L)), D: R[t].D.map(L => mkLine(t, L)) };
+    if (RN.absent && RN.absent.size) {                                   // tonight's Spond: the slots nobody's in sit out
+      const G = SC.grp.ravens; for (const k of ['F', 'D']) { G[k] = G[k].map(L => { for (const q of L) if (RN.absent.has(q.num)) skShow(q, false); return L.filter(q => !RN.absent.has(q.num)); }); G[k] = G[k].filter((L, i) => L.length || (k === 'F' && i === 0)); }
+      if (G.D.length === 0) G.D = [[]]; if (G.F.length < 2) G.F.push([]);
+    }
     SC.lines = { ravens: [...SC.grp.ravens.F, ...SC.grp.ravens.D], visitors: [...SC.grp.visitors.F, ...SC.grp.visitors.D] };
   } else { SC.grp = null; SC.lines = { ravens: R.ravens.map(L => mkLine('ravens', L)), visitors: R.visitors.map(L => mkLine('visitors', L)) }; }
   SC.fPrev = 2; SC.fChgT = -99; SC.goals = [];
@@ -4976,6 +5087,7 @@ const RN = { map: null, at: 0, players: null }, RSLOTS = { F: ['17', '12', '19',
 const LSLOTS = [['17', 'Line 1 centre'], ['12', 'Line 1 right wing'], ['27', 'Line 2 left wing'], ['19', 'Line 2 centre'], ['22', 'Line 2 right wing'], ['14', 'Line 3 left wing'], ['16', 'Line 3 centre'], ['10', 'Line 3 right wing'], ['44', 'D pair 1'], ['5', 'D pair 1'], ['2', 'D pair 2'], ['8', 'D pair 2'], ['3', 'D pair 3'], ['6', 'D pair 3']];
 function rosterApply(j) {
   if (!j || !Array.isArray(j.players)) return;
+  const spWas = !!RN.spSaved; if (spWas) { RN.map = RN.spSaved; RN.spSaved = null; RN.absent = null; RN.spB = null; }
   RN.players = j.players;
   const byN = {}, used = new Set(), m = {}, lu = st.lineup || {}; for (const p of j.players) byN[p.n] = p;
   for (const [sl] of LSLOTS) { const n = lu[sl]; if (n && byN[n] && byN[n].pos !== 'G' && !used.has(n)) { m[sl] = byN[n]; used.add(n); } }
@@ -4986,6 +5098,7 @@ function rosterApply(j) {
   RN.map = {}; for (const k in m) RN.map[k] = { n: m[k].n, num: m[k].num };
   if (typeof lineupUI === 'function') lineupUI();
   for (const k in SKP) { const s = SKP[k]; if (s.team === 'ravens') rosterLabel(s.p, s.num); }
+  if (spWas) spApply();
 }
 function rosterLabel(P, slot) {
   const R = RN.map && RN.map[slot]; if (!R || P.goalie || P.team !== 'ravens') return;
@@ -5320,6 +5433,7 @@ function drawPhone() {
   else if (PH.scr === 'letters') phLetters(y0);
   else if (PH.scr === 'player') phPlayer(y0);
   else if (PH.scr === 'season') phSeason(y0);
+  else if (PH.scr === 'spond') phSpond(y0);
   if (PH.scr !== 'thread') {                                            // bottom bar
     const un = Object.keys(vc && vc.unread || {}).length;
     const nb = [['Home', () => { PH.scr = 'home'; }], [un ? 'Texts (' + un + ')' : 'Texts', () => { PH.scr = 'contacts'; PH.scroll = 0; }], ['Talon', () => { PH.scr = 'table'; }], ['Stats', () => { PH.scr = 'stats'; PH.scroll = 0; }], ['Lines', () => { MENU.tab = TABS.indexOf('Lines'); openMenu(); }], ['Settings', () => { openMenu(); }]];
@@ -5334,6 +5448,7 @@ function phHome(y) {
   pg.textAlign = 'left'; pg.fillStyle = '#b9a8d8'; pg.font = '600 22px system-ui, sans-serif'; pg.fillText(f.cup ? 'TALON CUP' : 'FRIENDLY', 58, y + 34);
   pg.fillStyle = '#ffffff'; pg.font = '800 34px system-ui, sans-serif'; pWrap('Ravens vs ' + f.opp, W - 120, '800 34px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 58, y + 78 + k * 40));
   pg.fillStyle = '#e0a928'; pg.font = '600 24px system-ui, sans-serif'; pg.fillText((f.home ? 'Home' : 'Away') + ' · Record ' + vc.rec.w + '-' + vc.rec.d + '-' + vc.rec.l, 58, y + 150);
+  if (RN.players) { const c = spCounts(); pBtn(W - 214, y + 112, 166, 50, 'Spond ' + (c.yes + 1) + ' in', c.none + c.maybe && spWeek().left && !spWeek().fin ? '#8a3b1c' : '#3d1778', () => { PH.scr = 'spond'; PH.scroll = 0; }, 21); }
   // meters
   const mtr = (l, v, x) => { pg.fillStyle = '#b9a8d8'; pg.font = '600 22px system-ui, sans-serif'; pg.textAlign = 'left'; pg.fillText(l, x, y + 205); pRect(x, y + 222, 240, 14, 7, '#2a1f40'); pRect(x, y + 222, 240 * clamp(v, 0, 100) / 100, 14, 7, '#e0a928'); };
   mtr('Confidence', vc.conf, 44); mtr('Team spirit', vc.vibe, 316);
@@ -5413,11 +5528,12 @@ function phGame(y) {
   pRect(34, y + 160, W - 68, 250, 24, '#2a2140'); pg.fillStyle = '#e0a928'; pg.font = '700 22px system-ui, sans-serif'; pg.fillText('Crofty', 58, y + 192);
   pg.fillStyle = '#ffffff'; pWrap(g, W - 116, '500 27px system-ui, sans-serif').slice(0, 6).forEach((l, k) => pg.fillText(l, 58, y + 232 + k * 34));
   { const need = capNeed(); pg.textAlign = 'left'; pg.fillStyle = need && Object.keys(lettersFor()).length < 3 ? '#e08a8a' : '#e0a928'; pg.font = '600 20px system-ui, sans-serif'; pWrap('Letters: ' + capText(), W - 290, '600 20px system-ui, sans-serif').slice(0, 2).forEach((l, k) => pg.fillText(l, 44, y + 434 + k * 24)); }
+  if (RN.players) { const B = RN.spB || spApply(); if (B) { pg.textAlign = 'right'; pg.fillStyle = '#9fe0b0'; pg.font = '600 19px system-ui, sans-serif'; pg.fillText((B.n + 1) + ' skaters' + (B.res.length ? ' + ' + B.res.length + ' res.' : '') + (B.spares ? ', ' + B.spares + ' spare' : '') + ' · ' + firstN(B.gk) + ' in goal', W - 58, y + 192); pBtn(W - 214, y - 2, 180, 48, 'Spond ' + (B.n + 1) + ' in', '#2a1a44', () => { PH.scr = 'spond'; PH.scroll = 0; }, 20); } }
   pBtn(W - 224, y + 418, 190, 44, capNeed() && Object.keys(lettersFor()).length < 3 ? 'Pick the A' : 'Letters', capNeed() && Object.keys(lettersFor()).length < 3 ? '#8a3b1c' : '#2a1a44', () => { PH.scr = 'letters'; PH.scroll = 0; }, 21);
   pBtn(34, y + 482, W - 68, 92, 'To the dressing room', '#5a2bb0', () => carRoom('pre'), 32);
   pBtn(34, y + 590, W - 68, 70, 'Sim it (no time tonight)', '#2a1a44', () => carGameSim(), 25);
   if (CAR.cl) pBtn(34, y + 712, W - 68, 70, "Use Crofty's lines", '#3d1778', () => { st.lineup = Object.assign({}, CAR.cl.lu); saveSettings(); if (RN.players) rosterApply({ players: RN.players }); CAR.vc.lineNews = 'Crofty\'s new lines: ' + CAR.cl.ch.join('; '); CAR.pre = 'Done, new lines are in. ' + CAR.pre.replace(/^Lines: [^.]*\. /, ''); CAR.cl = null; toast("Crofty's lines are in", 1.5); }, 25);
-  pg.fillStyle = '#7d70a0'; pg.font = '500 20px system-ui, sans-serif'; pg.textAlign = 'center'; pg.fillText('Periods: ' + PER_NAMES[st.perP] + ' (Drills tab in Settings)', W / 2, y + 688 + (CAR.cl ? 112 : 0));
+  pg.fillStyle = '#7d70a0'; pg.font = '500 20px system-ui, sans-serif'; pg.textAlign = 'center'; pg.fillText('Periods: 3 x 20 min', W / 2, y + 688 + (CAR.cl ? 112 : 0));
 }
 const talonRows = vc => Object.entries(vc.tab).sort((a, b) => b[1].pts - a[1].pts || (b[1].gf - b[1].ga) - (a[1].gf - a[1].ga) || b[1].gf - a[1].gf);
 function phTable(y) {
@@ -5461,10 +5577,10 @@ function phLetters(y) {                                                 // who w
   const W = PHW, names = tonightNames(), inn = new Set(names), need = capNeed(names), L = lettersFor(names), sub = (st.capSub || []).filter(Boolean);
   pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText('The letters', 44, y + 24);
   const out = [CAPS.C].concat(CAPS.A).filter(n => !inn.has(n));
-  const msg = out.length ? out.join(' and ') + (out.length > 1 ? " aren't" : " isn't") + ' in tonight\'s lineup. Pick ' + need + ' to wear the A' + (need > 1 ? 's' : '') + ' instead.' : 'Tony has the C, and you and Robbins the A. If one of them is out of the lineup, pick a stand-in here.';
+  const msg = out.length ? out.join(' and ') + (out.length > 1 ? " aren't" : " isn't") + ' in tonight\'s lineup. ' + (LAUTO.size ? 'Whoever has played the most games for the club wears the A (auto). Tap someone to choose instead.' : 'Pick ' + need + ' to wear the A' + (need > 1 ? 's' : '') + ' instead.') : 'Tony has the C, and you and Robbins the A. If one of them is out of the lineup, pick a stand-in here.';
   pg.fillStyle = '#c9bde3'; pWrap(msg, W - 88, '500 23px system-ui, sans-serif').forEach((l, k) => pg.fillText(l, 44, y + 66 + k * 30));
   pg.fillStyle = '#e0a928'; pg.font = '700 22px system-ui, sans-serif'; pg.fillText(capText(names), 44, y + 168);
-  const pool = names.filter(n => n !== 'Drew' && n !== CAPS.C && !CAPS.A.includes(n));
+  const pool = names.filter(n => n !== 'Drew' && n !== CAPS.C && !CAPS.A.includes(n) && !/^Spare /.test(n));
   pool.forEach((n, i) => { const on = L[n] === 'A', x = 34 + (i % 2) * ((W - 78) / 2 + 10), yy = y + 196 + Math.floor(i / 2) * 62;
     pBtn(x, yy, (W - 78) / 2, 54, (on ? 'A  ' : '') + n, on ? '#5a2bb0' : '#2a1a44', () => { let s2 = (st.capSub || []).filter(Boolean); if (s2.includes(n)) s2 = s2.filter(x => x !== n); else { s2.push(n); s2 = s2.slice(-Math.max(1, need)); } setSetting('capSub', s2); KIT.ltT = -9; }, 22); });
   if (!need) { pg.textAlign = 'center'; pg.fillStyle = '#7d70a0'; pg.font = '500 19px system-ui, sans-serif'; pg.fillText('(Picks only count when someone with a letter is out)', W / 2, y + 196 + Math.ceil(pool.length / 2) * 62 + 24); }
@@ -5726,10 +5842,10 @@ function carTrainDone(sc, reps) {
   setTimeout(() => carHub(), 3500);
 }
 // ---- game night
-function carGameGo() { const f = fxNow(), vc = CAR.vc; phoneClose(); CAR.step = 'game'; scStart('5', { id: 'VC' + vc.season + 'W' + vc.week, opp: f.opp, r: f.r, style: f.style, home: f.home, cup: f.cup }); }
+function carGameGo() { const f = fxNow(), vc = CAR.vc; phoneClose(); spApply(); CAR.step = 'game'; scStart('5', { id: 'VC' + vc.season + 'W' + vc.week, opp: f.opp, r: f.r, style: f.style, home: f.home, cup: f.cup }); }
 function poisson(l) { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; }
 function simScore(ra, rb) { return [poisson(clamp(2.9 + (ra - rb) * 12, 0.8, 6)), poisson(clamp(2.9 + (rb - ra) * 12, 0.8, 6))]; }
-function carLineup() { const L = ['Drew']; for (const [sl] of LSLOTS) { const m = RN.map && RN.map[sl]; L.push(m ? m.n : '#' + sl); } return L; }
+function carLineup() { const L = ['Drew']; for (const [sl] of LSLOTS) { const m = RN.map && RN.map[sl]; if (m && !m.spare) L.push(m.n); else if (!m && !RN.spSaved) L.push('#' + sl); } return L; }
 function carCredit(goals, gf, me) {                                     // Ravens goals: [{sc, as}]. Unknown scorers (and simmed games) get a likely one from the line-up
   const lu = carLineup(), fw = lu.filter((n, i) => i <= 8), out = [];
   let dg = me.g || 0, da = me.a || 0;
@@ -5743,7 +5859,7 @@ function carCredit(goals, gf, me) {                                     // Raven
 }
 function carRecord(gf, ga, me, sim, goals, pens) {
   const vc = CAR.vc, f = fxNow(), res = gf > ga ? 'W' : gf < ga ? 'L' : 'D';
-  { vc.ps = vc.ps || {}; const cr = carCredit(goals || [], gf, me), P = n => vc.ps[n] = vc.ps[n] || { gp: 0, g: 0, a: 0, tgp: 0, tg: 0, ta: 0 };
+  { vc.ps = vc.ps || {}; const cr = carCredit(goals || [], gf, me), P = n => /^Spare /.test(n) || n === 'Ringer goalie' ? {} : (vc.ps[n] = vc.ps[n] || { gp: 0, g: 0, a: 0, tgp: 0, tg: 0, ta: 0 });
     for (const n of cr.lu) { P(n).gp++; if (f.cup) P(n).tgp++; }
     for (const n of pens || []) P(n).pim = (P(n).pim || 0) + 2;
     { const L = lettersFor(cr.lu); for (const n in L) { if (L[n] === 'C') P(n).lC = (P(n).lC || 0) + 1; else P(n).lA = (P(n).lA || 0) + 1; } }
@@ -5761,7 +5877,7 @@ function carRecord(gf, ga, me, sim, goals, pens) {
   vc.conf = clamp(vc.conf + (res === 'W' ? 6 : res === 'D' ? 2 : -1) + 3 * (me.g || 0), 0, 100); vc.vibe = clamp(vc.vibe + (res === 'W' ? 5 : res === 'D' ? 2 : 0), 0, 100);
   vc.wk.game = 1; carSave();
 }
-function carGameSim() { const f = fxNow(), s = simScore(RAV_R + (CAR.vc.conf - 55) / 1000, f.r), g = Math.min(s[0], Math.random() < 0.35 ? 1 : 0), a = Math.min(s[0] - g, Math.random() < 0.35 ? 1 : 0); carRecord(s[0], s[1], { g, a, sh: 1 + Math.floor(Math.random() * 3) }, true); PH.note = CAR.vc.last.line; PH.scr = 'home'; }
+function carGameSim() { spApply(); const f = fxNow(), s = simScore(RAV_R + (CAR.vc.conf - 55) / 1000, f.r), g = Math.min(s[0], Math.random() < 0.35 ? 1 : 0), a = Math.min(s[0] - g, Math.random() < 0.35 ? 1 : 0); carRecord(s[0], s[1], { g, a, sh: 1 + Math.floor(Math.random() * 3) }, true); PH.note = CAR.vc.last.line; PH.scr = 'home'; }
 function carGameDone() {
   CAR.step = null; carRecord(SC.score[0], SC.score[1], { g: SC.my.g, a: SC.my.a, sh: SC.my.sh }, false, (SC.goals || []).filter(g => g.t === 'R').map(g => ({ sc: g.sc, as: g.as })), (SC.pens || []).filter(p => p.team === 'ravens').map(p => p.nm));
   PH.note = CAR.vc.last.line;
@@ -5770,7 +5886,7 @@ function carGameDone() {
 function carAbort() { if (CAR.step === 'train' || CAR.step === 'game') { CAR.step = null; PH.note = 'Stopped part way: start it again when you\'re ready.'; } }
 function carNextWeek() {
   const vc = CAR.vc; if (carNext()) return;
-  vc.week++; vc.wk = { chat: 0, train: 0, game: 0, after: 0 }; PH.note = ''; PH.scr = vc.week > CWEEKS ? 'season' : 'home'; carSave();
+  spRestore(); vc.week++; vc.wk = { chat: 0, train: 0, game: 0, after: 0 }; PH.note = ''; PH.scr = vc.week > CWEEKS ? 'season' : 'home'; carSave();
 }
 // ---- the hub: on the bench at the rink, phone in your hand
 function carHub() {
@@ -6694,7 +6810,7 @@ function roomBoard() {                                                   // the 
     const d = CAR.train && DRILLS.find(x => x.id === CAR.train.id), P = d && (d.fd ? d.fd.points : d.board && d.board.points) || [];
     g.fillStyle = '#1b3e9e'; g.font = '600 40px "Comic Sans MS", system-ui, sans-serif'; P.slice(0, 3).forEach((p, k) => g.fillText('- ' + p, 60, 300 + k * 60)); roomWbTex.needsUpdate = true; return; }
   g.fillText('vs ' + (f ? f.opp : ''), 60, 96);
-  const lu = st.lineup || {}, LT = lettersFor(), n = sl => { const nm = lu[sl] || (RN.map && RN.map[sl] && RN.map[sl].n) || '?'; return firstN(nm) + (LT[nm] ? ' (' + LT[nm] + ')' : ''); };
+  const lu = RN.spSaved ? {} : st.lineup || {}, LT = lettersFor(), n = sl => { const nm = lu[sl] || (RN.map && RN.map[sl] && RN.map[sl].n) || (RN.spSaved ? '-' : '?'); return firstN(nm) + (LT[nm] ? ' (' + LT[nm] + ')' : ''); };
   g.font = '600 40px "Comic Sans MS", system-ui, sans-serif'; g.fillStyle = '#222222';
   const rows = [['1', 'Drew' + (LT.Drew ? ' (' + LT.Drew + ')' : '') + ' - ' + n('17') + ' - ' + n('12')], ['2', n('27') + ' - ' + n('19') + ' - ' + n('22')], ['3', n('14') + ' - ' + n('16') + ' - ' + n('10')], ['D', n('44') + ' - ' + n('5') + '   ' + n('2') + ' - ' + n('8') + '   ' + n('3') + ' - ' + n('6')], ['G', firstN(lu.G || 'Craig')]];
   rows.forEach(([k, t], i) => { g.fillStyle = '#b01e2a'; g.fillText(k, 60, 170 + i * 62); g.fillStyle = '#222222'; g.fillText(t, 120, 170 + i * 62); });
@@ -6722,6 +6838,7 @@ function roomPlayer(i, name) {
 }
 // in you go: the lads are already in, in their kit
 function carRoom(kind) {
+  if (kind === 'pre') spApply();
   phoneClose(); if (DR.on) drillStop(true); if (SC.on) scStop(true);
   if (CAR.place === 'pub') { for (const o of PUBP) o.p.root.visible = false; }
   SCN.length = 0; CAR.place = 'room'; Object.assign(RM, { kind, phase: 'chat', t: 0, talkT: 0, quietT: 0, talked: false, talking: false, said: 0, lastSent: MIC.sent, hov: -1, poseT: 1, heard: '' });
@@ -6779,7 +6896,7 @@ async function roomSay(P, text) {                                       // a set
   }
 }
 function roomTalkText() {                                               // Crofty's talk: who we're playing and how they play, the plan, the lines, and a lift
-  const f = fxNow(), vc = CAR.vc, lu = st.lineup || {}, n = sl => { const x = firstN(lu[sl] || (RN.map && RN.map[sl] && RN.map[sl].n) || ''); return x === 'Crofty' ? 'me' : x; };
+  const f = fxNow(), vc = CAR.vc, lu = RN.spSaved ? {} : st.lineup || {}, n = sl => { const x = firstN(lu[sl] || (RN.map && RN.map[sl] && RN.map[sl].n) || ''); return x === 'Crofty' ? 'me' : x; };
   const opp = f ? f.opp : 'this lot', cup = f && f.cup ? ' Talon Cup game, so it counts.' : '';
   const how = f ? (f.style === 'forecheck' ? opp + ' come hard on the forecheck. Move it quick, first pass out, and our D talk to each other.' : f.style === 'rush' ? opp + ' love to counter on the rush. Everybody backchecks, and we don\'t get caught three high.' : f.style === 'cycle' ? opp + ' grind it low and cycle. Win your battles on the wall and keep the front of our net clear.' : opp + ' are patient with it. Make them chase, keep our shape, and get pucks to the net.') : 'Keep it simple and get pucks to the net.';
   const rec = vc && vc.rec ? (vc.rec.w > vc.rec.l ? 'We\'re playing well, so keep it going.' : vc.rec.l > vc.rec.w ? 'Results haven\'t gone our way yet, but the work\'s there. Tonight\'s the night it turns.' : '') : '';
@@ -7131,7 +7248,7 @@ function setSetting(key, val) {
 const KEEP_NAMES = { hold: 'Hold the trigger', toggle: 'Press on, press off', off: 'Off' };
 const MOUNT_KEYS = ['off', 'right', 'left'], MOUNT_NAMES = { off: 'Off', right: 'Right controller', left: 'Left controller' };
 const ONEM_KEYS = ['hold', 'btn', 'grip', 'off'], ONEM_NAMES = { hold: 'Lower trigger: hold', btn: 'A button', grip: 'Lower grip: hold', off: 'Off' };
-function goalieName() { const gks = RN.players ? RN.players.filter(p => p.pos === 'G') : []; const g = gks.find(p => p.n === (st.lineup || {}).G) || gks[0]; if (SC.g2 && g) SC.g2.p.name = g.n; }
+function goalieName() { const gks = RN.players ? RN.players.filter(p => p.pos === 'G') : []; const g = gks.find(p => p.n === (RN.gkTonight || (st.lineup || {}).G)) || gks[0]; if (SC.g2 && (RN.gkTonight || g)) SC.g2.p.name = RN.gkTonight || g.n; }
 function lineSet(sl, d) {                                                // who plays where: cycle through the lads not already in a spot
   if (!RN.players) return;
   const sk = RN.players.filter(p => p.pos === 'F').concat(RN.players.filter(p => p.pos === 'D')), lu = {};
@@ -7390,7 +7507,7 @@ function explain(e) {
 }
 let failure = '';
 async function enterVR(mode) {
-  CAR.mode = mode === 'career' ? 'career' : 'sandbox';
+  CAR.mode = mode === 'career' ? 'career' : 'sandbox'; if (CAR.mode !== 'career') spRestore();
   showErr(''); failure = '';
   if (!navigator.xr) { failure = explain(); showErr(failure); return; }
   closeAudio(); if (st.sound) audio = makeAudio();                       // created inside the tap, so the browser allows sound
@@ -7618,7 +7735,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
