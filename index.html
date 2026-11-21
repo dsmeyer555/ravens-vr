@@ -5522,16 +5522,17 @@ function scSlot(s, carrier, carrierTeam) {
   const cx = carrier ? (carrier === 'human' ? H.x : carrier.x) : PK.x, cz = carrier ? (carrier === 'human' ? H.z : carrier.z) : PK.z, pu = dir * cx, pv = dir * cz;
   const side = Math.abs(pv) > 1 ? Math.sign(pv) : (s.ln || 1), strong = s.ln === side;
   const mode = !carrier ? (pu > -2 ? 'O' : 'D') : carrierTeam === s.team ? 'O' : 'D';
-  const lim = BLUEL - 1.6, onside = t => { const tu = dir * t[0]; if (st.rulesOn && pu < BLUEL && tu > lim) { if (dir * s.x > lim + 1) s.urg = true; return [dir * lim, t[1]]; } return t; };
+  const cvu = carrier ? Math.max(0, dir * (carrier === 'human' ? S.vx : carrier.vx)) : 0;   // how fast the play's going up ice
+  const lim = BLUEL - 1.6, onside = t => { const tu = dir * t[0]; if (st.rulesOn && pu < BLUEL && tu > lim) { if (dir * s.x > BLUEL - 0.3 && pu < BLUEL - 1) s.urg = true; return [dir * Math.max(lim, Math.min(tu, pu - 0.5)), t[1]]; } return t; };   // ride level with the puck, don't park at the line
   if (mode === 'O') {
     if (pu < -BLUEL) {                                                   // breakout
       if (s.role === 'D') return strong ? W(clamp(pu - 2, -GX + 2, -BLUEL - 6), side * 7) : W(-GX + 2, -side * 6);
       if (s.role === 'W') return strong ? W(-17, side * 11.3) : W(s.q && s.q.early ? -3 : -8, -side * 11);
-      return W(clamp(pu + 8, -20, -10), -side * 1.5);
+      return W(clamp(pu + 4 + cvu * 0.6, -GX + 7, -4), -side * 1.8);   // the centre swings low and comes with speed
     }
     if (pu < BLUEL) {                                                    // the rush: wide lanes ahead of the puck (onside), centre trailing, D1 8 m back, D2 holding
-      if (s.role === 'W') return onside(W(pu + 4.5, s.ln * 10.5));
-      if (s.role === 'C') return onside(W(pu - 3, -side * 2.5));
+      if (s.role === 'W') return onside(W(pu + 4.5 + cvu * 0.7, s.ln * 10.5));
+      if (s.role === 'C') return onside(W(pu - 2 + cvu * 0.5, -side * 2.5));
       { const dm = sysD(s); if (dm === 'active') return strong ? W(pu - 3.5, side * 5) : W(pu - 9, -side * 3); if (dm === 'home') return strong ? W(pu - 10.5, side * 4) : W(pu - 15, -side * 3); }
       return strong ? W(pu - 8, side * 4) : W(pu - 13, -side * 3);
     }
@@ -5604,6 +5605,34 @@ function scNoneBehind(s, t, carrier, dir) {
   if (hit) { s.gm = true; if (tu < su - 1.5) s.urg = true; return [dir * tu, tz]; }
   return t;
 }
+// with the puck: everyone works for it. Behind the play and it's going up ice: skate (full speed, no dawdling). In their end: get open, don't
+// stand on a defender or behind one, keep moving a little so the man with the puck has someone to find, and come to him if he's in trouble.
+function scSupport(s, t, carrier, dir) {
+  const human = carrier === 'human', cx = human ? H.x : carrier.x, cz = human ? H.z : carrier.z, cvu = dir * (human ? S.vx : carrier.vx), pu = dir * cx;
+  const far = Math.hypot(t[0] - s.x, t[1] - s.z);
+  if (far > 3 && (cvu > 2 || pu > BLUEL) && dir * s.x < pu + 2) s.gm = true;              // the play's going: get up with it
+  if (pu < BLUEL || s.role === 'G') return t;
+  const opp = SC.sk.filter(o => o.team !== s.team && !o.chg && o.role !== 'G');
+  let tx = t[0], tz = t[1];
+  if (Math.hypot(tx - cx, tz - cz) < 4.5 && s.role !== 'D') {               // my spot's where he is: don't crowd him, give him another option
+    const side = Math.sign(cz * dir) || 1, mates = SC.sk.filter(o => o.team === s.team && o !== s && !o.chg), free = (u, v) => !mates.some(o => Math.hypot(o.x - dir * u, o.z - dir * v) < 3);
+    const opts = [[GX - 6, -side * 4], [GX - 2.5, side * 5.5], [GX - 10, -side * 2], [BLUEL + 5, side * 6]];
+    const o = opts.find(([u, v]) => free(u, v) && Math.hypot(dir * u - cx, dir * v - cz) > 5) || opts[0]; tx = dir * o[0]; tz = dir * o[1];
+  }
+  // a little purposeful movement around the spot (each man his own rhythm), more for forwards than the points
+  const ph = pClock * (s.role === 'D' ? 0.5 : 0.8) + (s.num || s.ln || 1) * 1.7, amp = s.role === 'D' ? 0.8 : 1.5;
+  tx += dir * Math.sin(ph) * amp * 0.6; tz += Math.cos(ph * 0.9) * amp;
+  // off a defender: if one's on the spot, slide away from him
+  for (const o of opp) { const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz); if (d < 2.6) { const k = (2.6 - d) / (d || 1); tx += dx * k; tz += dz * k; } }
+  // the passing lane from the puck: if a defender's sitting in it, step to the side that opens it
+  { const ax = tx - cx, az = tz - cz, L = Math.hypot(ax, az) || 1;
+    for (const o of opp) { const p = ((o.x - cx) * ax + (o.z - cz) * az) / L; if (p < 0.8 || p > L - 0.8) continue; const off = ((o.x - cx) * az - (o.z - cz) * ax) / L;
+      if (Math.abs(off) < 1.1) { const sh = (1.4 - Math.abs(off)) * (off >= 0 ? -1 : 1); tx += (az / L) * sh * 1.4; tz += (-ax / L) * sh * 1.4; break; } } }
+  // he's in trouble (pressured on the wall, nobody near): the nearest forward comes to give him a short option
+  if (s.role !== 'D') { const pr = opp.some(o => Math.hypot(o.x - cx, o.z - cz) < 2.2), near = SC.sk.filter(o => o.team === s.team && o !== carrier && o.role !== 'D' && !o.chg).sort((a, b) => Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz))[0];
+    if (pr && near === s && Math.hypot(s.x - cx, s.z - cz) > 5) { tx = cx + (tx - cx) * 0.45; tz = cz + (tz - cz) * 0.45; s.gm = true; } }
+  const r = inRink(tx, tz, 1.2); return dir * r[0] > BLUEL + 0.6 ? r : [dir * (BLUEL + 0.6), r[1]];
+}
 function scTargets(s, carrier, carrierTeam) {
   if (s.chg) return BENCH[s.team];
   const dir = teamDir(s.team), Q = s.team === 'visitors' && SC.Qopp ? SC.Qopp : (s.team === 'ravens' ? SC.Qr : SC.Qv) || ravensQ();
@@ -5625,6 +5654,7 @@ function scTargets(s, carrier, carrierTeam) {
     if (dir * (s.x - cx) > (s.q && s.q.bc ? 1 : 2) && dir * cx < BLUEL) s.urg = true;
   }
   let t = scSlot(s, carrier, carrierTeam);
+  if (carrier && carrierTeam === s.team && carrier !== s) t = scSupport(s, t, carrier, dir);
   if (s.role === 'D' && carrierTeam !== s.team) t = scNoneBehind(s, t, carrier, dir);
   if (s.team === 'ravens' && !BN.on && carrier !== 'human') {            // don't stand where Drew is: take his slot (left wing) instead, or move off him
     const dh = Math.hypot(t[0] - H.x, t[1] - H.z);
@@ -5762,7 +5792,7 @@ function scFrame(dt) {
   }
   if (!stopped) scSpace(TG, carrier, carrierTeam);
   for (const { s, t } of TG) {
-    const k = s.has || SC.chase[s.team] === s || s.urg ? 1 : 1 - Math.exp(-dt / 0.3);
+    const k = s.has || SC.chase[s.team] === s || s.urg ? 1 : 1 - Math.exp(-dt / (s.gm ? 0.1 : 0.3));
     if (s.gx == null) { s.gx = t[0]; s.gz = t[1]; } else { s.gx += (t[0] - s.gx) * k; s.gz += (t[1] - s.gz) * k; }
     const qs = qf(s), hot = SC.chase[s.team] === s || SC.press[s.team] === s || s.urg || s.gm;
     // a D skates backwards to hold his gap, but turns and skates once the man with the puck comes at speed (or he'd just get burned)
