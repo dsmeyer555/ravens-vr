@@ -2880,20 +2880,31 @@ function kitWay(team) {
   if (team === 'ravens') return home
     ? { key: 'RH', base: KC.purple, yoke: KC.black, sleeve: KC.black, cuff: KC.purple, stripe: KC.purple, collar: KC.white, hem: KC.black, num: KC.white, edge: KC.black, name: KC.white, letter: KC.white, crest: 'crestH', helmet: 0x141417, pants: 0x101013, glove: 0x16161b, trim: 0x383c61, sock: 'ravens' }
     : { key: 'RA', base: KC.white, yoke: KC.purple, sleeve: KC.purple, cuff: KC.black, stripe: KC.purple, collar: KC.black, hem: KC.black, num: KC.purple, edge: KC.black, name: KC.black, letter: KC.black, crest: 'crestA', helmet: 0xf0f0f2, pants: 0x101013, glove: 0x16161b, trim: 0x383c61, sock: 'ravens' };
-  const cc = clubColors((SC.fx && SC.fx.opp) || oppN() || ''), c1 = cc[0], c2 = cc[1], txt = oppInit(), hx = c => parseInt(c.slice(1), 16);
+  const cn = (SC.fx && SC.fx.opp) || oppN() || '', cc = clubColors(cn), c1 = cc[0], c2 = cc[1], txt = oppInit(), hx = c => parseInt(c.slice(1), 16), lg = clubLogo(cn);
   const lum = c => { const v = hx(c); return (0.299 * (v >> 16) + 0.587 * ((v >> 8) & 255) + 0.114 * (v & 255)) / 255; }, dark1 = lum(c1) < 0.55, onBase = dark1 ? KC.white : KC.black;
   const edge = lum(c2) < 0.5 ? c2 : KC.black, helm = hx(dark1 ? c1 : c2 === KC.white ? '#141416' : c2);
   return home
-    ? { key: 'VL' + txt + c1, base: KC.white, yoke: c1, sleeve: c1, cuff: KC.white, cuffLine: c1, stripe: c1, collar: c1, hem: c1, num: c1, edge: dark1 ? KC.black : c2 === KC.white ? KC.black : c2, name: dark1 ? c1 : KC.black, letter: c1, crestText: txt, helmet: helm, pants: dark1 ? hx(c1) : 0x101013, glove: dark1 ? hx(c1) : 0x101013, trim: 0xf0f0f2, sock: [KC.white, c1] }
-    : { key: 'VD' + txt + c1, base: c1, yoke: c2 === KC.white ? KC.black : c2, sleeve: c1, cuff: c2, cuffLine: c1, stripe: c2, collar: c2, hem: c2 === KC.white ? KC.black : c2, num: onBase, edge, name: onBase, letter: onBase, crestText: txt, helmet: helm, pants: 0x101013, glove: hx(dark1 ? c1 : '#141416'), trim: hx(c2), sock: [c1, c2] };
+    ? { key: 'VL' + txt + c1 + (lg ? 'L' : ''), crest: lg || undefined, base: KC.white, yoke: c1, sleeve: c1, cuff: KC.white, cuffLine: c1, stripe: c1, collar: c1, hem: c1, num: c1, edge: dark1 ? KC.black : c2 === KC.white ? KC.black : c2, name: dark1 ? c1 : KC.black, letter: c1, crestText: txt, helmet: helm, pants: dark1 ? hx(c1) : 0x101013, glove: dark1 ? hx(c1) : 0x101013, trim: 0xf0f0f2, sock: [KC.white, c1] }
+    : { key: 'VD' + txt + c1 + (lg ? 'L' : ''), crest: lg || undefined, base: c1, yoke: c2 === KC.white ? KC.black : c2, sleeve: c1, cuff: c2, cuffLine: c1, stripe: c2, collar: c2, hem: c2 === KC.white ? KC.black : c2, num: onBase, edge, name: onBase, letter: onBase, crestText: txt, helmet: helm, pants: 0x101013, glove: hx(dark1 ? c1 : '#141416'), trim: hx(c2), sock: [c1, c2] };
 }
 // each club's colours (made up to suit the name: tell me the real ones and they're one line each). Nobody else wears the Ravens' purple.
-const CLUBC = { 'Ayrshire Vikings': ['#7a1420', '#d8b04a'], 'Mariners B': ['#123a6b', '#f3f3f5'], Mariners: ['#123a6b', '#f3f3f5'], Thunder: ['#1e4fb0', '#f2c230'], 'Caledonian Thunder': ['#1e4fb0', '#f2c230'],
-  'Kilmarnock Piranhas': ['#0f7a6a', '#141416'], 'Edinburgh Stingers': ['#f2c230', '#141416'], 'Coatbridge Redwings': ['#c8202f', '#f3f3f5'], 'Galloway Grizzlies': ['#5a3b22', '#d8a83a'], 'The Kraken': ['#0f2e3d', '#79c1d6'],
-  'Lossiemouth Jets': ['#3d7cc9', '#f3f3f5'], 'Inverness Hurricanes': ['#a31f34', '#b8bcc4'], 'Hamilton Hawks': ['#6b1d2a', '#d8a83a'], 'The Hawks': ['#6b1d2a', '#d8a83a'], 'Belfast Foxes': ['#e2672a', '#141416'],
-  'Aberdeen Predators': ['#141416', '#c8202f'], 'Dundee Pirates': ['#141416', '#f3f3f5'], 'Aviemore Avalanche': ['#6e1b35', '#8fbbe0'], 'Lowland Raiders': ['#8f949c', '#141416'], 'Dundee Devils': ['#c8202f', '#141416'],
-  'Paisley Buccaneers': ['#1f4d2e', '#d8a83a'], 'Dundee Wildcats': ['#e07a1f', '#13284a'], 'Paisley Panthers': ['#141416', '#2aa6a0'], 'Kirkcaldy Kings': ['#d8a83a', '#141416'], 'Aberdeen North Stars': ['#1d6b3a', '#f3f3f5'],
-  'Dundee Knights': ['#5f6670', '#c8202f'], 'Edinburgh Phoenix': ['#e85d1f', '#f2c230'], 'Coatbridge Coyotes': ['#9b6a3c', '#141416'], 'The Distillers': ['#c98a2a', '#3b2414'], 'Irvine Flyers': ['#4aa0d8', '#13284a'], 'Stirling Wolves': ['#6b7079', '#141416'] };
+const CLUBC = { 'Ayrshire Vikings': ['#8a2a22', '#c8b48a'], 'Mariners B': ['#7fb6d6', '#16233f'], Mariners: ['#7fb6d6', '#16233f'], Thunder: ['#1e2fb0', '#d8dde8'], 'Caledonian Thunder': ['#1e2fb0', '#d8dde8'],
+  'Kilmarnock Piranhas': ['#16807a', '#f0ead2'], 'Edinburgh Stingers': ['#141416', '#d8d8dc'], 'Coatbridge Redwings': ['#c8202f', '#f3f3f5'], 'Galloway Grizzlies': ['#1f2f5c', '#e8b030'], 'The Kraken': ['#1d4c96', '#d63fc0'],
+  'Lossiemouth Jets': ['#d0202c', '#141416'], 'Inverness Hurricanes': ['#3fb0e8', '#141416'], 'Hamilton Hawks': ['#b3121b', '#141416'], 'The Hawks': ['#141416', '#e8d040'], 'Belfast Foxes': ['#e2672a', '#141416'],
+  'Aberdeen Predators': ['#141416', '#9a9ca2'], 'Dundee Pirates': ['#1f6b34', '#d8202f'], 'Aviemore Avalanche': ['#7d2238', '#3557a8'], 'Lowland Raiders': ['#8f949c', '#141416'], 'Dundee Devils': ['#c8202f', '#141416'],
+  'Paisley Buccaneers': ['#b3202a', '#e0a82e'], 'Dundee Wildcats': ['#141416', '#e07a1f'], 'Paisley Panthers': ['#141416', '#c8202f'], 'Kirkcaldy Kings': ['#1f3c9a', '#f0b429'], 'Aberdeen North Stars': ['#d42030', '#f2c230'],
+  'Dundee Knights': ['#141416', '#e8e8ea'], 'Edinburgh Phoenix': ['#141416', '#c8202f'], 'Coatbridge Coyotes': ['#141416', '#c8a46a'], 'The Distillers': ['#c98a2a', '#3b2414'], 'Irvine Flyers': ['#d42030', '#2266cc'], 'Stirling Wolves': ['#22355e', '#9fb4c8'] };
+// the clubs' own logos (logos/), for the front of their jerseys
+const LOGOF = { 'Aviemore Avalanche': 'aviemore-avalanche', 'Paisley Buccaneers': 'paisley-buccaneers', 'Coatbridge Coyotes': 'coatbridge-coyotes', 'Dundee Devils': 'dundee-devils', 'Irvine Flyers': 'irvine-flyers',
+  'Belfast Foxes': 'belfast-foxes', 'Galloway Grizzlies': 'galloway-grizzlies', 'Hamilton Hawks': 'hamilton-hawks', 'Inverness Hurricanes': 'inverness-hurricanes', 'Lossiemouth Jets': 'lossiemouth-jets', 'Kirkcaldy Kings': 'kirkcaldy-kings',
+  'Dundee Knights': 'dundee-knights', 'The Kraken': 'the-kraken', Mariners: 'mariners', 'Mariners B': 'mariners', 'Aberdeen North Stars': 'aberdeen-north-stars', 'Paisley Panthers': 'paisley-panthers', 'Edinburgh Phoenix': 'edinburgh-phoenix',
+  'Kilmarnock Piranhas': 'kilmarnock-piranhas', 'Dundee Pirates': 'dundee-pirates', 'Aberdeen Predators': 'aberdeen-predators', 'Lowland Raiders': 'lowland-raiders', 'Coatbridge Redwings': 'coatbridge-redwings', 'The Hawks': 'the-hawks',
+  'Edinburgh Stingers': 'edinburgh-stingers', 'Caledonian Thunder': 'caledonian-thunder', Thunder: 'caledonian-thunder', 'Ayrshire Vikings': 'ayrshire-vikings', 'Dundee Wildcats': 'dundee-wildcats', 'Stirling Wolves': 'stirling-wolves' };
+function clubLogo(n) {                                                   // its image key once loaded, else null (and starts loading it)
+  const f = LOGOF[n]; if (!f || location.protocol === 'file:') return null; const k = 'logo:' + f;
+  if (!KIT.img[k]) { const im = new Image(); im.src = 'logos/' + f + '.png'; KIT.img[k] = im; }
+  const im = KIT.img[k]; return im.complete && im.naturalWidth ? k : null;
+}
 function clubColors(n) { return CLUBC[n] || ['#b3202a', '#f3f3f5']; }
 // the jersey's picture: the body (front, sides, back) on top, the two sleeves below
 const JW = 512, tyT = vt => (1 - (0.36 + 0.64 * vt)) * JW, tyS = ta => (1 - (0.34 - 0.32 * ta)) * JW;
@@ -2913,7 +2924,7 @@ function paintJersey(K, num, name, letter, L) {
   g.fillStyle = K.yoke; g.beginPath(); g.moveTo(JW * 0.478, tyT(0.988)); g.lineTo(JW * 0.5, tyT(0.925)); g.lineTo(JW * 0.522, tyT(0.988)); g.closePath(); g.fill();
   // the crest on the front
   const cw = 0.47 * 0.64 * JW * (267 / 290), ch = 0.47 * 0.64 * JW, cx = JW * 0.5 - cw / 2, cy = tyT(0.84);
-  const im = K.crest && KIT.img[K.crest]; if (im && im.complete && im.naturalWidth) g.drawImage(im, cx, cy, cw, ch);
+  const im = K.crest && KIT.img[K.crest]; if (im && im.complete && im.naturalWidth) { const f = Math.min(cw / im.naturalWidth, ch / im.naturalHeight) * (K.crest.startsWith('logo:') ? 0.92 : 1), w = im.naturalWidth * f, h = im.naturalHeight * f; g.drawImage(im, JW * 0.5 - w / 2, cy + (ch - h) / 2, w, h); }
   else if (K.crestText) { g.save(); g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '900 ' + Math.round(ch * 0.42) + 'px Impact, "Arial Black", system-ui, sans-serif'; g.lineWidth = 5; g.strokeStyle = K.edge; g.strokeText(K.crestText, JW * 0.5, cy + ch * 0.5); g.fillStyle = K.num; g.fillText(K.crestText, JW * 0.5, cy + ch * 0.5); g.restore(); }
   // the captain's C or an A, on his left chest
   if (letter) { g.save(); g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '900 54px \"Graduate\", \"Rockwell Extra Bold\", \"Arial Black\", Impact, serif'; g.lineWidth = 5; g.strokeStyle = K.letter === KC.white ? KC.black : KC.white; g.strokeText(letter, JW * 0.622, tyT(0.705)); g.fillStyle = K.letter; g.fillText(letter, JW * 0.622, tyT(0.705)); g.restore(); }
