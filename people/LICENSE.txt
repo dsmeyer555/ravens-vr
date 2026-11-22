@@ -25,3 +25,5 @@ SOFTWARE.
 
 hockey.glb (the hockey player on the ice) and hockey_jersey_map.png: the hockey player model supplied by Drew Meyer for this game
 (textures reduced for the headset); the jersey map is made from it. Not covered by the MIT licence above.
+goalie.glb and goalie_jersey_map.png: the goalie model supplied by Drew Meyer (rigged mesh from his FBX, textures from his glb, simplified
+for the headset; a head from hockey.glb inside the mask). Not covered by the MIT licence above.
