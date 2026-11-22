@@ -2623,9 +2623,27 @@ function hpMake(t) {
   const along = (k, to) => { if (!B[k] || !B[to]) return; B[to].getWorldPosition(wv); R.dir[k] = B[k].worldToLocal(wv.clone()).normalize(); };
   along('sp', 'neck'); along('upL', 'foL'); along('foL', 'haL'); along('upR', 'foR'); along('foR', 'haR'); along('thL', 'caL'); along('caL', 'ftL'); along('thR', 'caR'); along('caR', 'ftR');
   R.eyes = new THREE.Vector3(HPEYE[0], HPEYE[1], HPEYE[2]); R.footY = B.ftL.getWorldPosition(wv).y;
+  if (B.head) { const inv = B.head.matrixWorld.clone().invert(); for (const [g, m] of [[HPVIS.g, HPVIS.m], [HPVIS.e, HPVIS.em]]) { const v = new THREE.Mesh(g, m); v.matrixAutoUpdate = false; v.matrix.copy(inv); v.renderOrder = 2; B.head.add(v); } }
   R.len = {}; for (const s of ['L', 'R']) { R.len['th' + s] = B['th' + s].getWorldPosition(wv).distanceTo(B['ca' + s].getWorldPosition(wv2)); R.len['ca' + s] = B['ca' + s].getWorldPosition(wv).distanceTo(B['ft' + s].getWorldPosition(wv2)); R.len['up' + s] = B['up' + s].getWorldPosition(wv).distanceTo(B['fo' + s].getWorldPosition(wv2)); R.len['fo' + s] = B['fo' + s].getWorldPosition(wv).distanceTo(B['ha' + s].getWorldPosition(wv2)); }
   return { root, B, R, skel, meshes, hp: true, kit: null };
 }
+// the visor: a clear shield fixed at his temples under the brim, curving round in front of his eyes and nose (in the model's own space)
+const HPVIS = (() => {
+  const NA = 32, NY = 4, a = 0.113, bz = 0.128, z0 = 0.0, yT = 1.716, yB = 1.645, A0 = 1.22, P = [], UV = [], I = [];
+  for (let iy = 0; iy <= NY; iy++) for (let ia = 0; ia <= NA; ia++) {
+    const t = iy / NY, ang = -A0 + 2 * A0 * ia / NA, fl = 1 + 0.07 * t;             // a little flare toward the bottom
+    P.push(Math.sin(ang) * a * fl, yT + (yB - yT) * t, z0 + Math.cos(ang) * bz * fl); UV.push(ia / NA, t);
+  }
+  for (let iy = 0; iy < NY; iy++) for (let ia = 0; ia < NA; ia++) { const p = iy * (NA + 1) + ia, q = p + NA + 1; I.push(p, q, p + 1, p + 1, q, q + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2)); g.setIndex(I); g.computeVertexNormals();
+  const E = [], EI = [];                                                   // the dark rubber edge along the bottom and up the sides
+  const pt = (ang, y, fl, r) => [Math.sin(ang) * a * fl * r, y, z0 + Math.cos(ang) * bz * fl * r];
+  for (let ia = 0; ia <= NA; ia++) { const ang = -A0 + 2 * A0 * ia / NA; E.push(...pt(ang, yB + 0.004, 1.07, 1.003), ...pt(ang, yB - 0.001, 1.07, 1.003)); }
+  for (let ia = 0; ia < NA; ia++) { const p = ia * 2; EI.push(p, p + 1, p + 2, p + 2, p + 1, p + 3); }
+  const e = new THREE.BufferGeometry(); e.setAttribute('position', new THREE.Float32BufferAttribute(E, 3)); e.setIndex(EI); e.computeVertexNormals();
+  return { g, e, m: new THREE.MeshStandardMaterial({ color: 0xbfd2e2, roughness: 0.05, metalness: 0.25, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false }),
+    em: new THREE.MeshStandardMaterial({ color: 0x1c1c20, roughness: 0.6, side: THREE.DoubleSide }) };
+})();
 const HPEYE = [0, 1.676, 0.07], HPFACE = [1.12, 0.98];   // (and how big his photo goes on: the model's face is broad)                                       // between his eyes, in the model's own space
 // recolour one of the model's textures for a kit: each pixel is sorted into the model's own colours (its blue, its red, white, black) and given
 // the kit's colour for that, keeping how light or dark it was
