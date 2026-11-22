@@ -22,3 +22,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+hockey.glb (the hockey player on the ice) and hockey_jersey_map.png: the hockey player model supplied by Drew Meyer for this game
+(textures reduced for the headset); the jersey map is made from it. Not covered by the MIT licence above.
