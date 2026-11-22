@@ -2512,7 +2512,7 @@ function avAttach(P, key) {
   if (P.ice && !HP.fail && st.hpOn !== false) {
     if (P.avId === 'hp') return; P.avId = 'hp';
     hpLoad().then(t => { if (!t) { P.avId = null; return avAttach(P, key); } if (P.avId !== 'hp') return; if (P.av) P.root.remove(P.av.root);
-      const A = hpMake(t); P.av = A; P.root.add(A.root); A.root.visible = !P.far; P.avMode = null; P.sm = null; try { hpKitApply(P, A); } catch (e) { run.kitErr = String(e); } faceApply(P); });
+      const A = hpMake(t); P.av = A; P.root.add(A.root); if (P.lod) P.lod.visible = false; hpLodShow(A, P.far); P.avMode = null; P.sm = null; try { hpKitApply(P, A); } catch (e) { run.kitErr = String(e); } faceApply(P); });
     return;
   }
   const id = avFile(String(key).replace(/^(ravens|visitors)#/, m => m)); if (P.avId === id) return; P.avId = id;
@@ -2605,7 +2605,7 @@ async function hpParse(buf) {
   j.nodes.forEach(n => { if (n.mesh === undefined) return; for (const p of j.meshes[n.mesh].primitives) { const g = new THREE.BufferGeometry(), at = p.attributes;
     g.setAttribute('position', new THREE.BufferAttribute(acc(at.POSITION), 3)); g.setAttribute('normal', new THREE.BufferAttribute(acc(at.NORMAL), 3)); g.setAttribute('uv', new THREE.BufferAttribute(acc(at.TEXCOORD_0), 2));
     const jt = acc(at.JOINTS_0); g.setAttribute('skinIndex', new THREE.BufferAttribute(jt instanceof Float32Array ? jt : new Uint16Array(jt), 4)); g.setAttribute('skinWeight', new THREE.BufferAttribute(acc(at.WEIGHTS_0), 4)); g.setIndex(new THREE.BufferAttribute(acc(p.indices), 1));
-    prims.push({ g, m: mats[p.material] }); } });
+    prims.push({ g, m: mats[p.material], lod: /_LOD$/.test(j.meshes[n.mesh].name || '') }); } });
   const ibm = acc(skin.inverseBindMatrices), inv = skin.joints.map((_, k) => new THREE.Matrix4().fromArray(ibm, k * 16));
   return { j, skin, prims, inv, mats };
 }
@@ -2616,34 +2616,51 @@ function hpMake(t) {
   for (const r of j.scenes[j.scene || 0].nodes) root.add(objs[r]);
   root.updateMatrixWorld(true);
   const skel = new THREE.Skeleton(t.skin.joints.map(k => objs[k]), t.inv), meshes = {};
-  for (const p of t.prims) { const m = new THREE.SkinnedMesh(p.g, p.m.mat); m.frustumCulled = false; m.castShadow = true; root.add(m); m.updateMatrixWorld(true); m.bind(skel, new THREE.Matrix4()); meshes[p.m.kind] = m; }
+  const lodM = {};
+  for (const p of t.prims) { const m = new THREE.SkinnedMesh(p.g, p.m.mat); m.frustumCulled = false; m.castShadow = !p.lod; root.add(m); m.updateMatrixWorld(true); m.bind(skel, new THREE.Matrix4()); if (p.lod) { lodM[p.m.kind] = m; m.visible = false; } else meshes[p.m.kind] = m; }
   const B = {}; for (const k in HPB) B[k] = objs.find(o => o.name === HPB[k]) || null;
   const R = { q: {}, wq: {}, dir: {} }, wv = new THREE.Vector3(), wv2 = new THREE.Vector3();
   for (const k in B) if (B[k]) { R.q[k] = B[k].quaternion.clone(); R.wq[k] = B[k].getWorldQuaternion(new THREE.Quaternion()); }
   const along = (k, to) => { if (!B[k] || !B[to]) return; B[to].getWorldPosition(wv); R.dir[k] = B[k].worldToLocal(wv.clone()).normalize(); };
   along('sp', 'neck'); along('upL', 'foL'); along('foL', 'haL'); along('upR', 'foR'); along('foR', 'haR'); along('thL', 'caL'); along('caL', 'ftL'); along('thR', 'caR'); along('caR', 'ftR');
   R.eyes = new THREE.Vector3(HPEYE[0], HPEYE[1], HPEYE[2]); R.footY = B.ftL.getWorldPosition(wv).y;
-  if (B.head) { const inv = B.head.matrixWorld.clone().invert(); for (const [g, m] of [[HPVIS.g, HPVIS.m], [HPVIS.e, HPVIS.em]]) { const v = new THREE.Mesh(g, m); v.matrixAutoUpdate = false; v.matrix.copy(inv); v.renderOrder = 2; B.head.add(v); } }
+  if (B.head) { const inv = B.head.matrixWorld.clone().invert(); for (const [g, m] of [[HPVIS.g, HPVIS.m], [HPVIS.eg, HPVIS.em], [HPVIS.tabs, HPVIS.tm]]) { const v = new THREE.Mesh(g, m); v.matrixAutoUpdate = false; v.matrix.copy(inv); v.renderOrder = 2; B.head.add(v); } }
   R.len = {}; for (const s of ['L', 'R']) { R.len['th' + s] = B['th' + s].getWorldPosition(wv).distanceTo(B['ca' + s].getWorldPosition(wv2)); R.len['ca' + s] = B['ca' + s].getWorldPosition(wv).distanceTo(B['ft' + s].getWorldPosition(wv2)); R.len['up' + s] = B['up' + s].getWorldPosition(wv).distanceTo(B['fo' + s].getWorldPosition(wv2)); R.len['fo' + s] = B['fo' + s].getWorldPosition(wv).distanceTo(B['ha' + s].getWorldPosition(wv2)); }
-  return { root, B, R, skel, meshes, hp: true, kit: null };
+  return { root, B, R, skel, meshes, lodM, hp: true, kit: null };
 }
-// the visor: a clear shield fixed at his temples under the brim, curving round in front of his eyes and nose (in the model's own space)
+// the visor, like a real half visor: flat side tabs screwed to the helmet just in front of his ears, running forward and curving round well out in
+// front of his face; the top edge level under the brim, the bottom edge sloping down toward the front to about the tip of his nose
 const HPVIS = (() => {
-  const NA = 32, NY = 4, a = 0.113, bz = 0.128, z0 = 0.0, yT = 1.716, yB = 1.645, A0 = 1.22, P = [], UV = [], I = [];
-  for (let iy = 0; iy <= NY; iy++) for (let ia = 0; ia <= NA; ia++) {
-    const t = iy / NY, ang = -A0 + 2 * A0 * ia / NA, fl = 1 + 0.07 * t;             // a little flare toward the bottom
-    P.push(Math.sin(ang) * a * fl, yT + (yB - yT) * t, z0 + Math.cos(ang) * bz * fl); UV.push(ia / NA, t);
-  }
-  for (let iy = 0; iy < NY; iy++) for (let ia = 0; ia < NA; ia++) { const p = iy * (NA + 1) + ia, q = p + NA + 1; I.push(p, q, p + 1, p + 1, q, q + 1); }
+  const SX = 0.117, ZB = -0.004, ZF0 = 0.055, ZF = 0.158, yT = 1.724, yS = 1.658, yF = 1.612, NS = 6, NA = 26, NY = 5;
+  // the plan-view outline: side straight from ZB to ZF0, then a rounded front (superellipse) round to the other side
+  const outline = [];
+  for (let i = 0; i <= NS; i++) outline.push([-SX, ZB + (ZF0 - ZB) * i / NS, 0]);
+  for (let i = 1; i < NA; i++) { const t = -Math.PI / 2 + Math.PI * i / NA, st = Math.sin(t), ct = Math.cos(t); outline.push([SX * Math.sign(st) * Math.pow(Math.abs(st), 0.75), ZF0 + (ZF - ZF0) * Math.pow(ct, 0.75), ct]); }
+  for (let i = NS; i >= 0; i--) outline.push([SX, ZB + (ZF0 - ZB) * i / NS, 0]);
+  const P = [], UV = [], I = [], NO = outline.length;
+  outline.forEach(([x, z, f], i) => { const fz = clamp((z - ZB) / (ZF - ZB), 0, 1), yb = yS + (yF - yS) * Math.pow(fz, 1.3);
+    for (let k = 0; k <= NY; k++) { const t = k / NY, y = yT + (yb - yT) * t, out = 1 + 0.035 * t * f; P.push(x * (1 + 0.02 * t), y, ZF0 + (z - ZF0) * out); UV.push(i / (NO - 1), t); } });
+  for (let i = 0; i < NO - 1; i++) for (let k = 0; k < NY; k++) { const p = i * (NY + 1) + k, q = p + NY + 1; I.push(p, p + 1, q, q, p + 1, q + 1); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2)); g.setIndex(I); g.computeVertexNormals();
-  const E = [], EI = [];                                                   // the dark rubber edge along the bottom and up the sides
-  const pt = (ang, y, fl, r) => [Math.sin(ang) * a * fl * r, y, z0 + Math.cos(ang) * bz * fl * r];
-  for (let ia = 0; ia <= NA; ia++) { const ang = -A0 + 2 * A0 * ia / NA; E.push(...pt(ang, yB + 0.004, 1.07, 1.003), ...pt(ang, yB - 0.001, 1.07, 1.003)); }
-  for (let ia = 0; ia < NA; ia++) { const p = ia * 2; EI.push(p, p + 1, p + 2, p + 2, p + 1, p + 3); }
-  const e = new THREE.BufferGeometry(); e.setAttribute('position', new THREE.Float32BufferAttribute(E, 3)); e.setIndex(EI); e.computeVertexNormals();
-  return { g, e, m: new THREE.MeshStandardMaterial({ color: 0xbfd2e2, roughness: 0.05, metalness: 0.25, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false }),
-    em: new THREE.MeshStandardMaterial({ color: 0x1c1c20, roughness: 0.6, side: THREE.DoubleSide }) };
+  // its edge catching the light: a thin bright strip along the bottom and up the back of each side
+  const E = [], EI = []; let ne = 0; const vtx = (i, k) => P.slice((i * (NY + 1) + k) * 3, (i * (NY + 1) + k) * 3 + 3);
+  for (let i = 0; i < NO; i++) { const a = vtx(i, NY), b = vtx(i, NY - 1), d = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) || 1, f = 0.0035 / d; E.push(...a, a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f); if (i) EI.push(ne - 2, ne - 1, ne, ne, ne - 1, ne + 1); ne += 2; }
+  for (const i of [0, NO - 1]) { const base = ne; for (let k = 0; k <= NY; k++) { const a = vtx(i, k); E.push(a[0], a[1], a[2], a[0], a[1], a[2] + (i ? -0.003 : 0.003)); if (k) EI.push(base + 2 * k - 2, base + 2 * k - 1, base + 2 * k, base + 2 * k, base + 2 * k - 1, base + 2 * k + 1); } ne += 2 * (NY + 1); }
+  const eg = new THREE.BufferGeometry(); eg.setAttribute('position', new THREE.Float32BufferAttribute(E, 3)); eg.setIndex(EI); eg.computeVertexNormals();
+  // the side tabs: a darker, frosted plate where it's screwed on, two screws each side
+  const parts = [];
+  for (const sx of [-1, 1]) {
+    for (const y of [1.703, 1.684]) { const sc = new THREE.CylinderGeometry(0.0055, 0.0055, 0.004, 10); sc.rotateZ(Math.PI / 2); sc.translate(sx * (SX + 0.005), y, 0.022); parts.push(sc); }
+  }
+  const tabs = mergeGeo(parts);
+  return { g, tabs, eg, em: new THREE.MeshBasicMaterial({ color: 0xe8f0f6, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthWrite: false }), m: new THREE.MeshStandardMaterial({ color: 0xd4e2ee, roughness: 0.04, metalness: 0.35, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }),
+    tm: new THREE.MeshStandardMaterial({ color: 0x202024, roughness: 0.5, metalness: 0.2 }) };
 })();
+function mergeGeo(list) {                                                  // non-indexed merge of simple geometries (position + normal)
+  const P = [], N = [];
+  for (let g of list) { g = g.index ? g.toNonIndexed() : g; P.push(...g.attributes.position.array); N.push(...g.attributes.normal.array); }
+  const o = new THREE.BufferGeometry(); o.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); o.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); return o;
+}
 const HPEYE = [0, 1.676, 0.07], HPFACE = [1.12, 0.98];   // (and how big his photo goes on: the model's face is broad)                                       // between his eyes, in the model's own space
 // recolour one of the model's textures for a kit: each pixel is sorted into the model's own colours (its blue, its red, white, black) and given
 // the kit's colour for that, keeping how light or dark it was
@@ -2671,23 +2688,24 @@ function hpRecolor(kind, K) {
 }
 // his jersey: our picture of it (paintJersey), moved pixel by pixel onto the model's jersey layout
 function hpJersey(K, num, name, letter) {
-  const src = paintJersey(K, num, name, letter), sc = src.image, J = HP.jw, sg = sc.getContext('2d'), sd = sg.getImageData(0, 0, J, J).data; src.dispose();
+  const src = paintJersey(K, num, name, letter, JLAYH), sc = src.image, J = HP.jw, sg = sc.getContext('2d'), sd = sg.getImageData(0, 0, J, J).data; src.dispose();
   const W = HP.mw, c = document.createElement('canvas'); c.width = W; c.height = W; const g = c.getContext('2d'), out = g.createImageData(W, W), od = out.data, idx = HP.idx, bc = parseInt(K.base.slice(1), 16);
   for (let i = 0, n = W * W; i < n; i++) { const s = idx[i], o = i * 4; if (s < 0) { od[o] = (bc >> 16) & 255; od[o + 1] = (bc >> 8) & 255; od[o + 2] = bc & 255; od[o + 3] = 255; continue; } const q = s * 4; od[o] = sd[q]; od[o + 1] = sd[q + 1]; od[o + 2] = sd[q + 2]; od[o + 3] = 255; }
   g.putImageData(out, 0, 0);
   const t = new THREE.CanvasTexture(c); t.flipY = false; if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
+function hpLodShow(A, far) { for (const k in A.meshes) A.meshes[k].visible = !far; for (const k in A.lodM) A.lodM[k].visible = !!far; }
 function hpKitApply(P, A) {
   const K = kitWay(P.team), pl = P.team === 'ravens' && RN.players && RN.players.find(q => q.n === P.name), name = P.team === 'ravens' ? String((pl && pl.jn) || P.name || '').replace(/\./g, '') : (P.oppJn || ''), num = P.shown || P.num, letter = P.team === 'ravens' ? capLetter(P.name) : '';
   const key = K.key + '|' + num + '|' + name + '|' + letter + '|' + (KIT.loaded ? 1 : 0) + (KIT.fonts ? 'f' : '');
   if (A.kitKey === key) return; A.kitKey = key; const M = A.meshes;
-  if (M.jersey) { if (!A.jm) { A.jm = M.jersey.material.clone(); M.jersey.material = A.jm; } if (A.jm.map && A.jm.map.isCanvasTexture) A.jm.map.dispose(); A.jm.map = hpJersey(K, num, name, letter); A.jm.needsUpdate = true; }
-  for (const kind of ['legs', 'shorts', 'glove', 'helmet']) { const m = M[kind]; if (!m) continue; const tx = hpRecolor(kind, K); if (!tx) continue; const own = A['m_' + kind] || (A['m_' + kind] = m.material.clone()); own.map = tx; own.needsUpdate = true; m.material = own; }
+  if (M.jersey) { if (!A.jm) { A.jm = M.jersey.material.clone(); M.jersey.material = A.jm; if (A.lodM.jersey) A.lodM.jersey.material = A.jm; } if (A.jm.map && A.jm.map.isCanvasTexture) A.jm.map.dispose(); A.jm.map = hpJersey(K, num, name, letter); A.jm.needsUpdate = true; }
+  for (const kind of ['legs', 'shorts', 'glove', 'helmet']) { const m = M[kind]; if (!m) continue; const tx = hpRecolor(kind, K); if (!tx) continue; const own = A['m_' + kind] || (A['m_' + kind] = m.material.clone()); own.map = tx; own.needsUpdate = true; m.material = own; if (A.lodM[kind]) A.lodM[kind].material = own; }
 }
 // what shows: the whole person off the ice, only his head (inside the helmet) on it
 function avSetMode(P, mode) {
   const A = P.av, M = P.m; P.avMode = mode;
-  if (A.hp) { for (const k in A.meshes) A.meshes[k].visible = true; for (const c of P.full) c.visible = c === M.shaft || c === M.sblade; P.fullVis = P.full.map(c => c.visible); return; }
+  if (A.hp) { hpLodShow(A, P.far); for (const c of P.full) c.visible = c === M.shaft || c === M.sblade; P.fullVis = P.full.map(c => c.visible); return; }
   const full = mode === 'full', kit = mode === 'kit' && A.kit; if (A.hcU) A.hcU.value = kit ? 1 : 0;
   if (A.meshes.body) A.meshes.body.visible = full || !A.kit; if (A.meshes.opacity) A.meshes.opacity.visible = full; if (A.meshes.head) A.meshes.head.visible = true;
   if (A.kit) { for (const k of ['jersey', 'pants', 'socks']) A.kit[k].visible = !!kit; for (const g of A.kit.att) if (g) g.visible = !!kit; }
@@ -2800,7 +2818,8 @@ function clubColors(n) { return CLUBC[n] || ['#b3202a', '#f3f3f5']; }
 // the jersey's picture: the body (front, sides, back) on top, the two sleeves below
 const JW = 512, tyT = vt => (1 - (0.36 + 0.64 * vt)) * JW, tyS = ta => (1 - (0.34 - 0.32 * ta)) * JW;
 const yokeV = u => 0.7 + 0.21 * Math.pow(Math.cos(Math.PI * (2 * u - 1)), 2);
-function paintJersey(K, num, name, letter) {
+function paintJersey(K, num, name, letter, L) {
+  L = L || JLAY0;
   const c = document.createElement('canvas'); c.width = c.height = JW; const g = c.getContext('2d');
   g.fillStyle = K.base; g.fillRect(0, 0, JW, tyT(0) + 2);
   g.fillStyle = K.hem; g.fillRect(0, tyT(0.1), JW, tyT(0) - tyT(0.1) + 2);
@@ -2821,9 +2840,9 @@ function paintJersey(K, num, name, letter) {
   // the back: name and number, centred on the seam (drawn at both edges)
   for (const x of [0, JW]) {
     g.save(); g.textAlign = 'center'; g.textBaseline = 'middle';
-    if (name) { const N = name.toUpperCase(); let fs = 40; g.font = '700 ' + fs + 'px KitName, "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif'; while (g.measureText(N).width > 140 && fs > 24) { fs -= 2; g.font = '700 ' + fs + 'px KitName, "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif'; }
-      try { g.letterSpacing = '1px'; } catch (e) { } g.lineWidth = 3; g.strokeStyle = K.edge; g.strokeText(N, x, tyT(0.80)); g.fillStyle = K.name; g.fillText(N, x, tyT(0.80)); try { g.letterSpacing = '0px'; } catch (e) { } }
-    g.font = '400 128px \"Graduate\", \"Rockwell Extra Bold\", \"Arial Black\", Impact, serif'; g.lineJoin = 'miter'; g.lineWidth = 9; g.strokeStyle = K.edge; g.strokeText(String(num), x, tyT(0.5)); g.fillStyle = K.num; g.fillText(String(num), x, tyT(0.5));
+    if (name) { const N = name.toUpperCase(); let fs = L.nameFs; g.font = '700 ' + fs + 'px KitName, "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif'; while (g.measureText(N).width > L.nameW && fs > 20) { fs -= 2; g.font = '700 ' + fs + 'px KitName, "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif'; }
+      try { g.letterSpacing = '1px'; } catch (e) { } g.lineWidth = 3; g.strokeStyle = K.edge; g.strokeText(N, x, tyT(L.nameV)); g.fillStyle = K.name; g.fillText(N, x, tyT(L.nameV)); try { g.letterSpacing = '0px'; } catch (e) { } }
+    g.save(); g.translate(x, tyT(L.numV)); g.scale(String(num).length > 1 ? L.numSx2 : L.numSx1, 1); g.font = '400 ' + L.numFs + 'px \"Graduate\", \"Rockwell Extra Bold\", \"Arial Black\", Impact, serif'; g.lineJoin = 'miter'; g.lineWidth = 9 * L.numFs / 128; g.strokeStyle = K.edge; g.strokeText(String(num), 0, 0); g.fillStyle = K.num; g.fillText(String(num), 0, 0); g.restore();
     const hc = KIT.img.herc; if (K.key[0] === 'R' && hc && hc.complete && hc.naturalWidth) g.drawImage(hc, x - 17, tyT(0.075), 34, 15);
     g.restore();
   }
@@ -2838,6 +2857,8 @@ function paintJersey(K, num, name, letter) {
   }
   const t = new THREE.CanvasTexture(c); if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
+// where the back's name and number go (the drawn people's jerseys, and the hockey model's, which is broader across the back)
+const JLAY0 = { nameV: 0.80, nameW: 140, nameFs: 40, numV: 0.5, numFs: 128, numSx1: 1, numSx2: 1 }, JLAYH = { nameV: 0.735, nameW: 98, nameFs: 31, numV: 0.47, numFs: 110, numSx1: 0.9, numSx2: 0.74 };
 function paintSocks(K) {
   const key = Array.isArray(K.sock) ? K.sock.join() : K.sock; if (KIT.tex['sock' + key]) return KIT.tex['sock' + key];
   const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'), ty = v => (1 - v) * 256;
@@ -4308,7 +4329,8 @@ function blobFrame() {
 }
 const LODG = { torso: new THREE.CapsuleGeometry(0.2, 0.32, 3, 8), pants: new THREE.BoxGeometry(0.38, 0.26, 0.27), legs: new THREE.BoxGeometry(0.32, 0.78, 0.2), head: new THREE.SphereGeometry(0.13, 10, 8), stick: new THREE.BoxGeometry(0.03, 0.03, 1.45) };
 function setFar(P, far) {
-  if (!P.lod || P.far === far) return; P.far = far; P.lod.visible = far; if (P.av) P.av.root.visible = !far;
+  if (!P.lod || P.far === far) return;
+  if (P.av && P.av.hp) { P.far = far; P.lod.visible = false; P.av.root.visible = true; hpLodShow(P.av, far); P.full.forEach((c, i) => { c.visible = P.fullVis ? P.fullVis[i] : c.visible; }); return; } P.far = far; P.lod.visible = far; if (P.av) P.av.root.visible = !far;
   P.full.forEach((c, i) => { c.visible = far ? false : P.fullVis[i]; });
 }
 const _A = new THREE.Vector3(), _B = new THREE.Vector3(), _J = new THREE.Vector3(), _E = new THREE.Vector3(), _T2 = new THREE.Vector3(), _P2 = new THREE.Vector3(), _W2 = new THREE.Vector3(), _U2 = new THREE.Vector3();
