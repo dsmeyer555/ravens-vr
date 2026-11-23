@@ -3759,7 +3759,7 @@ function tourNew(vc) {
   vc.tour = { stage: 'groups', rd: 0, A, B, games, ko: [], host, res: '', me: { gp: 0, g: 0, a: 0 }, aw: null, awI: 0, log: [] };
   return vc.tour;
 }
-const tourR = n => n === 'Ravens' ? RAV_R + ((CAR.vc && CAR.vc.conf || 55) - 55) / 1000 + ratAdj() : clubBy(n)[1];
+const tourR = n => n === 'Ravens' ? RAV_R + ((CAR.vc && CAR.vc.conf || 55) - 55) / 1000 + ratAdj() : clubR(n);
 function ratAdj() { if (!RN.players || !RN.map) return 0; const R = Object.values(RN.map).filter(m => m && !m.spare).map(m => ratingOf(m.n)); return R.length ? (R.reduce((a, b) => a + b, 0) / R.length - 3.4) * 0.03 : 0; }
 function tourTable(T, grp) {
   const tab = {}; for (const n of T[grp]) tab[n] = { n, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
@@ -3778,7 +3778,7 @@ function tourFx(vc) {
   const opp = g.h === 'Ravens' ? g.a : g.h, c = clubBy(opp), lab = T.stage === 'groups' ? 'Group ' + g.g + ', game ' + (g.rd + 1) : T.stage === 'semi' ? 'Semi-final' : 'Final';
   return { opp, r: c[1], style: c[2], home: g.h === 'Ravens', cup: false, tour: true, ko: T.stage !== 'groups', lab, id: 'T' + vc.season + (T.stage === 'groups' ? 'G' + g.rd : T.stage[0].toUpperCase()) };
 }
-function tourSimGame(g) { const s = simScore(tourR(g.h), tourR(g.a)); g.gf = s[0]; g.ga = s[1]; if (g.st && g.gf === g.ga) g.so = Math.random() < 0.5 + (tourR(g.h) - tourR(g.a)) * 4 ? 'h' : 'a'; }
+function tourSimGame(g) { const s = simScore(tourR(g.h), tourR(g.a), 0, clubGk(g.h), clubGk(g.a)); g.gf = s[0]; g.ga = s[1]; formRes(g.h, g.a, s[0], s[1]); if (g.st && g.gf === g.ga) g.so = Math.random() < 0.5 + (tourR(g.h) - tourR(g.a)) * 4 ? 'h' : 'a'; }
 const tourWin = g => g.gf > g.ga || (g.gf === g.ga && g.so === 'h') ? g.h : g.a;
 function tourAdvance(vc) {                                                // the other games of this round, then on to the next stage
   const T = vc.tour;
@@ -3869,7 +3869,7 @@ function phTour(y) {
     pRect(34, yy, W - 68, 76, 16, '#2f1c52'); pg.fillStyle = '#b9a8d8'; pg.font = '600 18px system-ui, sans-serif'; pg.fillText(f.lab.toUpperCase(), 54, yy + 24);
     pg.fillStyle = '#ffffff'; pg.font = '800 25px system-ui, sans-serif'; pg.fillText('Ravens vs ' + f.opp, 54, yy + 56);
     yy += 88; const bh = Math.min(76, PHH - 128 - yy - 66);
-    pBtn(34, yy, W - 68, bh, 'To the dressing room', '#5a2bb0', () => { CAR.pre = (f.ko ? (f.lab === 'Final' ? "Final. Leave nothing out there. " : "Win and we're in the final. ") : '') + (f.style === 'forecheck' ? 'They come hard on the forecheck, so move it quick.' : f.style === 'rush' ? 'They love a rush, so backcheck all the way.' : f.style === 'cycle' ? 'They cycle it low, so stay tight to your man.' : 'They wait for mistakes, so keep it simple.'); carRoom('pre'); }, 28);
+    pBtn(34, yy, W - 68, bh, 'To the dressing room', '#5a2bb0', () => { CAR.pre = (f.ko ? (f.lab === 'Final' ? "Final. Leave nothing out there. " : "Win and we're in the final. ") : '') + (f.style === 'forecheck' ? 'They come hard on the forecheck, so move it quick.' : f.style === 'rush' ? 'They love a rush, so backcheck all the way.' : f.style === 'cycle' ? 'They cycle it low, so stay tight to your man.' : 'They wait for mistakes, so keep it simple.') + (croftyScout(f) ? ' ' + croftyScout(f).trim() : ''); carRoom('pre'); }, 28);
     pBtn(34, yy + bh + 8, (W - 76) / 2, 54, 'Sim it', '#2a1a44', () => carGameSim(), 22);
     pBtn(42 + (W - 76) / 2, yy + bh + 8, (W - 76) / 2, 54, 'Lines', '#2a1a44', () => { spApply(); PH.scr = 'lines'; PH.scroll = 0; PH.sel = null; PH.note2 = ''; }, 22);
   } else {
@@ -4408,6 +4408,7 @@ function oppRoster(club) {
     const fn = OPP_FIRST[Math.floor(k('f' + sl) * OPP_FIRST.length)]; let si = Math.floor(k('s' + sl) * OPP_SUR.length); if (OPP_SUR[si] === fn) si = (si + 1) % OPP_SUR.length;
     L.push({ sl, num: String(num), n: fn, sur: OPP_SUR[si], r }); });
   const star = L.slice(0, 9).sort((a, b) => k('st' + a.sl) - k('st' + b.sl))[0]; star.r = 5; star.star = true;
+  { let si = Math.floor(k('gs') * OPP_SUR.length); if (L.some(x => x.sur === OPP_SUR[si])) si = (si + 1) % OPP_SUR.length; L.gk = { n: OPP_FIRST[Math.floor(k('gf') * OPP_FIRST.length)], sur: OPP_SUR[si] }; }
   return L;
 }
 function oppApply(fx) {                                                    // their names and numbers on their skaters
@@ -5598,6 +5599,7 @@ function scStart(mode, fx) {
   SC.fPrev = 2; SC.fChgT = -99; SC.goals = [];
   SC.fx = SC.mode === '5' ? (fx || null) : null; if (SC.mode === '5') hlNewGame(); SC.Qr = ravensQ(); SC.Qv = skillQ(levelSk()); SC.Qopp = fxSkill(SC.fx); if (SC.fx) fxLineup(SC.fx);
   for (const k in SKP) SKP[k].q = null; if (SC.mode === '5') { oppApply(SC.fx); sysPrep(); } iqReset();
+  GOAL.gq = SC.mode === '5' && SC.fx && SC.fx.opp ? gqAt(st.goalP + clubGk(SC.fx.opp) + gkNight(SC.fx)) : null;   // their own goalie, hot or cold tonight
   for (const L of [...SC.lines.ravens, ...SC.lines.visitors]) for (const q of L) skShow(q, false);   // everyone starts on the bench
   SC.sk = SC.grp ? [...SC.grp.ravens.F[0], ...SC.grp.ravens.D[0], ...SC.grp.visitors.F[0], ...SC.grp.visitors.D[0]] : [...SC.lines.ravens[0], ...SC.lines.visitors[0]];
   for (const s of SC.sk) { skShow(s, true); s.shift = 0; s.chg = false; }
@@ -6781,8 +6783,9 @@ const oppAbbr = () => oppShort().replace(/^THE /, '').slice(0, 3);
 // their level from the career game: stronger clubs are quicker and sharper, and each plays its own way
 function fxSkill(fx) {
   if (!fx) return null;
-  const b = skillQ(clamp(levelSk() + ((+fx.r || 0.52) - 0.52) * 0.8, 0.15, 0.95));                  // the Opponents level, better or worse by how good this team is
-  b.fo = clamp(0.5 + ((+fx.r || 0.52) - 0.52) * 0.8, 0.3, 0.7);
+  const r = (+fx.r || clubBy(fx.opp)[1]) + formAdj(fx.opp) + (fx.tour ? 0 : fx.home ? -HOME_ICE : HOME_ICE);   // form, and the home side's wee edge
+  const b = skillQ(clamp(levelSk() + (r - 0.52) * 0.8, 0.15, 0.95));                  // the Opponents level, better or worse by how good this team is
+  b.fo = clamp(0.5 + (r - 0.52) * 0.8, 0.3, 0.7);
   if (fx.style === 'rush') { b.spd *= 1.03; b.dec *= 0.85; }
   else if (fx.style === 'cycle') { b.prot = Math.min(0.88, b.prot + 0.1); b.dec *= 1.15; b.spd *= 0.98; }
   else if (fx.style === 'forecheck') { b.poke = Math.min(0.65, b.poke * 1.15); b.read *= 0.85; b.spd *= 1.02; }
@@ -7025,6 +7028,57 @@ function histLoad() {
 const TALON5 = CLUBS.slice(0, 5), RAV_R = 0.52, CWEEKS = 24, TALON_WEEKS = [2, 4, 6, 8, 10, 14, 16, 18, 20, 22];
 const CAR = { mode: 'sandbox', step: null, vc: null, saveT: 0 };
 const clubBy = n => CLUBS.find(c => c[0] === n) || [n, 0.5, 'patient'];
+// ---- form, goalies and home ice. Form: each club's last five results nudge how good they are (a hot run lifts them, a bad one drops them);
+// the rest of the league plays its own games every week so everyone has form. Goalies: every club has its own goalie, better or worse than
+// the level you set, and on any night he can be hot or cold. Home ice: the home side is a wee bit better.
+const HOME_ICE = 0.012;
+const formOf = n => (CAR.vc && CAR.vc.form && CAR.vc.form[n]) || [];                         // newest last: 'W', 'D' or 'L'
+function formAdj(n) { const F = formOf(n).slice(-5); let t = 0; F.forEach((r, i) => { t += (r === 'W' ? 1 : r === 'L' ? -1 : 0) * (1 - 0.1 * (F.length - 1 - i)); }); return clamp(t * 0.0045, -0.02, 0.02); }
+const clubR = n => clubBy(n)[1] + formAdj(n);
+function formPush(n, r) { const vc = CAR.vc; if (!vc || !n || n === 'Ravens') return; vc.form = vc.form || {}; const F = vc.form[n] = vc.form[n] || []; F.push(r); if (F.length > 8) F.shift(); }
+function formRes(h, a, x, y) { formPush(h, x > y ? 'W' : x < y ? 'L' : 'D'); formPush(a, y > x ? 'W' : y < x ? 'L' : 'D'); }
+function formWeek() {                                                    // the clubs not playing us this week play each other (most of them)
+  const vc = CAR.vc; if (!vc || vc.formWk === vc.season + ':' + vc.week) return; vc.formWk = vc.season + ':' + vc.week;
+  const f = fxNow(), busy = new Set(['Ravens']); if (f) busy.add(f.opp); if (f && f.cup && vc.rounds && vc.rounds[f.round]) vc.rounds[f.round].forEach(p => p.forEach(x => busy.add(x)));
+  if (f && f.tour && vc.tour) [].concat(vc.tour.A || [], vc.tour.B || []).forEach(x => busy.add(x));
+  const key = n => spR(vc.season + 'fw' + vc.week + n), pool = CLUBS.map(c => c[0]).filter(n => !busy.has(n)).sort((a, b) => key(a) - key(b));
+  for (let i = 0; i + 1 < pool.length; i += 2) { if (key(pool[i] + pool[i + 1]) > 0.8) continue; const h = pool[i], a = pool[i + 1], q = simScore(clubR(h), clubR(a), 1, clubGk(h), clubGk(a)); formRes(h, a, q[0], q[1]); }
+}
+function formWords(n) {                                                  // "won their last four", "one win in five" ... or nothing worth saying
+  const F = formOf(n); if (F.length < 3) return ''; const L5 = F.slice(-5), w = L5.filter(r => r === 'W').length, l = L5.filter(r => r === 'L').length;
+  let run = 0; const last = F[F.length - 1]; for (let i = F.length - 1; i >= 0 && F[i] === last; i--) run++;
+  const num = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+  if (last === 'W' && run >= 3) return 'won their last ' + num[run];
+  if (last === 'L' && run >= 3) return 'lost their last ' + num[run];
+  if (L5.length >= 4 && w >= 4) return w + ' wins in their last ' + L5.length;
+  if (L5.length >= 4 && w === 0) return 'no wins in ' + L5.length;
+  if (L5.length >= 4 && l === 0) return 'unbeaten in ' + L5.length;
+  return '';
+}
+const clubGk = n => !n || n === 'Ravens' ? 0 : (spR(n + 'gk') - 0.5) * 1.2;       // their goalie, -0.6 to +0.6 on the goalie levels
+function gkNight(f) {                                                    // hot or cold tonight (the same answer before and during the game)
+  if (!f || !f.opp) return 0; const v = spR(f.opp + 'gkn' + (f.id || '') + (CAR.vc ? CAR.vc.season + 'w' + CAR.vc.week : ''));
+  return v > 0.86 ? 0.45 : v < 0.12 ? -0.45 : (v - 0.5) * 0.2;
+}
+function gqAt(x) { x = clamp(x, 0, 3); const i = Math.floor(x), u = x - i, A = GOALIES[i], B = GOALIES[Math.min(3, i + 1)], o = {}; for (const k in A) o[k] = A[k] + (B[k] - A[k]) * u; return o; }
+function croftyScout(f) {                                                // one thing Crofty says about them, if there's anything worth saying
+  if (!f || !f.opp) return ''; const gn = gkNight(f), gq = clubGk(f.opp), fw = formWords(f.opp);
+  const g = oppRoster(f.opp).gk, who = g ? 'Their goalie ' + g.n + ' ' + g.sur : 'Their goalie';
+  if (gn > 0.3) return who + ' is on fire, so get bodies in front of the net. ';
+  if (gn < -0.3) return who + ' has been leaking goals, so shoot from everywhere. ';
+  const tv = fw && 'They\'ve ' + (/^unbeaten/.test(fw) ? 'been ' : /^(won|lost)/.test(fw) ? '' : 'had ') + fw;
+  if (/^lost|^no wins/.test(fw)) return tv + ', but don\'t let them get going. ';
+  if (fw) return tv + ', so no easy night. ';
+  if (gq > 0.35) return 'Good goalie, so pick your spots. ';
+  return '';
+}
+function scoutLine(f) {                                                  // the phone's one line on them: their danger man, form, goalie
+  if (!f || !f.opp) return ''; const dg = oppDanger(f), fw = formWords(f.opp), gq = clubGk(f.opp), gn = gkNight(f), bits = [];
+  if (dg) bits.push('Watch #' + dg.num + ' ' + dg.sur);
+  if (fw) { const t = fw.replace(/^(won|lost) their last/, '$1 last').replace(/ in their last /, ' in '); bits.push(t[0].toUpperCase() + t.slice(1)); }
+  bits.push(gn > 0.3 ? 'goalie on fire' : gn < -0.3 ? 'goalie leaking goals' : gq > 0.35 ? 'strong goalie' : gq < -0.35 ? 'weak goalie' : '');
+  return bits.filter(Boolean).join(' · ');
+}
 const firstN = n => String(n || '').replace(/\..*$/, '').split(' ')[0];
 function randomFx() { const c = CLUBS[Math.floor(Math.random() * CLUBS.length)]; return { id: 'RND' + Date.now().toString(36), opp: c[0], r: c[1], style: c[2], home: Math.random() < 0.5, cup: false }; }
 function carNew(season) {
@@ -7223,8 +7277,10 @@ function phTrain(y) {
 function phGame(y) {
   const W = PHW, f = fxNow(), g = CAR.pre;
   pg.textAlign = 'left'; pg.fillStyle = '#ffffff'; pg.font = '800 32px system-ui, sans-serif'; pg.fillText('Game night', 44, y + 24);
-  pg.fillStyle = '#b9a8d8'; pg.font = '600 24px system-ui, sans-serif'; pWrap('Ravens vs ' + f.opp + ' · ' + (f.home ? 'home' : 'away') + (f.cup ? ' · Talon Cup' : ' · friendly'), W - 88, '600 24px system-ui, sans-serif').forEach((l, k) => pg.fillText(l, 44, y + 66 + k * 30));
-  { const dg = oppDanger(f); pg.fillStyle = '#9a8fb3'; pg.font = '500 20px system-ui, sans-serif'; let t = 'They ' + (STYLE_TXT[f.style] || 'play their own way') + '.' + (dg ? ' Watch #' + dg.num + ' ' + dg.n + ' ' + dg.sur + '.' : ''); while (pg.measureText(t).width > W - 88 && t.length > 8) t = t.slice(0, -1); pg.fillText(t, 44, y + 134); }
+  pg.fillStyle = '#b9a8d8'; pg.font = '600 24px system-ui, sans-serif'; const mL = pWrap('Ravens vs ' + f.opp + ' · ' + (f.home ? 'home' : 'away') + (f.cup ? ' · Talon Cup' : ' · friendly'), W - 88, '600 24px system-ui, sans-serif'); mL.forEach((l, k) => pg.fillText(l, 44, y + 66 + k * 30));
+  { const dg = oppDanger(f); pg.fillStyle = '#9a8fb3'; pg.font = '500 19px system-ui, sans-serif'; const fit = t => { while (pg.measureText(t).width > W - 88 && t.length > 8) t = t.slice(0, -1); return t; };
+    pg.fillText(fit('They ' + (STYLE_TXT[f.style] || 'play their own way') + '.'), 44, y + (mL.length > 1 ? 124 : 114));
+    pg.fillStyle = '#c9b98a'; pg.fillText(fit(scoutLine(f)), 44, y + (mL.length > 1 ? 148 : 140)); }
   pRect(34, y + 160, W - 68, 250, 24, '#2a2140'); pg.fillStyle = '#e0a928'; pg.font = '700 22px system-ui, sans-serif'; pg.fillText('Crofty', 58, y + 192);
   pg.fillStyle = '#ffffff'; pWrap(g || '', W - 116, '500 27px system-ui, sans-serif').slice(0, 4).forEach((l, k) => pg.fillText(l, 58, y + 232 + k * 34));
   if (RN.players) pBtn(58, y + 352, 200, 46, 'Edit lines', '#5a2bb0', () => { PH.scr = 'lines'; PH.scroll = 0; PH.sel = null; PH.note2 = ''; }, 21);
@@ -7462,7 +7518,7 @@ function carGo(k) {
     CAR.train = { id, name: d.name, msg: 'Training tonight: ' + d.name + '. ' + why + ' See you at the rink.' }; PH.scr = 'train'; return;
   }
   if (k === 'game') { const tips = ['Heads up in our end. Find your man before you find the puck.', 'Wingers, curl back and show your D a target.', 'Keep the breakouts simple. Simple wins games.', 'Skate hard through the neutral zone and make them pick.', 'Stick on the ice. Always.', 'Talk to each other. If you\'re thinking it, say it.', 'Short shifts. Come off when your legs say so.', 'Win the first five minutes and the rest gets easier.'];
-    spApply(); const f = fxNow(), cl = croftyLines(); CAR.cl = cl.ch.length ? cl : null; CAR.pre = (cl.ch.length ? 'Lines: ' + cl.ch.join('; ') + '. ' : (vc.me && vc.me.gp >= 3 ? 'Same lines as last week. ' : '')) + (f.style === 'forecheck' ? 'They come hard on the forecheck, so move it quick. ' : f.style === 'rush' ? 'They love a rush, so backcheck all the way. ' : f.style === 'cycle' ? 'They grind it low, so win your battles on the wall. ' : 'They\'re patient, so make them chase it. ') + pick(tips) + ' Enjoy it.'; PH.scr = 'game'; }
+    spApply(); const f = fxNow(), cl = croftyLines(); CAR.cl = cl.ch.length ? cl : null; CAR.pre = (cl.ch.length ? 'Lines: ' + cl.ch.join('; ') + '. ' : (vc.me && vc.me.gp >= 3 ? 'Same lines as last week. ' : '')) + (f.style === 'forecheck' ? 'They come hard on the forecheck, so move it quick. ' : f.style === 'rush' ? 'They love a rush, so backcheck all the way. ' : f.style === 'cycle' ? 'They grind it low, so win your battles on the wall. ' : 'They\'re patient, so make them chase it. ') + croftyScout(f) + pick(tips) + ' Enjoy it.'; PH.scr = 'game'; }
 }
 function croftyLines() {                                              // swaps he'd make: whoever's scoring moves up
   const vc = CAR.vc, ps = vc.ps || {}, lu = RN.spSaved && RN.players ? lnCur() : Object.assign({}, DEFAULT_LU, st.lineup), pts = n => { const r = ps[n]; return r ? r.g + r.a : 0; }, ch = [];   // tonight's team when it's in
@@ -7628,7 +7684,10 @@ function carTrainDone(sc, reps) {
 // ---- game night
 function carGameGo() { const f = fxNow(), vc = CAR.vc; if (!f) return; phoneClose(); spApply(); CAR.step = 'game'; if (st.myRole && MYROLE_GOALS[st.myRole]) setTimeout(() => toast(st.myRole + ' goals tonight: ' + MYROLE_GOALS[st.myRole].map(x => x[0]).join(' · '), 4), 2500); scStart('5', { id: f.id || 'VC' + vc.season + 'W' + vc.week, opp: f.opp, r: f.r, style: f.style, home: f.home, cup: f.cup, tour: !!f.tour, ko: !!f.ko }); }
 function poisson(l) { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; }
-function simScore(ra, rb) { return [poisson(clamp(2.9 + (ra - rb) * 12, 0.8, 6)), poisson(clamp(2.9 + (rb - ra) * 12, 0.8, 6))]; }
+function simScore(ra, rb, h, ga, gb) {                                  // h: 1 if a is at home, -1 if b is, 0 neutral; ga, gb: their goalies
+  const d = (ra - rb) * 12 + (h || 0) * HOME_ICE * 12;
+  return [poisson(clamp(2.9 + d - (gb || 0) * 0.5, 0.8, 6)), poisson(clamp(2.9 - d - (ga || 0) * 0.5, 0.8, 6))];
+}
 function carLineup() { const L = ['Drew']; for (const [sl] of LSLOTS) { const m = RN.map && RN.map[sl]; if (m && !m.spare) L.push(m.n); else if (!m && !RN.spSaved) L.push('#' + sl); } return L; }
 function carCredit(goals, gf, me) {                                     // Ravens goals: [{sc, as}]. Unknown scorers (and simmed games) get a likely one from the line-up
   const lu = carLineup(), fw = lu.filter((n, i) => i <= 8), out = [];
@@ -7642,6 +7701,7 @@ function carCredit(goals, gf, me) {                                     // Raven
   return { lu, goals: out };
 }
 function carRecord(gf, ga, me, sim, goals, pens) {
+  formWeek(); if (fxNow()) formPush(fxNow().opp, gf < ga ? 'W' : gf > ga ? 'L' : 'D');
   if (fxNow() && fxNow().tour) return tourRecord(gf, ga, me, sim, goals, pens);
   const vc = CAR.vc, f = fxNow(), res = gf > ga ? 'W' : gf < ga ? 'L' : 'D', MB = milSnap(vc);
   { vc.ps = vc.ps || {}; const cr = carCredit(goals || [], gf, me), P = n => /^Spare /.test(n) ? {} : (vc.ps[n] = vc.ps[n] || { gp: 0, g: 0, a: 0, tgp: 0, tg: 0, ta: 0 });
@@ -7657,7 +7717,7 @@ function carRecord(gf, ga, me, sim, goals, pens) {
   vc.results.push({ week: vc.week, opp: f.opp, gf, ga, home: f.home, cup: f.cup, sim: !!sim });
   if (f.cup) {                                                            // the table: this game and the round's other two
     const add = (h, a, x, y) => { const H = vc.tab[h], A = vc.tab[a]; if (!H || !A) return; H.p++; A.p++; H.gf += x; H.ga += y; A.gf += y; A.ga += x; if (x > y) { H.w++; A.l++; H.pts += 2; } else if (x < y) { A.w++; H.l++; A.pts += 2; } else { H.d++; A.d++; H.pts++; A.pts++; } };
-    for (const [h, a] of vc.rounds[f.round]) { if (h === 'Ravens') add(h, a, gf, ga); else if (a === 'Ravens') add(h, a, ga, gf); else { const s = simScore(clubBy(h)[1], clubBy(a)[1]); add(h, a, s[0], s[1]); } }
+    for (const [h, a] of vc.rounds[f.round]) { if (h === 'Ravens') add(h, a, gf, ga); else if (a === 'Ravens') add(h, a, ga, gf); else { const s = simScore(clubR(h), clubR(a), 1, clubGk(h), clubGk(a)); add(h, a, s[0], s[1]); formRes(h, a, s[0], s[1]); } }
   }
   const mine = [me.g ? me.g + (me.g > 1 ? ' goals' : ' goal') : '', me.a ? me.a + (me.a > 1 ? ' assists' : ' assist') : ''].filter(Boolean).join(', ');
   vc.last = { scorers: (vc.lastScorers || ''), gf, ga, opp: f.opp, g: me.g || 0, a: me.a || 0, sh: me.sh || 0, line: `The Ravens ${res === 'W' ? 'beat' : res === 'L' ? 'lost to' : 'drew with'} ${f.opp} ${gf}-${ga}${sim ? ' (simmed)' : ''}.${mine ? ' Drew: ' + mine + '.' : ''}` };
@@ -7666,7 +7726,7 @@ function carRecord(gf, ga, me, sim, goals, pens) {
   if (PH.milNote) { vc.last.line += ' Milestones: ' + PH.milNote + '.'; PH.milNote = ''; }
   vc.wk.game = 1; carSave();
 }
-function carGameSim() { spApply(); if (!fxNow()) return; const f = fxNow(), s = simScore(RAV_R + (CAR.vc.conf - 55) / 1000 + ratAdj(), f.r), g = Math.min(s[0], Math.random() < 0.35 ? 1 : 0), a = Math.min(s[0] - g, Math.random() < 0.35 ? 1 : 0); carRecord(s[0], s[1], { g, a, sh: 1 + Math.floor(Math.random() * 3) }, true); PH.note = CAR.vc.last.line; PH.scr = 'home'; }
+function carGameSim() { spApply(); if (!fxNow()) return; const f = fxNow(), s = simScore(RAV_R + (CAR.vc.conf - 55) / 1000 + ratAdj(), (+f.r || clubBy(f.opp)[1]) + formAdj(f.opp), f.tour ? 0 : f.home ? 1 : -1, 0, clubGk(f.opp) + gkNight(f)), g = Math.min(s[0], Math.random() < 0.35 ? 1 : 0), a = Math.min(s[0] - g, Math.random() < 0.35 ? 1 : 0); carRecord(s[0], s[1], { g, a, sh: 1 + Math.floor(Math.random() * 3) }, true); PH.note = CAR.vc.last.line; PH.scr = 'home'; }
 function carGameDone() {
   CAR.step = null; carRecord(SC.score[0], SC.score[1], { g: SC.my.g, a: SC.my.a, sh: SC.my.sh }, false, (SC.goals || []).filter(g => g.t === 'R').map(g => ({ sc: g.sc, as: g.as })), (SC.pens || []).filter(p => p.team === 'ravens').map(p => p.nm));
   PH.note = CAR.vc.last.line;
@@ -9574,7 +9634,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { clubKit, CLUBKIT, paintJersey, GK, gkLoad, gkMake, gkPose, gkAttach, HP, hpLoad, hpMake, hpKitApply, hpRecolor, HPEYE, scCarry, passLane, pmRebuild, PMV, HELMV, kitGeo, setSetting, FACE, faceApply, faceRefresh, faceLoad, sur, fullN, AGMOBJ, carAgm, agmY, agmLeave, speechPick, speechFit, speechKind, SPEECH, spiritApply, GOAL, GOALIES, CLUBS, otStart, soStart, soResult, scPeriodEnd, callsFrame, LADS, scFaceoff, foSk, DFN, drillRep, GX, BLUEL, scGap, scRoles, GX, BLUEL, scGap, scRoles, SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { simScore, clubR, formAdj, formOf, formWords, scoutLine, croftyScout, clubGk, gkNight, gqAt, GOAL, HOME_ICE, CLUBKIT, paintJersey, GK, gkLoad, gkMake, gkPose, gkAttach, HP, hpLoad, hpMake, hpKitApply, hpRecolor, HPEYE, scCarry, passLane, pmRebuild, PMV, HELMV, kitGeo, setSetting, FACE, faceApply, faceRefresh, faceLoad, sur, fullN, AGMOBJ, carAgm, agmY, agmLeave, speechPick, speechFit, speechKind, SPEECH, spiritApply, GOAL, GOALIES, CLUBS, otStart, soStart, soResult, scPeriodEnd, callsFrame, LADS, scFaceoff, foSk, DFN, drillRep, GX, BLUEL, scGap, scRoles, GX, BLUEL, scGap, scRoles, SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
