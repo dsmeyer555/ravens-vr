@@ -2449,18 +2449,57 @@ function faceFrame(P, dt, look, hy, hz) {
 const AV = { base: 'people/', tmpl: {}, wait: {}, fail: {}, map: null, mapN: -1, on: true };
 const AV_M = ['m01', 'm02', 'm03', 'm04', 'm05', 'm06', 'm07', 'm08', 'm09', 'm10', 'm11', 'm12', 'm13', 'm14', 'm16', 'm17', 'm18', 'm20'], AV_F = ['f01', 'f08', 'f13', 'f14'];
 const AV_FEMALE = new Set(['Vicky', 'Steph', 'Manuela']);
+// skin: each Rocketbox body's own skin tone (hands, b; face and neck, h), measured from its textures, and masks of where its skin is (people/skin/).
+// Someone whose photo we have gets the body nearest his own skin tone, and then that body's skin (hands, arms, neck, ears) is shifted the
+// rest of the way to match his photo, so his face and his hands are the same person.
+const SKSRC = {"m01":{"b":[181,127,108],"h":[188,139,112]},"m02":{"b":[197,142,121],"h":[206,158,127]},"m03":{"b":[182,124,102],"h":[183,129,98]},"m04":{"b":[151,102,75],"h":[108,71,51]},"m05":{"b":[188,128,98],"h":[200,143,118]},"m06":{"b":[183,128,106],"h":[201,144,113]},"m07":{"b":[178,113,79],"h":[194,134,98]},"m08":{"b":[186,130,108],"h":[199,139,106]},"m09":{"b":[199,147,119],"h":[199,145,110]},"m10":{"b":[204,140,94],"h":[206,145,92]},"m11":{"b":[214,146,121],"h":[229,162,129]},"m12":{"b":[143,94,72],"h":[101,70,50]},"m13":{"b":[172,116,95],"h":[206,142,112]},"m14":{"b":[187,131,110],"h":[203,137,104]},"m16":{"b":[203,152,123],"h":[215,162,132]},"m17":{"b":[151,105,77],"h":[123,85,54]},"m18":{"b":[111,71,57],"h":[56,33,23]},"m20":{"b":[186,127,107],"h":[192,140,119]},"f01":{"b":[203,150,119],"h":[203,150,119]},"f08":{"b":[192,135,105],"h":[192,135,105]},"f13":{"b":[200,144,107],"h":[200,144,107]},"f14":{"b":[204,149,115],"h":[204,149,115]}};
+const skLin = c => c.map(v => Math.pow(v / 255, 2.2));
+function skDist(a, b) { const A = skLin(a), B = skLin(b), la = A[0] + A[1] + A[2] + 1e-4, lb = B[0] + B[1] + B[2] + 1e-4; return Math.abs(Math.log(la / lb)) + 6 * Math.hypot(A[0] / la - B[0] / lb, A[2] / la - B[2] / lb); }
+function skMaskLoad(id) {
+  const one = k => fetch(AV.base + 'skin/' + id + '_' + k + '.png').then(r => { if (!r.ok) throw 0; return r.blob(); }).then(b => createImageBitmap(b, { imageOrientation: 'none', premultiplyAlpha: 'none', colorSpaceConversion: 'none' }))
+    .then(bmp => { const t = new THREE.Texture(bmp); t.flipY = false; t.needsUpdate = true; return t; }).catch(() => null);
+  return Promise.all([one('b'), one('h')]).then(([b, h]) => ({ b, h }));
+}
+const rosterTone = n => (n === 'Drew' ? RN.drew && RN.drew.tone : (rnP(n) || {}).tone) || null;   // from your server (evened out for each photo's lighting)
+const skTone = n => rosterTone(n) || FACE.tone[n] || null;
+function skLight(t) { if (!t) return null; const k = clamp(470 / (t[0] + t[1] + t[2]), 0.8, 1.7); return t.map(v => Math.min(255, Math.round(v * k))); }   // (no tone from the server: a photo can't tell dim light from dark skin, so assume it's the light)
 function avFile(name) {
-  const pool = AV_FEMALE.has(name) ? AV_F : AV_M, roster = RN.players || [];
-  if (!AV.map || AV.mapN !== roster.length) {                         // a different model for everyone on the roster, the same one every time
-    AV.map = {}; AV.mapN = roster.length; const used = { m: new Set(), f: new Set() };
-    const names = roster.map(p => p.n).concat(['Crofty']).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => hashStr(a) - hashStr(b));
-    for (const n of names) { const f = AV_FEMALE.has(n), pl = f ? AV_F : AV_M, u = f ? used.f : used.m; let k = hashStr(n) % pl.length; for (let t = 0; t < pl.length && u.has(k); t++) k = (k + 1) % pl.length; u.add(k); AV.map[n] = pl[k]; }
+  const pool = AV_FEMALE.has(name) ? AV_F : AV_M, roster = RN.players || [], nT = Object.keys(FACE.tone).length + roster.filter(p => p.tone).length;
+  if (!AV.map || AV.mapN !== roster.length || AV.mapT !== nT) {           // a different model for everyone on the roster where possible, the same one every time; nearest skin first
+    AV.map = {}; AV.mapN = roster.length; AV.mapT = nT; const used = {};
+    const names = roster.map(p => p.n).concat(['Crofty']).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => (skTone(b) ? 1 : 0) - (skTone(a) ? 1 : 0) || hashStr(a) - hashStr(b));
+    for (const n of names) { const pl = AV_FEMALE.has(n) ? AV_F : AV_M, tn = skTone(n); let best = null, bc = 1e9;
+      for (let i = 0; i < pl.length; i++) { const id = pl[(hashStr(n) + i) % pl.length], c = (tn ? skDist(tn, SKSRC[id].h) : i * 0.001) + (used[id] || 0) * (tn ? 0.06 : 10); if (c < bc) { bc = c; best = id; } }
+      used[best] = (used[best] || 0) + 1; AV.map[n] = best; }
   }
   return AV.map[name] || pool[hashStr(String(name)) % pool.length];
+}
+function skFromPhoto(bmp) {                                              // his skin tone from his photo: cheekbones, nose, forehead (missing beards, brows and glasses)
+  const W = 48, H = Math.round(48 * bmp.height / bmp.width), c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); g.drawImage(bmp, 0, 0, W, H);
+  const d = g.getImageData(0, 0, W, H).data, meds = [];
+  for (const [u, v] of [[0.3, 0.47], [0.7, 0.47], [0.5, 0.47], [0.5, 0.26], [0.38, 0.29], [0.62, 0.29]]) {
+    const px = []; const x0 = Math.round(u * W), y0 = Math.round((1 - v) * H);                      // (the photo is stored upside down)
+    for (let y = y0 - 2; y <= y0 + 2; y++) for (let x = x0 - 2; x <= x0 + 2; x++) { const i = (y * W + x) * 4, r = d[i], gg = d[i + 1], b = d[i + 2], mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
+      if (r >= gg && gg >= b * 0.8 && mx > 35 && mx < 252 && (mx - mn) / (mx + 1) > 0.08 && (mx - mn) / (mx + 1) < 0.7) px.push([r, gg, b]); }
+    if (px.length >= 6) { const m = [0, 1, 2].map(k => px.map(p => p[k]).sort((a, b) => a - b)[px.length >> 1]); meds.push(m); }
+  }
+  if (meds.length < 2) return null;
+  const L = meds.map(m => m[0] + m[1] + m[2]), Ls = L.slice().sort((a, b) => a - b), mL = Ls[Ls.length >> 1], ok = meds.filter((m, i) => Math.abs(L[i] - mL) < 0.25 * mL);
+  return [0, 1, 2].map(k => Math.round(ok.reduce((a, m) => a + m[k], 0) / ok.length));
+}
+// his body's skin shifted to his own tone: on the body (hands, arms) and, in headMat, the head (neck, ears, round the photo)
+function skRat(A, which, tone) { const s = A.skId && SKSRC[A.skId]; if (!s || !tone) return null; const T = skLin(tone), S = skLin(s[which]); return new THREE.Vector3(...[0, 1, 2].map(k => clamp(T[k] / Math.max(S[k], 1e-4), 0.35, 2.2))); }
+function skBody(A, tone) {
+  const body = A.meshes.body, mk = A.skM && A.skM.b; if (!body || !mk) return; const base = A.bodyBase || (A.bodyBase = body.material), rat = tone && skRat(A, 'b', tone);
+  if (!rat) { body.material = base; return; }
+  const m = base.clone(); m.onBeforeCompile = sh => { sh.uniforms.skMask = { value: mk }; sh.uniforms.skRat = { value: rat };
+    sh.fragmentShader = 'uniform sampler2D skMask; uniform vec3 skRat;\n' + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n  diffuseColor.rgb *= mix(vec3(1.0), skRat, texture2D(skMask, vMapUv).r);'); };
+  m.customProgramCacheKey = () => 'skb'; body.material = m;
 }
 function avLoad(id) {
   if (AV.tmpl[id]) return Promise.resolve(AV.tmpl[id]); if (AV.fail[id]) return Promise.resolve(null);
   return AV.wait[id] || (AV.wait[id] = fetch(AV.base + id + '.glb').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }).then(avParse)
+    .then(t => skMaskLoad(id).then(m => { t.skM = m; return t; }))
     .then(t => (AV.tmpl[id] = t)).catch(e => { AV.fail[id] = true; run.avFail = (run.avFail || 0) + 1; if (/HTTP 404/.test(e.message)) AV.dead = true; return null; }));   // (no people/ folder on the site: stop asking)
 }
 async function avParse(buf) {                                          // our own glb files: plain accessors, embedded jpeg/png images
@@ -2522,14 +2561,14 @@ function avAttach(P, key) {
   avLoad(id).then(t => {
     if (!t || P.avId !== id) return;
     if (P.av) P.root.remove(P.av.root);
-    const A = avMake(t); try { kitBuild(P, A, kitWay(P.team)); } catch (e) { A.kit = null; run.kitErr = String(e); }
+    const A = avMake(t); A.skId = id; A.skM = t.skM; try { kitBuild(P, A, kitWay(P.team)); } catch (e) { A.kit = null; run.kitErr = String(e); }
     P.av = A; P.root.add(A.root); A.root.visible = !P.far; P.avMode = null; P.sm = null; faceApply(P);
   });
 }
 // ---- the lads' real faces (only those who've said yes). The photos live on your server, behind your key; the page asks for one when that
 // player's model is built, keeps it in memory only (never saved on the headset) and projects it onto the front of his model's head, feathered
 // into the skin at the edges, so it moves with his head, his blinks and his jaw. No server, no key, no photo: he keeps the stock face.
-const FACE = { tex: {}, busy: {}, fail: {} };
+const FACE = { tex: {}, busy: {}, fail: {}, tone: {} };
 function faceHas(n) { if (!n || st.faces === false || !brainOK()) return false; return n === 'Drew' ? !!(RN.drew && RN.drew.face) : !!(rnP(n) || {}).face; }
 function faceLoad(n) {
   if (FACE.tex[n] || FACE.busy[n] || FACE.fail[n] || !faceHas(n)) return;
@@ -2537,24 +2576,28 @@ function faceLoad(n) {
   fetch(st.brainUrl.replace(/\/+$/, '') + '/face?n=' + encodeURIComponent(n), { headers: { 'X-Ravens-Key': st.brainKey }, cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
     .then(b => createImageBitmap(b, { imageOrientation: 'flipY' }))
-    .then(bmp => { const t = new THREE.Texture(bmp); t.flipY = false; if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true; FACE.tex[n] = t; faceRefresh(n); })
+    .then(bmp => { try { const tn = rosterTone(n) || skLight(skFromPhoto(bmp)); if (tn) FACE.tone[n] = tn; } catch (e) { } const t = new THREE.Texture(bmp); t.flipY = false; if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true; FACE.tex[n] = t; faceRefresh(n); })
     .catch(() => { FACE.fail[n] = true; }).finally(() => { FACE.busy[n] = false; });
 }
 function pmRebuild() { const L = []; for (const k in SKP) L.push(SKP[k].p); for (const o of PUBP) L.push(o.p); for (const o of ROOMP) L.push(o.p); if (CROF.p) L.push(CROF.p); for (const P of L) if (P && P.av) { const key = P.lookKey; P.avId = null; avAttach(P, key); } }
-function faceRefresh(n) { const L = []; if (SC.g2 && SC.g2.p) L.push(SC.g2.p); if (GOAL.p) L.push(GOAL.p); for (const k in SKP) L.push(SKP[k].p); for (const o of PUBP) L.push(o.p); for (const o of ROOMP) L.push(o.p); if (CROF.p) L.push(CROF.p); for (const P of L) if (P && P.name === n && P.av) faceApply(P); }
+function faceRefresh(n) { const L = []; if (SC.g2 && SC.g2.p) L.push(SC.g2.p); if (GOAL.p) L.push(GOAL.p); for (const k in SKP) L.push(SKP[k].p); for (const o of PUBP) L.push(o.p); for (const o of ROOMP) L.push(o.p); if (CROF.p) L.push(CROF.p);
+  for (const P of L) if (P && P.name === n && P.av) { if (P.av.skId && avFile(n) !== P.av.skId) { const key = P.lookKey; P.avId = null; avAttach(P, key); } else faceApply(P); } }   // (his skin tone's known now: a nearer body if there is one)
 function faceApply(P) {
   const A = P && P.av, n = P && P.name; if (!A || !A.meshes.head || !n) return;
-  if (!faceHas(n)) { if (A.faceOn) { A.faceOn = false; headMat(A, null); } return; }
+  if (!faceHas(n)) { if (A.faceOn) { A.faceOn = false; headMat(A, null); skBody(A, null); } return; }
   const tx = FACE.tex[n]; if (!tx) return faceLoad(n);
   if (A.faceOn === n) return;
-  A.faceOn = n; headMat(A, tx); run.faces = (run.faces || 0) + 1;
+  A.faceOn = n; headMat(A, tx); skBody(A, FACE.tone[n]); run.faces = (run.faces || 0) + 1;
 }
 // his head's material: the stock one, plus his photo on the face, plus (in a test model's helmet) his hair pressed down inside the shell
+const P_skTone = A => A.faceOn && FACE.tone[A.faceOn];
 function headMat(A, tx) {
   const head = A.meshes.head, base = A.faceBase || (A.faceBase = head.material), g = head.geometry; if (!g.boundingBox) g.computeBoundingBox();
   if (!tx && !A.hc) { head.material = base; return; }
   const e = A.R.eyes, k = (g.boundingBox.max.x - g.boundingBox.min.x) / 0.182;
+  const skR = tx && P_skTone(A) && A.skM && A.skM.h ? skRat(A, 'h', P_skTone(A)) : null;
   const gk = !!A.gk, m = base.clone(), U = { faceK: { value: gk ? 100 : 1 }, faceMap: { value: tx }, faceC: { value: gk ? new THREE.Vector3(e.x / 100, -e.z / 100, (e.y - 0.035 * HPFACE[1]) / 100) : A.hp ? new THREE.Vector3(e.x, e.y - 0.035 * HPFACE[1], e.z) : new THREE.Vector3(e.x, -e.z, e.y - 0.034 * k) }, faceS: { value: A.hp || gk ? new THREE.Vector2(0.17 * HPFACE[0], 0.21 * HPFACE[1]) : new THREE.Vector2(0.17 * k, 0.21 * k) } };
+  if (skR) Object.assign(U, { skMask: { value: A.skM.h }, skRat: { value: skR } });
   if (A.hc) Object.assign(U, { hcC: { value: A.hc.c }, hcR: { value: A.hc.r }, hcB: { value: A.hc.b }, hcOn: A.hcU || (A.hcU = { value: 0 }) });
   m.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U);
@@ -2563,14 +2606,14 @@ function headMat(A, tx) {
  { vec3 hd = transformed - hcC; float hup = smoothstep(hcB - 0.012, hcB + 0.012, hd.z + max(0.0, hd.y + 0.05) * 1.3) * smoothstep(-0.07, -0.045, hd.z) * hcOn; float hl = length(hd / hcR);
    if (hl > 1.0 && hup > 0.0) transformed = hcC + mix(hd, hd / hl, hup); }` : ''));
     sh.vertexShader = vs;
-    if (tx) sh.fragmentShader = 'uniform sampler2D faceMap; uniform vec3 faceC; uniform vec2 faceS; uniform float faceK; varying vec3 vFaceP; varying vec3 vFaceN;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+    if (tx) sh.fragmentShader = (skR ? 'uniform sampler2D skMask; uniform vec3 skRat;\n' : '') + 'uniform sampler2D faceMap; uniform vec3 faceC; uniform vec2 faceS; uniform float faceK; varying vec3 vFaceP; varying vec3 vFaceN;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>` + (skR ? '\n  diffuseColor.rgb *= mix(vec3(1.0), skRat, texture2D(skMask, vMapUv).r);' : '') + `
   { vec3 fd = (vFaceP - faceC) * faceK; vec3 fn = normalize(vFaceN);` + (A.hp ? 'fd = vec3(fd.x, -fd.z, fd.y); fn = vec3(fn.x, -fn.z, fn.y);' : '') + `
     vec2 fuv = vec2(fd.x / faceS.x + 0.5, fd.z / faceS.y + 0.5);
     float fm = 1.0 - smoothstep(0.72, 1.0, length((fuv - 0.5) * vec2(2.15, 2.0)));
     fm *= smoothstep(0.12, 0.5, -fn.y) * step(fd.y, 0.04);
     if (fm > 0.001) { vec4 fc = texture2D(faceMap, clamp(fuv, 0.0, 1.0)); diffuseColor.rgb = mix(diffuseColor.rgb, fc.rgb, fm); } }`);
   };
-  m.customProgramCacheKey = () => 'face' + (tx ? 1 : 0) + (A.hc ? 'h' : '') + (A.hp ? 'p' : '') + (gk ? 'g' : '');
+  m.customProgramCacheKey = () => 'face' + (tx ? 1 : 0) + (A.hc ? 'h' : '') + (A.hp ? 'p' : '') + (gk ? 'g' : '') + (skR ? 's' : '');
   head.material = m;
 }
 // ---- Phase 13e: the hockey players. Everyone on the ice is the proper hockey-player model (helmet and cage, padded jersey, breezers, socks,
@@ -6980,7 +7023,7 @@ function rosterLoad() {
   try { const c = JSON.parse(localStorage.getItem('ravens-vr3-roster') || 'null'); if (c) rosterApply(c); } catch (e) { }
   if (!brainOK()) return Promise.resolve(false);
   fxLoad();
-  return brainFetch('/roster', null, 8000).then(j => { rosterApply(j); try { localStorage.setItem('ravens-vr3-roster', JSON.stringify(j)); } catch (e) { } return true; }).catch(() => false);
+  return brainFetch('/roster', null, 8000).then(j => { rosterApply(j); setTimeout(() => (RN.players || []).filter(p => p.face).forEach((p, i) => setTimeout(() => faceLoad(p.n), 120 * i)), 500); try { localStorage.setItem('ravens-vr3-roster', JSON.stringify(j)); } catch (e) { } return true; }).catch(() => false);
 }
 // finished games and drills go to the server; if it can't be reached they wait on the headset and go next time
 const SQKEY = 'ravens-vr3-sendq';
@@ -9806,7 +9849,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { thinkFrame, lowMan, dumpRace, simScore, sprayStep, scGoal, scSlot, scTargets, netMan, clubR, formAdj, formOf, formWords, scoutLine, croftyScout, clubGk, gkNight, gqAt, GOAL, HOME_ICE, CLUBKIT, paintJersey, GK, gkLoad, gkMake, gkPose, gkAttach, HP, hpLoad, hpMake, hpKitApply, hpRecolor, HPEYE, scCarry, passLane, pmRebuild, PMV, HELMV, kitGeo, setSetting, FACE, faceApply, faceRefresh, faceLoad, sur, fullN, AGMOBJ, carAgm, agmY, agmLeave, speechPick, speechFit, speechKind, SPEECH, spiritApply, GOAL, GOALIES, CLUBS, otStart, soStart, soResult, scPeriodEnd, callsFrame, LADS, scFaceoff, foSk, DFN, drillRep, GX, BLUEL, scGap, scRoles, GX, BLUEL, scGap, scRoles, SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { avAttach, skBody, headMat, FACE, SKSRC, avFile, faceLoad, thinkFrame, lowMan, dumpRace, simScore, sprayStep, scGoal, scSlot, scTargets, netMan, clubR, formAdj, formOf, formWords, scoutLine, croftyScout, clubGk, gkNight, gqAt, GOAL, HOME_ICE, CLUBKIT, paintJersey, GK, gkLoad, gkMake, gkPose, gkAttach, HP, hpLoad, hpMake, hpKitApply, hpRecolor, HPEYE, scCarry, passLane, pmRebuild, PMV, HELMV, kitGeo, setSetting, FACE, faceApply, faceRefresh, faceLoad, sur, fullN, AGMOBJ, carAgm, agmY, agmLeave, speechPick, speechFit, speechKind, SPEECH, spiritApply, GOAL, GOALIES, CLUBS, otStart, soStart, soResult, scPeriodEnd, callsFrame, LADS, scFaceoff, foSk, DFN, drillRep, GX, BLUEL, scGap, scRoles, GX, BLUEL, scGap, scRoles, SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
