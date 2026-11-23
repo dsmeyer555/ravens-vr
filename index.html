@@ -1371,7 +1371,10 @@ function attachStep(dt, now) {
   PK.carryV = Math.hypot(_vp[0] - PA.svx, _vp[2] - PA.svz);
   const cv = Math.max(PK.carryV, 1e-6), into = side * ((_vp[0] - PA.svx) * wx + (_vp[2] - PA.svz) * wz) / cv, fwd = ((_vp[0] - PA.svx) * PA.fx + (_vp[2] - PA.svz) * PA.fz) / cv;
   if (_T[1] > PUCK.HH + 0.1) { PK.att = 0; PK.cr = 0; PK.rel = now + 0.3; PK.vx = PA.svx; PK.vz = PA.svz; return false; }   // blade lifted off it (a slap shot windup): the puck stays where it is, moving with you
-  PK.attHo = into > 0.3 && ((PK.carryV > 1.8 && fwd > 0.6) || (PK.carryV > 7 && fwd > 0.1)) ? (PK.attHo || 0) + 1 : 0;   // never on a backswing      // two frames in a row, so one shaky frame does not throw it
+  // a push forward, a hard sweep across (a pass to the side: on the backhand that's most of them), never a backswing; two frames in a row, so one shaky frame
+  // doesn't throw it. A sideways sweep has to be quicker and squarer to the face than stickhandling ever is, and not straight off a switch of faces.
+  const across = PK.carryV > 4.5 && into > 0.5 && fwd > -0.35 && now - PK.attSw > 0.15;
+  PK.attHo = into > 0.3 && ((PK.carryV > 1.8 && fwd > 0.6) || across || (PK.carryV > 7 && fwd > 0.1)) ? (PK.attHo || 0) + 1 : 0;
   if (PK.attHo >= 2) {                                                        // straight into the ride: the puck rides the face to the top of the stroke and goes
     PK.attHo = 0; PK.att = 0; PK.touch = now; PK.attOut = (PK.attOut || 0) + 1; PK.x = _T[0]; PK.z = _T[2]; PK.y = PUCK.HH; PK.cr = 1;
     PK.sh = 1; PK.shPk = 0; PK.shT = 0; PK.shUp = 0; PK.shWy = -1; PK.smx = _vp[0]; PK.smz = _vp[2]; PK.uvE = 0; PK.uvM = 0; return false;
@@ -2759,12 +2762,12 @@ function gkPose(P, dt) {
   A.root.position.set(0, 0, 0); A.root.updateMatrixWorld(true);
   // hips where the stance puts them, leaning forward into the crouch
   avTurn(B.pel, _gq.copy(_rq).multiply(R.wq.pel), 1);
-  avAim(A, 'sp', _gv.set(0, Math.cos(G.lean), Math.sin(G.lean)).clone(), 1);
-  _ge.set(-G.lean * 0.7, 0, 0); const hq = new THREE.Quaternion().setFromEuler(_ge);
+  avAim(A, 'sp', _gv.set(Math.sin(G.roll || 0), Math.cos(G.lean), Math.sin(G.lean)).clone(), 1);
+  _ge.set(-G.lean * 0.7 + (G.pitch || 0), G.look || 0, 0, 'YXZ'); const hq = new THREE.Quaternion().setFromEuler(_ge);
   if (B.neck) avTurn(B.neck, _gq.copy(hq).premultiply(_rq).multiply(R.wq.neck), 0.5);
   avTurn(B.head, _gq.copy(hq).premultiply(_rq).multiply(R.wq.head), 1);
   A.root.updateMatrixWorld(true);
-  const hipNow = P.root.worldToLocal(B.thL.getWorldPosition(_gv)).clone(), hipT = _gv2.set(0, G.hipY, -0.02).add(_gA.set(R.hip0.x, 0, 0));
+  const hipNow = P.root.worldToLocal(B.thL.getWorldPosition(_gv)).clone(), hipT = _gv2.set(G.hx || 0, G.hipY, -0.02).add(_gA.set(R.hip0.x, 0, 0));
   A.root.position.add(hipT.sub(hipNow)); A.root.updateMatrixWorld(true);
   for (const s of ['L', 'R']) {
     const J = G[s], sx = s === 'L' ? 1 : -1, hip = P.root.worldToLocal(B['th' + s].getWorldPosition(new THREE.Vector3()));
@@ -2772,7 +2775,7 @@ function gkPose(P, dt) {
     const pole = J.kn.clone().sub(hip.clone().add(an).multiplyScalar(0.5)); if (pole.lengthSq() < 1e-6) pole.set(sx * 0.2, 0, 1);
     ik2(hip, an, R.len['th' + s], R.len['ca' + s], pole.normalize(), _J, _E);
     avAim(A, 'th' + s, _J.clone().sub(hip), 1); avAim(A, 'ca' + s, _E.clone().sub(_J), 1);
-    const ft = B['ft' + s]; if (ft) { _ge.set(0, sx * 1.25 * (G.b || 0), 0); avTurn(ft, _gq.setFromEuler(_ge).premultiply(_rq).multiply(R.wq['ft' + s]), 1); }
+    const ft = B['ft' + s]; if (ft) { _ge.set(0, sx * 1.25 * (G.b || 0) + (J.yaw || 0), 0, 'XYZ'); avTurn(ft, _gq.setFromEuler(_ge).premultiply(_rq).multiply(R.wq['ft' + s]), 1); }
   }
   A.root.updateMatrixWorld(true);
   for (const [s, hand] of [['L', P.gHand], ['R', P.bHand]]) {
@@ -4539,28 +4542,74 @@ function smoothPose(P, dt) {
     }
   }
 }
+const _C2 = new THREE.Vector3();
+// ice spray off a hockey stop: a little burst of snow off the front skate, thrown the way he was going
+const SPRAY = (() => { const n = 160, g = new THREE.BufferGeometry(), pos = new Float32Array(n * 3).fill(-50); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const pts = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xf4f8ff, size: 0.06, transparent: true, opacity: 0.85, depthWrite: false })); pts.frustumCulled = false; scene.add(pts);
+  return { n, pos, vel: new Float32Array(n * 3), life: new Float32Array(n), i: 0, g, pts, live: 0 }; })();
+function sprayEmit(x, z, vx, vz, k) {
+  for (let j = 0; j < k; j++) { const i = SPRAY.i = (SPRAY.i + 1) % SPRAY.n, a = (Math.random() - 0.5) * 0.9, c = Math.cos(a), sn = Math.sin(a), f = 0.35 + Math.random() * 0.45;
+    SPRAY.pos[i * 3] = x + (Math.random() - 0.5) * 0.12; SPRAY.pos[i * 3 + 1] = 0.03; SPRAY.pos[i * 3 + 2] = z + (Math.random() - 0.5) * 0.12;
+    SPRAY.vel[i * 3] = (vx * c - vz * sn) * f; SPRAY.vel[i * 3 + 1] = 0.6 + Math.random() * 1.3; SPRAY.vel[i * 3 + 2] = (vx * sn + vz * c) * f; SPRAY.life[i] = 0.35 + Math.random() * 0.3; }
+  SPRAY.live = 1;
+}
+function sprayStep(dt) {
+  if (!SPRAY.live) return; let any = 0; const P = SPRAY.pos, V = SPRAY.vel, L = SPRAY.life;
+  for (let i = 0; i < SPRAY.n; i++) { if (L[i] <= 0) continue; L[i] -= dt; if (L[i] <= 0 || P[i * 3 + 1] < 0) { P[i * 3 + 1] = -50; L[i] = 0; continue; } any = 1;
+    V[i * 3 + 1] -= 6 * dt; const d = Math.exp(-dt * 2.5); V[i * 3] *= d; V[i * 3 + 2] *= d; P[i * 3] += V[i * 3] * dt; P[i * 3 + 1] += V[i * 3 + 1] * dt; P[i * 3 + 2] += V[i * 3 + 2] * dt; }
+  SPRAY.g.attributes.position.needsUpdate = true; SPRAY.live = any;
+}
 const avJP = () => { const v = () => new THREE.Vector3(); return { L: { hip: v(), kn: v(), an: v(), sh: v(), el: v(), ha: v() }, R: { hip: v(), kn: v(), an: v(), sh: v(), el: v(), ha: v() }, lean: 0, hp: 0, hx: 0, hy: 0, hz: 0 }; };
 function poseSkater2(P, dt) {
   const s = P.s, M = P.m, sd = P.side, k = clamp(s.speed / 7.5, 0, 1), jp = P.jp || (P.jp = avJP());
   P.root.position.set(s.x, 0, s.z); P.root.rotation.set(0, Math.atan2(s.fx, s.fz), 0);
-  P.root.rotation.z = clamp(-s.turn * 0.09, -0.3, 0.3) * k;                                        // lean into turns
+  // how he's skating: striding (pushing), gliding, crossing over through a turn, a hockey stop, or backwards. Each eases in and out.
+  { const ice = !P.seat && !P.casual && !P.off, ek = 1 - Math.exp(-dt / 0.18);
+    const effW = !ice || s.speed < 0.4 ? 0 : s.push == null ? 1 : Math.max(+s.push, s.speed < 2 ? 0.6 : 0);   // striding while he's driving on, gliding when he eases off (anyone without the skating info strides as before)
+    P.eff = (P.eff == null ? effW : P.eff) + (effW - (P.eff == null ? effW : P.eff)) * ek;
+    P.crs = (P.crs || 0) + ((ice && !s.bk ? clamp(s.cross || 0, 0, 1) * clamp((s.speed - 2) / 2, 0, 1) : 0) - (P.crs || 0)) * ek;
+    P.stp = (P.stp || 0) + ((ice && (s.brake || 0) > 0.3 && s.speed > 2.5 ? 1 : 0) - (P.stp || 0)) * (1 - Math.exp(-dt / ((s.brake || 0) > 0.3 ? 0.08 : 0.25)));
+    P.bkw = (P.bkw || 0) + ((s.bk ? 1 : 0) - (P.bkw || 0)) * ek; }
+  const eff = P.eff, crs = P.crs, stp = P.stp, bkw = P.bkw, ins = s.turn > 0 ? 1 : -1;            // ins: the inside of the turn (+1 his left)
+  if (stp > 0.5 && s.speed > 2.5 && P.root.visible && !P.far) sprayEmit(s.x + s.fx * 0.25, s.z + s.fz * 0.25, s.fx * s.speed, s.fz * s.speed, Math.random() < s.speed * dt * 4 ? 2 : 0);
+  P.root.rotation.z = clamp(-s.turn * 0.09, -0.3, 0.3) * k * (1 - 0.7 * stp);                    // lean into turns
   // legs: a push out and back with each stride, the other skate gliding under him; standing still both skates sit under the hips
-  P.ph += dt * Math.PI * 2 * (0.35 + 0.12 * s.speed) * (s.speed > 0.4 ? 1 : 0) * (s.bk ? -0.75 : 1);   // backwards: C-cuts the other way
-  const hipY = P.seat ? 0.52 : P.casual ? 0.99 : 0.93 - 0.15 * k;                               // off the ice (the pub, the coach) they stand up straight; in the room they sit
-  _hipL.set(0.1, hipY, -0.03); _hipR.set(-0.1, hipY, -0.03);
+  P.ph += dt * Math.PI * 2 * (0.35 + 0.12 * s.speed) * (s.speed > 0.4 ? 0.25 + 0.75 * eff : 0) * (s.bk ? -0.75 : 1);   // backwards: C-cuts the other way
+  const sw = Math.sin(P.ph), bob = 0.5 + 0.5 * Math.cos(2 * P.ph);
+  const hipY = P.seat ? 0.52 : P.casual ? 0.99 : 0.93 - 0.15 * k - 0.022 * eff * k * bob - 0.08 * stp - 0.04 * bkw;   // off the ice (the pub, the coach) they stand up straight; in the room they sit. Each push sinks him into the glide knee
+  const swayX = -0.04 * sw * eff * k * (1 - stp);                                               // his weight goes over the gliding skate
+  _hipL.set(0.1 + swayX, hipY, -0.03); _hipR.set(-0.1 + swayX, hipY, -0.03);
   for (const [sx, hip, nm, off] of [[1, _hipL, 'L', 0], [-1, _hipR, 'R', Math.PI]]) {
-    const t = ((P.ph + off) % (Math.PI * 2)) / (Math.PI * 2);
-    let fx, fz, fy = 0.13;
-    if (P.seat) { fx = sx * 0.19; fz = 0.44; fy = 0.12; }
-    else if (t < 0.55) { const p = t / 0.55; fx = sx * (0.13 + 0.3 * p * k); fz = 0.12 - 0.5 * p * k; }
-    else { const p = (t - 0.55) / 0.45; fx = sx * (0.13 + 0.3 * k * (1 - p) * (1 - p)); fz = 0.12 - 0.5 * k * (1 - p); fy += 0.08 * Math.sin(Math.PI * p) * k; }
+    const t = ((P.ph + off) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) / (Math.PI * 2);
+    let fx, fz, fy = 0.13, yaw;
+    if (P.seat) { fx = sx * 0.19; fz = 0.44; fy = 0.12; yaw = 0; }
+    else {
+      // a stride: out and back on the push, then the skate comes back under him just off the ice
+      let ax, az, ay = 0.13;
+      if (t < 0.55) { const p = t / 0.55; ax = sx * (0.13 + 0.32 * p * k); az = 0.12 - 0.5 * p * k; }
+      else { const p = (t - 0.55) / 0.45; ax = sx * (0.13 + 0.32 * k * (1 - p) * (1 - p)); az = 0.12 - 0.5 * k * (1 - p); ay += 0.08 * Math.sin(Math.PI * p) * k; }
+      let ay2 = sx * 0.25 * k * (t < 0.55 ? 1 : 0.3);
+      // gliding: both skates under him, knees bent, one a little ahead
+      const gx = sx * 0.13, gz = 0.12 + sx * 0.06, gy = 0.13;
+      ax = gx + (ax - gx) * eff; az = gz + (az - gz) * eff; ay = gy + (ay - gy) * eff; ay2 *= eff;
+      // crossovers: the outside skate comes over the front of the inside one, the inside skate pushes under him
+      if (crs > 0.01) {
+        const inside = sx === ins, o = -ins; let cx, cz, cy = 0.13, cyaw;
+        if (inside) { if (t < 0.55) { const p = t / 0.55; cx = ins * (0.15 - 0.36 * p); cz = 0.1 - 0.12 * p; cyaw = -ins * 0.2; } else { const p = (t - 0.55) / 0.45; cx = ins * (-0.21 + 0.36 * p); cz = -0.02 + 0.12 * p; cy += 0.05 * Math.sin(Math.PI * p); cyaw = 0; } }
+        else { if (t < 0.55) { const p = t / 0.55; cx = o * (0.12 + 0.3 * p); cz = 0.12 - 0.3 * p; cyaw = o * 0.35; } else { const p = (t - 0.55) / 0.45; cx = o * (0.42 - 0.62 * p); cz = -0.18 + 0.45 * p; cy += 0.13 * Math.sin(Math.PI * p); cyaw = ins * 0.15; } }
+        ax += (cx - ax) * crs; az += (cz - az) * crs; ay += (cy - ay) * crs; ay2 += (cyaw - ay2) * crs;
+      }
+      // a hockey stop: skates turned across, feet apart, the front one leading
+      if (stp > 0.01) { const front = sx === ins ? 1 : -1, hx2 = sx * 0.07, hz2 = 0.04 + front * 0.2; ax += (hx2 - ax) * stp; az += (hz2 - az) * stp; ay += (0.12 - ay) * stp; ay2 += (ins * 1.35 - ay2) * stp; }
+      fx = ax; fz = az; fy = ay; yaw = ay2;
+    }
     _T2.set(fx, fy, fz); ik2(hip, _T2, 0.43, 0.43, _P2.set(sx * 0.2, 0, 1), _J, _E); jp[nm].hip.copy(hip); jp[nm].kn.copy(_J); jp[nm].an.copy(_E);
     segTo(M['th' + nm], hip, _J, 0.42); segTo(M['sh' + nm], _J, _E, 0.43);
-    M['bo' + nm].position.set(_E.x, 0.075, _E.z + 0.04); M['bo' + nm].rotation.set(0, sx * 0.25 * k * (t < 0.55 ? 1 : 0.3), 0); jp[nm].yaw = M['bo' + nm].rotation.y;
+    M['bo' + nm].position.set(_E.x, 0.075, _E.z + 0.04); M['bo' + nm].rotation.set(0, yaw, 0); jp[nm].yaw = yaw;
     M['bl' + nm].position.set(_E.x, 0.018, _E.z + 0.04); M['bl' + nm].rotation.copy(M['bo' + nm].rotation);
   }
-  // body: leaning forward more as he goes faster
-  const lean = (P.seat ? 0.22 : P.casual ? 0.04 : 0.18) + 0.45 * k, cl = Math.cos(lean), sl = Math.sin(lean), by = hipY + 0.04;
+  // body: leaning forward more as he goes faster (sitting back into a stop, more upright going backwards)
+  const lean = ((P.seat ? 0.22 : P.casual ? 0.04 : 0.18) + 0.45 * k) * (1 - 0.75 * stp) * (1 - 0.45 * bkw) + 0.03 * eff * k * bob, cl = Math.cos(lean), sl = Math.sin(lean), by = hipY + 0.04;
   M.pants.position.set(0, hipY - 0.02, 0); M.pants.rotation.set(lean * 0.4, 0, 0);
   M.torso.position.set(0, by + 0.27 * cl, 0.27 * sl); M.torso.rotation.set(lean, 0, 0);
   M.shoulders.position.set(0, by + 0.5 * cl, 0.5 * sl); M.shoulders.rotation.set(lean, 0, 0);
@@ -4586,6 +4635,9 @@ function poseSkater2(P, dt) {
     else { const p = sstep((t - 0.45) / 0.35); bx = bx - sd * 0.25 * p; bz = bz + 0.35 - 0.1 * p; by2 = 0.5 * p; }
   }
   const top = _A.set(-sd * 0.06, by + 0.4 * cl - 0.05, 0.4 * sl + 0.3);                        // top hand in front of his chest
+  // skating hard with nothing to do with the puck: stick in the top hand, the other arm pumping
+  P.one = (P.one || 0) + (((s.speed > 4.6 && eff > 0.6 && s.bx == null && !(s.shotT >= 0) && stp < 0.2 && !bkw && !P.off && !P.seat) ? 1 : 0) - (P.one || 0)) * (1 - Math.exp(-dt / 0.25));
+  if (P.one > 0.01) { top.x += (-sd * 0.2 - top.x) * P.one; top.y += (by + 0.3 * cl - top.y) * P.one; top.z += (0.3 * sl + 0.18 - top.z) * P.one; bz += (1.05 - bz) * P.one; bx += (sd * 0.25 - bx) * P.one; }
   _U2.set(bx - top.x, 0, bz - top.z).normalize();                                               // blade runs on from where the shaft points
   const heel = _B.set(bx - _U2.x * 0.14, by2 + 0.02, bz - _U2.z * 0.14);
   _sv.subVectors(top, heel); const dl = _sv.length(), S = _sv.clone().divideScalar(dl);
@@ -4595,6 +4647,7 @@ function poseSkater2(P, dt) {
   M.sblade.matrix.makeBasis(_U2, _up, _W2); M.sblade.matrix.setPosition(heel.x, by2, heel.z); M.sblade.matrixWorldNeedsUpdate = true;
   // arms reach for the hands on the shaft: the lower hand is on his forehand side
   const lowSh = sd > 0 ? _shL : _shR, topSh = sd > 0 ? _shR : _shL, lowN = sd > 0 ? 'L' : 'R', topN = sd > 0 ? 'R' : 'L';
+  if (P.one > 0.01) { const a = Math.sin(P.ph + (sd > 0 ? Math.PI : 0)); lowH.lerp(_C2.set(sd * 0.3, by + 0.16 * cl + 0.06 * Math.abs(a), 0.16 * sl + 0.04 + 0.24 * a), P.one); }   // (swinging opposite his skates)
   for (const [sh, hand, nm, sx] of [[lowSh, lowH, lowN, sd], [topSh, top, topN, -sd]]) {
     ik2(sh, hand, 0.3, 0.29, _P2.set(sx * 1, -0.8, -0.4), _J, _E);
     if (P.jp) { P.jp[nm].sh.copy(sh); P.jp[nm].el.copy(_J); P.jp[nm].ha.copy(_E); }
@@ -4603,31 +4656,53 @@ function poseSkater2(P, dt) {
   }
 }
 function poseGoalie(P, dt) {
-  const s = P.s, M = P.m, b = s.b;
+  const s = P.s, M = P.m, b = s.b, ek = k => 1 - Math.exp(-Math.min(dt, 0.1) / k);
   P.root.position.set(s.x, 0, s.z); P.root.rotation.set(0, Math.atan2(s.fx, s.fz), 0);
-  const mix = (a, c) => a + (c - a) * b, hipY = mix(0.7, 0.47);
-  M.pants.position.set(0, hipY, -0.02);
-  const lean = 0.28, cl = Math.cos(lean), sl = Math.sin(lean), by = hipY + 0.06;
+  // what he's doing: standing tall when the play's at the other end, pushing across the crease, sliding in the butterfly, kicking a pad out
+  const fl = Math.hypot(s.fx, s.fz) || 1, vx = P.gpx != null && dt > 0 ? (s.x - P.gpx) / dt : 0, vz = P.gpz != null && dt > 0 ? (s.z - P.gpz) / dt : 0; P.gpx = s.x; P.gpz = s.z;
+  P.glat = (P.glat || 0) + (clamp((vx * s.fz - vz * s.fx) / fl, -4, 4) - (P.glat || 0)) * ek(0.1);         // across the crease (+ his left)
+  const far = Math.hypot(PK.x - s.x, PK.z - s.z) > 26 && !s.glove && !s.blocker && b < 0.2 && !s.held;
+  P.rlx = (P.rlx || 0) + ((far ? 1 : 0) - (P.rlx || 0)) * ek(far ? 0.8 : 0.2); const rlx = P.rlx;
+  const mv = clamp(P.glat / 1.6, -1, 1), md = Math.sign(mv) || 1, ma = Math.abs(mv) * (1 - rlx);
+  const pad = (s.padT || 0) > 0 && b > 0.3 ? s.padX || 0 : 0;
+  P.gLx = (P.gLx || 0) + (((s.glove ? 0.07 : s.blocker ? -0.07 : pad ? Math.sign(pad) * 0.05 : 0) + mv * 0.03) - (P.gLx || 0)) * ek(0.08);   // his weight goes toward the save
+  const mix = (a, c) => a + (c - a) * b, hipY = mix(0.7, 0.47) + 0.1 * rlx * (1 - b) - 0.04 * ma * (1 - b);
+  M.pants.position.set(P.gLx, hipY, -0.02);
+  const lean = 0.28 - 0.15 * rlx, cl = Math.cos(lean), sl = Math.sin(lean), by = hipY + 0.06;
+  { const l = toLocal(P, PK.x, PK.z, {}), d = Math.hypot(l.x, l.z) || 1, gj = P.gj || (P.gj = { L: {}, R: {} });   // his eyes on the puck
+    P.gkYaw = (P.gkYaw || 0) + (clamp(Math.atan2(l.x, l.z), -1.1, 1.1) - (P.gkYaw || 0)) * ek(0.07);
+    P.gkPit = (P.gkPit || 0) + (clamp(Math.atan2(by + 0.7 - PK.y, d) - 0.15, -0.3, 0.75) - (P.gkPit || 0)) * ek(0.07);
+    gj.look = P.gkYaw; gj.pitch = P.gkPit; gj.hx = P.gLx; gj.roll = -P.gLx * 1.6; }
   M.torso.position.set(0, by + 0.29 * cl, 0.29 * sl - 0.02); M.torso.rotation.set(lean, 0, 0);
   M.shoulders.position.set(0, by + 0.56 * cl, 0.56 * sl - 0.02); M.shoulders.rotation.set(lean, 0, 0);
   M.neck.position.set(0, by + 0.64 * cl, 0.64 * sl); M.head.position.set(0, by + 0.76 * cl, 0.76 * sl + 0.02); M.visor.position.copy(M.head.position); M.visor.position.z += 0.02;
   P.pads = [];
   for (const [sx, nm] of [[1, 'L'], [-1, 'R']]) {
-    const hip = _A.set(sx * 0.12, hipY, -0.02), knee = _J.set(sx * mix(0.21, 0.11), mix(0.44, 0.1), mix(0.12, 0.2)), ank = _E.set(sx * mix(0.3, 0.54), mix(0.12, 0.1), mix(0.02, -0.06));
+    const hip = _A.set(sx * 0.12 + P.gLx, hipY, -0.02), knee = _J.set(sx * mix(0.21, 0.11) + P.gLx * 0.5, mix(0.44, 0.1), mix(0.12, 0.2)), ank = _E.set(sx * mix(0.3, 0.54), mix(0.12, 0.1), mix(0.02, -0.06));
+    let yaw = 0;
+    if (rlx > 0.01) { ank.x -= sx * 0.06 * rlx; knee.y += 0.06 * rlx; knee.x -= sx * 0.04 * rlx; }   // standing up, feet closer
+    if (ma > 0.05) {                                                    // across the crease: up, the lead skate turned toward the post and the back one pushing; down, the lead pad reaching out as he slides
+      const lead = sx === md;
+      if (b < 0.5) { if (lead) { ank.x += sx * 0.1 * ma; yaw = sx * 1.1 * ma; } else { ank.x += sx * 0.16 * ma; knee.y -= 0.06 * ma; knee.x += sx * 0.05 * ma; } }
+      else if (lead) ank.x += sx * 0.1 * ma;
+    }
+    if (pad && Math.sign(pad) === sx) { const ex = clamp(Math.abs(pad) - 0.35, 0, 0.3) * 0.7; ank.x += sx * ex; ank.z += 0.04 * ex / 0.21; knee.x += sx * ex * 0.4; }   // the pad save: that leg kicks out along the ice
     segTo(M['th' + nm], hip, knee, 0.42);
     const padTop = knee.clone().addScaledVector(_sv.subVectors(knee, ank).normalize(), 0.16);
     segTo(M['pad' + nm], padTop, ank, 1.0, true); M['pad' + nm].scale.x = 1; M['pad' + nm].scale.z = 1;
     if (b > 0.5) { M['pad' + nm].rotateY(sx * 0.0); }
     M['roll' + nm].position.copy(padTop); M['roll' + nm].rotation.set(0, 0, Math.PI / 2);
     M['bo' + nm].position.set(ank.x, 0.07, ank.z + 0.03);
-    const gj = P.gj || (P.gj = { L: {}, R: {} }); gj[nm].hip = (gj[nm].hip || new THREE.Vector3()).copy(hip); gj[nm].kn = (gj[nm].kn || new THREE.Vector3()).copy(knee); gj[nm].an = (gj[nm].an || new THREE.Vector3()).copy(ank); gj.hipY = hipY; gj.lean = lean; gj.b = b;
+    const gj = P.gj || (P.gj = { L: {}, R: {} }); gj[nm].yaw = yaw; gj[nm].hip = (gj[nm].hip || new THREE.Vector3()).copy(hip); gj[nm].kn = (gj[nm].kn || new THREE.Vector3()).copy(knee); gj[nm].an = (gj[nm].an || new THREE.Vector3()).copy(ank); gj.hipY = hipY; gj.lean = lean; gj.b = b;
     P.pads.push({ x: (padTop.x + ank.x) / 2, y0: 0, h: Math.max(padTop.y, ank.y) + 0.1, hw: Math.abs(padTop.x - ank.x) / 2 + 0.12, z: (padTop.z + ank.z) / 2 });
   }
   // glove (his left) and blocker (his right) rest out in front, or reach to where a shot is going
   const shL = _shL.set(0.27, by + 0.52 * cl, 0.52 * sl), shR = _shR.set(-0.27, by + 0.52 * cl, 0.52 * sl);
-  const gRest = new THREE.Vector3(0.42, hipY + 0.28, 0.36), bRest = new THREE.Vector3(-0.4, hipY + 0.16, 0.34);
+  const gRest = new THREE.Vector3(0.42 - 0.1 * rlx + P.gLx, hipY + 0.28 - 0.1 * rlx, 0.36 - 0.08 * rlx), bRest = new THREE.Vector3(-0.4 + 0.08 * rlx + P.gLx, hipY + 0.16 - 0.06 * rlx, 0.34);
   P.gHand = P.gHand || gRest.clone(); P.bHand = P.bHand || bRest.clone();
-  const gT = s.glove ? new THREE.Vector3(s.glove[0], s.glove[1], 0.4) : gRest, bT = s.blocker ? new THREE.Vector3(s.blocker[0], s.blocker[1], 0.36) : bRest;
+  let gT = s.glove ? new THREE.Vector3(s.glove[0], s.glove[1], 0.4) : gRest, bT = s.blocker ? new THREE.Vector3(s.blocker[0], s.blocker[1], 0.36) : bRest;
+  if (s.held === 'glove' && !s.glove) gT = new THREE.Vector3(0.24, hipY + 0.46, 0.34);              // a catch: he shows the glove
+  if (s.held === 'cover') { gT = new THREE.Vector3(0.08, 0.16, 0.42); bT = new THREE.Vector3(-0.12, 0.2, 0.4); }   // on it, both hands down
   for (const [h, tg] of [[P.gHand, gT], [P.bHand, bT]]) { const d = _sv.subVectors(tg, h), L = d.length(), mv = Math.min(L, (P.handSp || 3.4) * dt); if (L > 1e-4) h.addScaledVector(d, mv / L); }
   for (const [sh, hand, nm, sx] of [[shL, P.gHand, 'L', 1], [shR, P.bHand, 'R', -1]]) {
     ik2(sh, hand, 0.3, 0.29, _P2.set(sx, -0.6, -0.5), _J, _E); segTo(M['up' + nm], sh, _J, 0.37); segTo(M['fo' + nm], _J, _E, 0.32);
@@ -4753,13 +4828,14 @@ function goalFrame(dt, G) {
     if (t < 0.9 && Math.abs(cx) < 1.5) {
       const GQ = G.gq || GOALIES[st.goalP] || GOALIES[1]; if (G.threat <= 0) { const fx = SHFX[pClock - (PK.shKindT || -9) < 1.2 && PK.shKind] || SHFX.wrist; G.rt = Math.max(0.05, GQ.rt + Math.random() * GQ.rr + fx.rt + (SC.so && SC.so.on ? 0.16 : 0));  const rk = clamp(0.32 / Math.max(t, 0.05), 0.4, 1.25); G.ex = (Math.random() + Math.random() - 1) * GQ.err * 1.4 * fx.err * rk; G.ey = (Math.random() + Math.random() - 1) * GQ.err * fx.err * rk; } G.threat = Math.max(G.threat, 0) + dt;   // he reacts a moment late and misreads it by a little (more for a rec goalie)
       if (G.threat > G.rt) {                                          // he reacts a moment after the shot
-        if (cy < 0.42) bT = 1;
+        if (cy < 0.42) { bT = 1; s.padX = cx + G.ex; s.padT = 0.7; }   // low: down in the butterfly, kicking the pad out to that side
         else if (cx > 0) gl = [clamp(cx + G.ex, 0.2, 0.8), clamp(cy + 0.05 + G.ey, 0.35, 1.1)];
         else bk = [clamp(cx + G.ex, -0.75, -0.2), clamp(cy + G.ey, 0.3, 1.0)];
         
       }
     } else G.threat = 0;
   } else { G.threat = 0; if (l.z > 0 && l.z < 2.5 && Math.abs(l.x) < 1 && PK.y < PUCK.HH + 0.05 && Math.hypot(PK.vx, PK.vz) < 4) bT = 1; }   // a puck in tight: drop and seal the ice
+  if (G.hold > 0 && G.held === 'cover') bT = 1; s.held = G.hold > 0 ? G.held : ''; s.padT = (s.padT || 0) - dt;
   s.b += (bT - s.b) * (1 - Math.exp(-dt * (bT > s.b ? GQ0.bd : 3)));
   if (gl) { s.glove = gl; G.gT = 0.5; } else if ((G.gT = (G.gT || 0) - dt) <= 0) s.glove = null;
   if (bk) { s.blocker = bk; G.bT = 0.5; } else if ((G.bT = (G.bT || 0) - dt) <= 0) s.blocker = null;
@@ -5370,7 +5446,7 @@ function aiSkate(o, tx, tz, dt, vmax, sx, sz) {
   if (dl > 0.04 && (d > 0.3 || tvl > 0.4)) { dx /= dl; dz /= dl; m = clamp(want / vmax + 0.06, 0, 1); }
   if (sp > want + 0.7) brake = clamp((sp - want) / 3, 0, 1);
   if (sp > 2 && dl > 0.04 && (o.vx * dx + o.vz * dz) / sp < -0.3) brake = Math.max(brake, 0.7);      // going the wrong way: a hockey stop
-  skateStep(S2, { m, dx, dz, brake, assist: true }, dt, vmax);
+  const r = skateStep(S2, { m, dx, dz, brake, assist: true }, dt, vmax); o.skPush = r.pushing ? 1 : clamp((m - 0.35) / 0.4, 0, 1); o.skCross = r.cross; o.skBrake = sp > 2.5 ? brake : 0;
   o.x = S2.x; o.z = S2.z; o.vx = S2.vx; o.vz = S2.vz;
 }
 function skMove(s, tx, tz, dt, Q, o) {
@@ -5401,7 +5477,7 @@ function skMove(s, tx, tz, dt, Q, o) {
 }
 function skSync(s, sp, turn, dt) {
   s.box.x = s.x; s.box.z = s.z; s.box.ax = s.fx; s.box.az = s.fz; s.box.vx = s.vx; s.box.vz = s.vz;
-  const ps = s.p.s; ps.x = s.x; ps.z = s.z; ps.fx = s.fx; ps.fz = s.fz; ps.speed = sp; ps.turn = turn; ps.lookX = PK.x; ps.lookZ = PK.z;
+  const ps = s.p.s; ps.x = s.x; ps.z = s.z; ps.fx = s.fx; ps.fz = s.fz; ps.speed = sp; ps.turn = turn; ps.lookX = PK.x; ps.lookZ = PK.z; ps.push = s.skPush; ps.cross = s.skCross; ps.brake = s.skBrake;
   const near = Math.hypot(PK.x - s.x, PK.z - s.z) < 1.6; ps.bx = s.has || near ? PK.x : null; ps.bz = s.has || near ? PK.z : null;
   if (ps.shotT >= 0) { ps.shotT += dt * (ps.shotT < 0.3 ? (ps.shotK || 1) : 1); if (ps.shotT > 0.85) { ps.shotT = -1; ps.shotK = 1; } }
   posePlayer(s.p, dt);
@@ -5491,7 +5567,7 @@ function skAct(s, dt, Q) {
   if (s.act !== 'shoot' && s.act !== 'pass') return false;
   s.actT -= dt; if (s.actT > 0) return false;
   const a = s.aim;
-  if (s.act === 'shoot') { const d = Math.hypot(a[0] - s.x, a[1] - s.z), t = d / a[3]; skRelease(s, a[0], a[1], a[3], (a[2] + 0.5 * GRAV * t * t) / t, Q.shot * (s.shErr || 1)); PK.shKind = s.shK || 'wrist'; PK.shKindT = pClock; PK.shBy = s.team; s.shK = null; s.shErr = 1; if (SC.on) SC.crash = { team: s.team, t: pClock }; }
+  if (s.act === 'shoot') { const d = Math.hypot(a[0] - s.x, a[1] - s.z), t = d / a[3]; skRelease(s, a[0], a[1], a[3], (a[2] + 0.5 * GRAV * t * t) / t, Q.shot * (s.shErr || 1)); PK.shKind = s.shK || 'wrist'; PK.shKindT = pClock; PK.shBy = s.team; if (SC.on) SC.crash = { team: s.team, t: pClock, z: s.z }; s.shK = null; s.shErr = 1; if (SC.on) SC.crash = { team: s.team, t: pClock }; }
   else { skRelease(s, a[0], a[1], a[3], 0, Q.pass); if (SC.on && !s.dumpT) { const T = SC.st || (SC.st = { pa: [0, 0], pc: [0, 0], to: [0, 0], dump: [0, 0], gg: 0, dd: 0, qu: 0 }); T.pa[s.team === 'ravens' ? 0 : 1]++; SC.lp = { team: s.team, t: pClock }; } s.dumpT = 0; }
   return true;
 }
@@ -6230,6 +6306,15 @@ function scCarry(s) {
   return inRink(s.x + best[0] * 7, s.z + best[1] * 7, 1.2);
 }
 // ---- where everyone else goes
+function netMan(team, carrier) {                                         // the forward whose job is the net front while we have it in their zone
+  SC.nf = SC.nf || {}; SC.nfT = SC.nfT || {}; const dir = teamDir(team), m = SC.nf[team];
+  const fs = SC.sk.filter(o => o.team === team && o.role !== 'D' && o.role !== 'G' && !o.chg && o !== carrier && !o.has);
+  if (m && fs.includes(m) && pClock - SC.nfT[team] < 9) return m;             // he keeps the job a while (no swapping every second)
+  const cz = carrier === 'human' ? H.z : carrier ? carrier.z : PK.z, side = Math.sign(dir * cz) || 1;
+  let b = null, bc = 1e9;
+  for (const o of fs) { const c = Math.hypot(o.x - dir * (GX - 2.5), o.z) - (o.q && o.q.net ? 6 : 0) + (o.q && o.q.soft ? 6 : 0) - (o.role === 'W' && o.ln !== side ? 2 : 0); if (c < bc) { bc = c; b = o; } }
+  SC.nf[team] = b; SC.nfT[team] = pClock; return b;
+}
 function scSlot(s, carrier, carrierTeam) {
   const dir = teamDir(s.team), W = (u, v) => [dir * u, dir * v], five = SC.mode === '5';
   const cx = carrier ? (carrier === 'human' ? H.x : carrier.x) : PK.x, cz = carrier ? (carrier === 'human' ? H.z : carrier.z) : PK.z, pu = dir * cx, pv = dir * cz;
@@ -6250,6 +6335,14 @@ function scSlot(s, carrier, carrierTeam) {
       return strong ? W(pu - 8, side * 4) : W(pu - 13, -side * 3);
     }
     const lowC = pu > GX - 6;                                            // their end: points, half-wall, back door, high slot (low when it's low)
+    if (carrier && s.role !== 'D' && SC.entry && pClock - (SC.entry[s.team] || -9) < 3) {   // just carried in: the far winger drives the net, the centre trails into the high slot
+      if (s.role === 'W' && s.ln !== side && !(s.q && s.q.soft)) { s.gm = true; s.drive = true; return W(GX - 3.2, -side * 1.8); }
+      if (s.role === 'C') return W(GX - 10, -side * 1.5);
+    }
+    if (carrier && s.role !== 'D' && netMan(s.team, carrier) === s) {   // somebody always goes to the net: a screen when it's up top, the back door when it's low
+      s.gm = true;                                                       // (his spot's his: the spacing doesn't push him off it)
+      return pu < GX - 12 ? W(GX - 2.2, clamp(pv * 0.12, -0.8, 0.8)) : W(GX - 2.6, -side * 1.1);
+    }
     if (s.role === 'D') { const dm = sysD(s); if (dm === 'active' && strong && Math.abs(pv) > 6 && pu < GX - 4) return W(clamp(pu - 2.5, BLUEL + 3, GX - 9), side * 10); return W(BLUEL + (dm === 'home' ? 1.2 : 1.9), s.ln * 7.5 + pv * 0.1); }
     if (s.role === 'W') return strong ? W(clamp(pu, GX - 10, GX - 3), side * 11) : s.q && s.q.net ? W(GX - 2.8, -side * 1.3) : s.q && s.q.soft ? W(GX - 8.5, -side * 5.5) : W(GX - 6, -side * 4.5);
     if (s.q && s.q.net) return W(GX - 3, -side * 0.8);
@@ -6344,17 +6437,27 @@ function scSupport(s, t, carrier, dir) {
     const opts = [[GX - 6, -side * 4], [GX - 2.5, side * 5.5], [GX - 10, -side * 2], [BLUEL + 5, side * 6]];
     const o = opts.find(([u, v]) => free(u, v) && Math.hypot(dir * u - cx, dir * v - cz) > 5) || opts[0]; tx = dir * o[0]; tz = dir * o[1];
   }
-  // a little purposeful movement around the spot (each man his own rhythm), more for forwards than the points
-  const ph = pClock * (s.role === 'D' ? 0.5 : 0.8) + (s.num || s.ln || 1) * 1.7, amp = s.role === 'D' ? 0.8 : 1.5;
-  tx += dir * Math.sin(ph) * amp * 0.6; tz += Math.cos(ph * 0.9) * amp;
-  // off a defender: if one's on the spot, slide away from him
-  for (const o of opp) { const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz); if (d < 2.6) { const k = (2.6 - d) / (d || 1); tx += dx * k; tz += dz * k; } }
-  // the passing lane from the puck: if a defender's sitting in it, step to the side that opens it
-  { const ax = tx - cx, az = tz - cz, L = Math.hypot(ax, az) || 1;
-    for (const o of opp) { const p = ((o.x - cx) * ax + (o.z - cz) * az) / L; if (p < 0.8 || p > L - 0.8) continue; const off = ((o.x - cx) * az - (o.z - cz) * ax) / L;
-      if (Math.abs(off) < 1.1) { const sh = (1.4 - Math.abs(off)) * (off >= 0 ? -1 : 1); tx += (az / L) * sh * 1.4; tz += (-ax / L) * sh * 1.4; break; } } }
+  // getting open: look round his spot for the best place to take a pass (a clear lane from the puck, nobody on him, a good place to shoot
+  // from, not on top of a teammate), and go there. He re-reads it a few times a second, sticking with a spot that's still good.
+  if (!(SC.nf && SC.nf[s.team] === s && dir * cx > BLUEL) && !s.drive) {
+    const o0 = s.opn, Q = s.q || (s.team === 'visitors' ? SC.Qopp || SC.Qv : SC.Qr);
+    if (!o0 || pClock - o0.t > 0.35) {
+      const nx = dir * GX, mates = SC.sk.filter(o => o.team === s.team && o !== s && !o.chg && o !== carrier); let best = null, bs = -9;
+      for (let i = 0; i < 15; i++) {
+        const a = i === 0 ? 0 : i <= 8 ? (i - 1) * 0.785 : (i - 9) * 1.047 + 0.3, r = i === 0 ? 0 : i <= 8 ? 2.2 : 4, q = inRink(tx + Math.cos(a) * r, tz + Math.sin(a) * r, 1.2), px = q[0], pz = q[1];
+        if (dir * px < BLUEL + 0.8) continue; const dc = Math.hypot(px - cx, pz - cz); if (dc < 3) continue;
+        let dO = 4; for (const o of opp) dO = Math.min(dO, Math.hypot(o.x - px, o.z - pz));
+        let dM = 9; for (const m of mates) dM = Math.min(dM, Math.hypot(m.x - px, m.z - pz)); if (s.team === 'ravens' && !BN.on && carrier !== 'human') dM = Math.min(dM, Math.hypot(H.x - px, H.z - pz));
+        const ln = passLane(cx, cz, px, pz, clamp(9 + dc * 0.3, 11, 17), s.team, Q), sq = s.role === 'D' ? 0 : shotQ(px, pz, nx);
+        const v = ln + dO * 0.16 + sq * 1.1 - r * 0.07 - (dM < 3 ? (3 - dM) * 0.25 : 0) + (o0 && Math.hypot(px - o0.x, pz - o0.z) < 1.2 ? 0.08 : 0);
+        if (v > bs) { bs = v; best = [px, pz]; }
+      }
+      s.opn = best ? { t: pClock, x: best[0], z: best[1] } : null;
+    }
+    if (s.opn) { tx = s.opn.x; tz = s.opn.z; }
+  }
   // he's in trouble (pressured on the wall, nobody near): the nearest forward comes to give him a short option
-  if (s.role !== 'D') { const pr = opp.some(o => Math.hypot(o.x - cx, o.z - cz) < 2.2), near = SC.sk.filter(o => o.team === s.team && o !== carrier && o.role !== 'D' && !o.chg).sort((a, b) => Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz))[0];
+  if (s.role !== 'D') { const pr = opp.some(o => Math.hypot(o.x - cx, o.z - cz) < 2.2), near = SC.sk.filter(o => o.team === s.team && o !== carrier && o.role !== 'D' && !o.chg && !(SC.nf && SC.nf[s.team] === o && dir * cx > BLUEL)).sort((a, b) => Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz))[0];
     if (pr && near === s && Math.hypot(s.x - cx, s.z - cz) > 5) { tx = cx + (tx - cx) * 0.45; tz = cz + (tz - cz) * 0.45; s.gm = true; } }
   const r = inRink(tx, tz, 1.2); return dir * r[0] > BLUEL + 0.6 ? r : [dir * (BLUEL + 0.6), r[1]];
 }
@@ -6419,7 +6522,7 @@ function scMarks(carrier, carrierTeam) {
   }
 }
 function scTargets(s, carrier, carrierTeam) {
-  if (s.chg) return BENCH[s.team];
+  s.drive = false; if (s.chg) return BENCH[s.team];
   const dir = teamDir(s.team), Q = s.team === 'visitors' && SC.Qopp ? SC.Qopp : (s.team === 'ravens' ? SC.Qr : SC.Qv) || ravensQ();
   if (!carrier && SC.chase[s.team] === s && !(SC.dOff && SC.dOff.team === s.team)) { const p = intercept(s, Q); return [p[0] - s.fx * 0.7, p[1] - s.fz * 0.7]; }   // loose puck: to where he gets to it first
   if (SC.dOff && SC.dOff.team === s.team && dir * s.x > BLUEL - 1.5 && (carrierTeam === s.team || dir * s.x > BLUEL + 0.35)) { s.urg = true; return [dir * (BLUEL - 1.2), clamp(s.z, -9, 9)]; }   // delayed offside: tag up
@@ -6428,7 +6531,11 @@ function scTargets(s, carrier, carrierTeam) {
     const ox = -dir * GX, lx = cx + cvx * 0.3, lz = cz + cvz * 0.3, tn = Math.hypot(ox - lx, lz) || 1;
     return [lx + (ox - lx) / tn * 0.75, lz - lz / tn * 0.75 - Math.sign(cz) * 0.35];
   }
-  if (SC.crash && SC.crash.team === s.team && pClock - SC.crash.t < 1.6 && s.role !== 'D' && !carrier) return [dir * (GX - 2.3), (s.ln || 0) * 1.5];   // a shot's gone in: crash the net
+  if (SC.crash && SC.crash.team === s.team && pClock - SC.crash.t < 2 && s.role !== 'D' && !carrier && dir * PK.x > BLUEL) {   // a shot's gone in: crash the net
+    const fs = SC.sk.filter(o => o.team === s.team && o.role !== 'D' && o.role !== 'G' && !o.chg).sort((a, b) => Math.hypot(a.x - dir * GX, a.z) - Math.hypot(b.x - dir * GX, b.z));
+    const i = fs.indexOf(s), sz = Math.sign(SC.crash.z || 0) || 1; s.gm = true;
+    return i === 0 ? [dir * (GX - 1.9), -sz * 0.5] : i === 1 ? [dir * (GX - 2.3), -sz * 2.3] : [dir * (GX - 6), sz * 1.5];   // the crease, the far post (where rebounds go), and the high slot
+  }
   // a shot's being wound up: step into the lane if it's close
   if (carrier && carrier !== 'human' && carrierTeam !== s.team && carrier.act === 'shoot' && carrier.aim) {
     const ax = carrier.x, az = carrier.z, bx = carrier.aim[0], bz = carrier.aim[1], dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1, t = clamp(((s.x - ax) * dx + (s.z - az) * dz) / L2, 0.15, 0.85), px = ax + dx * t, pz = az + dz * t;
@@ -6543,7 +6650,7 @@ function scFrame(dt) {
   const stopped = SC.pause > 0 || SC.after > 0 || SC.inter > 0 || SC.over;
   if (!stopped) { SC.clk -= dt; if (SC.clk <= 0) { SC.clk = 0; scPeriodEnd(); } }
   { const sec = Math.ceil(SC.clk); if (sec !== SC.hudSec) { SC.hudSec = sec; hudDraw(); } }
-  if (SC.tc && SC.tc.last === 'you' && pClock - (PK.htouch || -9) < 0.05 && Math.hypot(PK.vx - S.vx, PK.vz - S.vz) > 9 && teamDir('ravens') * PK.vx > 4) SC.crash = { team: 'ravens', t: pClock };
+  if (SC.tc && SC.tc.last === 'you' && pClock - (PK.htouch || -9) < 0.05 && Math.hypot(PK.vx - S.vx, PK.vz - S.vz) > 9 && teamDir('ravens') * PK.vx > 4) SC.crash = { team: 'ravens', t: pClock, z: H.z };
   // shots on goal: a goalie stopping it
   for (const e of EV) if (e.k === 'block' && e.kind === 'goalie') { const k = (e.x != null ? e.x : PK.x) * teamDir('ravens') > 0 ? 0 : 1; if (pClock - SC.shotT[k] > 0.8) { SC.shots[k]++; SC.shotT[k] = pClock; if (k === 0 && SC.tc.last === 'you') { SC.my.sh++; const lb = shotLab(); if (lb) { SC.msg = lb + ': saved'; SC.msgT = pClock + 2.5; } } } }
   const qf = s => s.q || (s.team === 'visitors' ? SC.Qopp || SC.Qv || (SC.Qv = skillQ(levelSk())) : Q);
@@ -6566,6 +6673,7 @@ function scFrame(dt) {
     }
   }
   const carrierTeam = carrier === 'human' ? 'ravens' : carrier ? carrier.team : null;
+  { SC.cuPrev = SC.cuPrev || {}; SC.entry = SC.entry || {}; for (const tm of ['ravens', 'visitors']) { const u = carrier && carrierTeam === tm ? teamDir(tm) * (carrier === 'human' ? H.x : carrier.x) : null; if (u != null && SC.cuPrev[tm] != null && SC.cuPrev[tm] < BLUEL && u >= BLUEL) SC.entry[tm] = pClock; SC.cuPrev[tm] = u; if (u == null) SC.entry[tm] = -9; } }   // a zone entry (for the drive to the net)
   { const who = carrier === 'human' || pClock - (PK.htouch || -9) < 0.08 ? 'you' : carrier ? carrier.team[0] + carrier.num : null; if (who && who !== SC.tc.last) { SC.tc.prev = SC.tc.last; SC.tc.last = who; } }   // who touched it last (for goals and assists)
   if (!stopped) for (const s of SC.sk) if (carrier && carrierTeam !== s.team && !s.chg) { if (skPoke(s, qf(s), carrier === 'human', carrier)) carrier = null; }
   penFrame(dt, stopped, carrier, carrierTeam); protArmFrame(dt);
@@ -8965,7 +9073,7 @@ function hudFrame(dt) {
 
 function puckFrame(dt) {
   if (RP.on) { rpFrame(dt); puck.position.set(PK.x, PK.y, PK.z); return; }
-  pClock += dt;
+  pClock += dt; sprayStep(dt);
   if (PK.out > 1.2) { EV.length = 0; run.pk.outs++; if (SC.on) scFaceoff('Puck out of play. Faceoff', nearestDot(clamp(PK.x, -25, 25), clamp(PK.z, -9, 9))); else { placePuck(); toast('Puck out of play'); } }
   PA.s = ASSISTS[st.assistP] || 0; if (st.arcade) PA.s = Math.max(PA.s, 2.2); PA.arc = st.arcade ? 1 : 0; PA.hx = H.x; PA.hz = H.z; PA.svx = S.vx; PA.svz = S.vz; PA.keep = keepOn && stickOn ? 1 : 0; PA.lift = LIFTS[st.liftP] || LIFTS[2]; PA.fx = H.fx; PA.fz = H.fz; PA.aim = AIMS[st.aimP] || 0;
   const ipx = PK.x, ipz = PK.z;
@@ -9634,7 +9742,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { out.textContent = ''; }, 4000);
 });
 if (/[?&]debug\b/.test(location.search)) window.__vr3 = window.__vr2 = { applyStickMeshes, boardText, skateStep, boardsPush, netPush, SK2, SPEEDS, S, st, run, rig, camera, scene, renderer, vig, toast, calibrate, applyLevel, resetRun, buildResult, levelStats, puckFrame, placePuck, nextCurve, setCurve, stickSolve, puckAdvance, STK, PK, EV, CURVES, POWERS, PUCK, BL, makeProfile, curveById, H, hands, crowd, RK, BODY, headQ, shaftM, knobM, PARTS, ROLLS, PA, ASSISTS, LIFTS, hapQ, STA, MENU, rays, menuM, gloveL, gloveR, openMenu, closeMenu, drawMenu, menuRows, setSetting, setKeep, rotateRig, HEADW, HF, ICES, MATE, GOAL, OBST, AIM_T, DR, DFN, SC, scStart, scStop, drillStart, drillStop, teleportTo, othersInit, posePlayer, makePlayer, toWorld, goalFrame, puckAdvance, PA, get runNow() { return run; }, toggleHands, setHands, loGripDist, handsStep, GRAB_R, get handsOne() { return handsOne; }, get grabPend() { return grabPend; }, get keepOn() { return keepOn; }, get bladeM() { return bladeM; }, get stickOn() { return stickOn; }, get bladeSp() { return bladeSp; }, get pClock() { return pClock; }, get skInfo() { return skInfo; }, get audio() { return audio; }, get vigU() { return vigU; } };
-if (window.__vr3) Object.assign(window.__vr3, { simScore, clubR, formAdj, formOf, formWords, scoutLine, croftyScout, clubGk, gkNight, gqAt, GOAL, HOME_ICE, CLUBKIT, paintJersey, GK, gkLoad, gkMake, gkPose, gkAttach, HP, hpLoad, hpMake, hpKitApply, hpRecolor, HPEYE, scCarry, passLane, pmRebuild, PMV, HELMV, kitGeo, setSetting, FACE, faceApply, faceRefresh, faceLoad, sur, fullN, AGMOBJ, carAgm, agmY, agmLeave, speechPick, speechFit, speechKind, SPEECH, spiritApply, GOAL, GOALIES, CLUBS, otStart, soStart, soResult, scPeriodEnd, callsFrame, LADS, scFaceoff, foSk, DFN, drillRep, GX, BLUEL, scGap, scRoles, GX, BLUEL, scGap, scRoles, SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
+if (window.__vr3) Object.assign(window.__vr3, { simScore, sprayStep, scGoal, scSlot, scTargets, netMan, clubR, formAdj, formOf, formWords, scoutLine, croftyScout, clubGk, gkNight, gqAt, GOAL, HOME_ICE, CLUBKIT, paintJersey, GK, gkLoad, gkMake, gkPose, gkAttach, HP, hpLoad, hpMake, hpKitApply, hpRecolor, HPEYE, scCarry, passLane, pmRebuild, PMV, HELMV, kitGeo, setSetting, FACE, faceApply, faceRefresh, faceLoad, sur, fullN, AGMOBJ, carAgm, agmY, agmLeave, speechPick, speechFit, speechKind, SPEECH, spiritApply, GOAL, GOALIES, CLUBS, otStart, soStart, soResult, scPeriodEnd, callsFrame, LADS, scFaceoff, foSk, DFN, drillRep, GX, BLUEL, scGap, scRoles, GX, BLUEL, scGap, scRoles, SHOT, REL, passModeCheck, callForPuck, CALL, skBlade, PUBP, PUB, carPub, carPubLeave, pubFrame, croftyLines, carNews, passHelp, DEFAULT_LU, carNowText, setStick: v => { stickOn = v; }, humanHas, humanBlade, SD, SDLIB, sdStart, sdFrame, drillStart, DRILLS, MYCALL, myCall, KB, kbType, kbSend, PSV, HOME, carCredit, crofPlays, carThreadOther, rtOf, progSeason, oppRoster, oppApply, oppDanger, diffNow, diffSet, DIFFS, ageOf, seasonName, seasonShort, histMerge, histLoad, talonRows, ACH, achCheck, achGame, trophies, homeShelf, SHELF, phAch, wlNew, wlWeek, wlTraining, wlVerdict, wlSign, wlRelease, wlSigned, wlCount, isRecruit, phWL, rosterApply, rnP, ratingOf, myRoleCheck, phRole, ratAdj, MYROLE_GOALS, ROLE_GROUPS, ROLEQ, sysOf, sysD, roleOf, chemOf, chemAdd, chemLine, chemAfterGame, sysPrep, legsOf, legsAdd, IQ, iqReset, iqFrame, iqScore, iqAfterGame, phSys, phIQ, scSlot, scDecide, milCheck, milSnap, milTot, HL, HLR, RP, hlRecord, hlMark, hlFinish, hlPack, rpStart, rpStop, rpFrame, rpView, phHigh, scGoal, perLen, tourNew, tourNext, tourFx, tourAdvance, tourRecord, tourAwards, tourTable, phTour, carRecord, carGameSim, fxNow, carGo, lnCur, lnBench, lnSwap, lnApply, lnPress, lnMove, lnRelease, phLines, PRAY, croftyLines, tonightNames, carGameDone, carGameGo, carNextWeek, carNew, spWeek, spStatus, spNudge, spCounts, spBuild, spApply, spRestore, spTruth, capAuto, LAUTO, phSpond, scSpace, interceptHelp, blobFrame, ALLP, BLOB, penEnforce, penDrewFouls, penBump, penCall, penOut, grpSwap, scDrop, skillQ, bodyHuman, STAM, SPR, sprintGo, stamFrame, stamSpeed, foTaker, shoutWhat, aiBurst, scDropWin,  protArm, protArmFrame, setOne: v => { handsOne = v; }, skCanPick, STA, humanBlade, sandboxHome, scPeriodEnd, HELM, PEN, PROT, penFoul, penSkip, protShield, setFar, kitWay, lettersFor, capText, CAPS, PH, PSV, drawPhone, phCv, AV, avFile, avLoad, lookFor, applyLook, LIFE, ROOMP, roomPlayer, offIce, mouthAmp, benchSkip, grpOn, scLines, drillEndX: () => drillEnd(), carNextX: () => carNext(), pubLineX: (P, t) => pubLine(P, t), TALKX: TALK, AI2, skShow, laneOpen, skBlade, teamDir, roomReact, roomTalkText, roomBanter, MIC, STK, frameFrom, copyFrame, resetPuck, tipZone, carRoom, roomLeave, roomFrame, roomTeamTalk, ROOMP, RM, ROOM, roomWbCanvas: () => roomWbC, roomDoorCanvas: () => roomDoorC, carReset, fdFace, BOT, FD, FDRILLS, DBD, pvOpen, pvClose, pvDraw, pvSim, pvCanvas: () => pvCv, pubBtnM, pubSignM, panelRay, rays, fdFrame, carOpenThread, contactsList, thGet, phCanvas: () => phCv, menuCanvas: () => menuCv, carTrainDoneT: carTrainDone, drillStop, DR, CAR, PH, carNew, carEnter, carHub, carGo, carRecord, carNextWeek, carGameSim, drawPhone, phoneSend, carThreadDone, carTrainGo, carGameGo, lineSet, menuRows, drawMenu, MENU, randomFx, scGoal, teamDir, OPPS, SKP, fxSkill, fxLineup, fxLoad, getFX: () => FX, setFX: f => { FX = f; }, scFaceoff, RN, talkFrame, HEADW, talkMates, H, S, BN, CROF, BNG, benchGo, benchFrame, croftySay, benchRefresh, lineupUI, TALK, micChunkT: a => micChunk(a), MIC, RN, micSend, micCut, wavB64, talkTarget, voiceCommand, replyAudio, talkTimes, brainSession, rosterApply, talkCtx, careerDone, VOX, voxLoad, careerCode, myCall, MYCALL, makePlayer, posePlayer, say, TALK, bodyAI, aiSkate, goalHomes, OH, scRules, placePuckOnBlade, hudFrame, HUDS, setHands, puckFrame, pkEffects, SKP, CALL, callForPuck, nearestDot, g2Show, drillAI, hudDraw, PILE, MC, mountCalStart, pivotSolve, mountOn, mountY: () => { mountDReq = true; STK.calReq = true; } });
 })();
 </script>
 
