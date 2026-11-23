@@ -6441,7 +6441,7 @@ function scSupport(s, t, carrier, dir) {
   // from, not on top of a teammate), and go there. He re-reads it a few times a second, sticking with a spot that's still good.
   if (!(SC.nf && SC.nf[s.team] === s && dir * cx > BLUEL) && !s.drive) {
     const o0 = s.opn, Q = s.q || (s.team === 'visitors' ? SC.Qopp || SC.Qv : SC.Qr);
-    if (!o0 || pClock - o0.t > 0.35) {
+    if (!o0 || pClock - o0.t > o0.w) {                                     // (each man on his own rhythm, so they don't all think in the same frame)
       const nx = dir * GX, mates = SC.sk.filter(o => o.team === s.team && o !== s && !o.chg && o !== carrier); let best = null, bs = -9;
       for (let i = 0; i < 15; i++) {
         const a = i === 0 ? 0 : i <= 8 ? (i - 1) * 0.785 : (i - 9) * 1.047 + 0.3, r = i === 0 ? 0 : i <= 8 ? 2.2 : 4, q = inRink(tx + Math.cos(a) * r, tz + Math.sin(a) * r, 1.2), px = q[0], pz = q[1];
@@ -6452,7 +6452,7 @@ function scSupport(s, t, carrier, dir) {
         const v = ln + dO * 0.16 + sq * 1.1 - r * 0.07 - (dM < 3 ? (3 - dM) * 0.25 : 0) + (o0 && Math.hypot(px - o0.x, pz - o0.z) < 1.2 ? 0.08 : 0);
         if (v > bs) { bs = v; best = [px, pz]; }
       }
-      s.opn = best ? { t: pClock, x: best[0], z: best[1] } : null;
+      s.opn = best ? { t: pClock, x: best[0], z: best[1], w: 0.28 + Math.random() * 0.14 } : null;
     }
     if (s.opn) { tx = s.opn.x; tz = s.opn.z; }
   }
